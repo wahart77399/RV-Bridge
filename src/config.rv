@@ -1,0 +1,54 @@
+Selected (Y/N,      Make,               Model,              Year,   Device Group,   Device Type,    RVC Index,  Device Name
+Y,                  Newmar,             Essex               2022,   DISCOVERY       ALL,            ALL,        ALL
+Y,                  Newmar,             Essex,              2022,   Lights,         Dimmable,       82,         Living Room Light
+Y,                  Newmar,             Essex,              2022,   Lights,         Dimmable,       84,         Bedroom Light
+Y,                  Newmar,             Essex,              2022,   Lights,         Dimmable,       85,         Bathroom Light
+Y,                  Newmar,             Essex,              2022,   Lights,         LightBulb,      98,         Driver Side Security Light
+Y,                  Newmar,             Essex,              2022,   Lights,         LightBulb,      99,         Passenger Side Security Light
+Y,                  Newmar,             Essex,              2022,   Locks,          Lock,           1,          Front Door
+Y,                  Newmar,             Essex,              2022,   Locks,          Lock,           2,          Bay Door Group 1
+Y,                  Newmar,             Essex,              2022,   Locks,          Lock,           3,          Bay Door Group 2
+Y,                  Newmar,             Essex,              2022,   Locks,          Lock,           4,          Bay Door Group 3
+Y,                  Newmar,             Essex,              2022,   Locks,          Lock,           5,          Bay Door Group 4
+Y,                  Newmar,             Essex,              2022,   AwningsShades,  Awning,         1,          Front Awning
+Y,                  Newmar,             Essex,              2022,   AwningsShades,  Awning,         2,          Rear Awning
+Y,                  Newmar,             Essex,              2022,   AwningsShades,  Awning,         3,          Door Awning
+Y,                  Newmar,             Essex,              2022,   AwningsShades,  Shades,         ?,          Driver Cabin Day Shades
+Y,                  Newmar,             Essex,              2022,   AwningsShades,  Shades,         ?,          Driver Cabin Night Shades
+Y,                  Newmar,             Essex,              2022,   AwningsShades,  Shades,         ?,          Living Room Day Shades
+Y,                  Newmar,             Essex,              2022,   AwningsShades,  Shades,         ?,          Living Room Night Shades
+Y,                  Newmar,             Essex,              2022,   AwningsShades,  Shades,         ?,          Dining Room Day Shades
+Y,                  Newmar,             Essex,              2022,   AwningsShades,  Shades,         ?,          Dining Room Night Shades
+Y,                  Newmar,             Essex,              2022,   AwningsShades,  Shades,         ?,          Kitchen Day Shades
+Y,                  Newmar,             Essex,              2022,   AwningsShades,  Shades,         ?,          Kitchen Night Shades
+Y,                  Newmar,             Essex,              2022,   AwningsShades,  Shades,         ?,          Bedroom Day Shades
+Y,                  Newmar,             Essex,              2022,   AwningsShades,  Shades,         ?,          Bedroom Night Shades
+Y,                  Newmar,             Essex,              2022,   AwningsShades,  Shades,         ?,          Bathroom Day Shades
+Y,                  Newmar,             Essex,              2022,   AwningsShades,  Shades,         ?,          Bathroom Night Shades
+Y,                  Newmar,             Essex,              2022,   AwningsShades,  Shades,         ?,          Half Bathroom Day Shades
+Y,                  Newmar,             Essex,              2022,   AwningsShades,  Shades,         ?,          Half Bathroom Night Shades
+Y,                  Newmar,             Essex,              2022,   RoofFans,       RoofFan,        ?,          Bathroom Roof Fan
+Y,                  Newmar,             Essex,              2022,   RoofFans,       RoofFan,        ?,          Half Bath Roof Fan
+Y,                  Newmar,             Essex,              2022,   RoofFans,       RoofFan,        ?,          Kitchen RoofFan
+Y,                  Newmar,             Essex,              2022,   HVAC,           Thermostat,     ?,          Living Room Thermostat
+Y,                  Newmar,             Essex,              2022,   HVAC,           Thermostat,     ?,          Kitchen Thermostat
+Y,                  Newmar,             Essex,              2022,   HVAC,           Thermostat,     ?,          Bedroom Thermostat
+Y,                  Newmar,             Essex,              2022,   HVAC,           AirConditioner, ?,          Front Air Conditioner
+Y,                  Newmar,             Essex,              2022,   HVAC,           AirConditioner, ?,          Mid Air Conditioner
+Y,                  Newmar,             Essex,              2022,   HVAC,           AirConditioner, ?,          Rear Air Conditioner
+Y,                  Newmar,             Essex,              2022,   HVAC,           HeatPump,       ?,          Front Heat Pump
+Y,                  Newmar,             Essex,              2022,   HVAC,           HeatPump,       ?,          Mid Heat Pump
+Y,                  Newmar,             Essex,              2022,   HVAC,           HeatPump,       ?,          Rear Heat Pump
+Y,                  Newmar,             Essex,              2022,   HVAC,           Furnace,        ?,          Oasis
+Y,                  Newmar,             Essex,              2022,   HVAC,           FloorHeat,      ?,          Front Floor Heat
+Y,                  Newmar,             Essex,              2022,   HVAC,           FloorHeat,      ?,          Mid Floor Heat
+Y,                  Newmar,             Essex,              2022,   HVAC,           FloorHeat,      ?,          Rear Floor Heat
+Y,                  Newmar,             Essex,              2022,   Utilities,      WaterPump,      0,          Water Pump
+Y,                  Newmar,             Essex,              2022,   Utilities,      Generator,      0,          Generator
+Y,                  Newmar,             Essex,              2022,   Utilities,      Battery,        ?,          Battery #1
+Y,                  Newmar,             Essex,              2022,   Utilities,      Battery,        ?,          Battery #2
+Y,                  Newmar,             Essex,              2022,   Utilities,      Battery,        ?,          Battery #3
+Y,                  Newmar,             Essex,              2022,   Utilities,      Battery,        ?,          Battery #4
+Y,                  Newmar,             Essex,              2022,   Utilities,      Battery,        ?,          Battery #5
+Y,                  Newmar,             Essex,              2022,   Utilities,      Battery,        ?,          Battery #6
+Y,                  Newmar,             Essex,              2022,   Utilities,      ShorePower,     ?,          Shore Power
