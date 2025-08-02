@@ -32,5 +32,5 @@
 ////////////////////////////////////////////////////////////////
 
 // this should be encrypted and secured, but for now, I'm not messing with it
-constexpr const char* WIFI_PASSWORD = "HookEmH0rnFrogsSuck!";
-constexpr const char* WIFI_SSID = "Castle Point";
+constexpr const char* WIFI_PASSWORD = "******";
+constexpr const char* WIFI_SSID = "ssid";
