@@ -36,10 +36,11 @@
 #include "GenericDevice.h"
 
 boolean SpanView::prepped = false;
-
+/**
 void SpanView::setCallBack(char c, const char* s, void (*f)(const char *)) {
     new SpanUserCommand(c, s, f);
 }
+*/
 
 const char* SpanView::getValuePair(const char* buff, int16_t& val1, int16_t& val2) {
 	val1 = -1;
