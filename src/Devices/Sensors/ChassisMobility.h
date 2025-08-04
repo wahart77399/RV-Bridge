@@ -1,6 +1,3 @@
-#ifndef CHASSIS_MOBILITY_H
-#define CHASSIS_MOBILITY_H // once I'm ready to define this, move this below ifndef
-
 /*********************************************************************************
  *  MIT License
  *  
@@ -39,7 +36,7 @@
 #include "Packet.h"
 
 constexpr uint8_t DEFAULT_CHASSIS_INDEX = 0;
-constexpr uint8_t CHASSIS_GROUP=0;
+// constexpr uint8_t CHASSIS_GROUP=0;
 
 class ChassisMobility : public GenericDevice {
     private:
@@ -93,7 +90,8 @@ class ChassisMobility : public GenericDevice {
             ;
         }
 
-        ChassisMobility(uint8_t address, uint8_t grp, std::list <RVC_DGN> dgns) : GenericDevice(address, DEFAULT_CHASSIS_INDEX, grp, dgns) {}
+        ChassisMobility(uint8_t address) // , uint8_t grp, std::list <RVC_DGN> dgns) 
+            : GenericDevice(address, DEFAULT_CHASSIS_INDEX) {} // , grp, dgns) {}
 
         ChassisMobility(uint8_t* data) : GenericDevice(data) {
             ; // Constructor with parameters implementation
@@ -120,11 +118,11 @@ class ChassisMobility : public GenericDevice {
 
         static ChassisMobility* getInstance(void) {
             if (instance == nullptr) {
-                std::list <RVC_DGN> dgns;
-                dgns.push_back(CHASSIS_MOBILITY_COMMAND);
-                dgns.push_back(CHASSIS_MOBILITY_STATUS);
-                dgns.push_back(CHASSIS_MOBILITY_STATUS_2);
-                instance = new ChassisMobility(148,CHASSIS_GROUP, dgns);
+                // std::list <RVC_DGN> dgns;
+                // dgns.push_back(CHASSIS_MOBILITY_COMMAND);
+                // dgns.push_back(CHASSIS_MOBILITY_STATUS);
+                // dgns.push_back(CHASSIS_MOBILITY_STATUS_2);
+                instance = new ChassisMobility(148); // ,CHASSIS_GROUP, dgns);
             }
             return instance;
         }
