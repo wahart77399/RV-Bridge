@@ -54,13 +54,13 @@ class GenericDevice {
         uint8_t* currentData;
         uint8_t sourceAddress;
         uint8_t instance;
-        uint8_t group; // maybe?
-        std::list <RVC_DGN> availableDGNs; // list of available DGN numbers for this device 
+        // uint8_t group; // maybe?
+        // std::list <RVC_DGN> availableDGNs; // list of available DGN numbers for this device 
 
         const uint8_t getInstance(void) const { return instance; }
         void setInstance(uint8_t curInstance) { instance = curInstance; }
-        uint8_t getGroup(void) { return group; }
-        void setGroup(uint8_t curGroup) { group = curGroup; }
+        // uint8_t getGroup(void) { return group; }
+        // void setGroup(uint8_t curGroup) { group = curGroup; }
 
         std::list<SpanView* >::iterator getViews(void) { 
             return views.begin(); 
@@ -123,19 +123,17 @@ class GenericDevice {
         GenericDevice() :
              views(), 
              currentData(nullptr), 
-             instance(0), 
-             group(0) {
+             instance(0) { //,             group(0) {
                 // all done in initializers    
         }
 
-        GenericDevice(uint8_t address, uint8_t index, uint8_t grp, std::list <RVC_DGN> dgns) :
+        GenericDevice(uint8_t address, uint8_t index) : //  ,uint8_t grp, std::list <RVC_DGN> dgns) :
             views(),
             currentData(nullptr),
             sourceAddress(address),
-            instance(index),
-            group(grp) { 
+            instance(index) { // },            group(grp) { 
             
-            availableDGNs = dgns;
+            // availableDGNs = dgns;
             currentData = new uint8_t[sizeof(uint8_t) * 8]; // allocate 8 bytes for the data
             currentData[0] = getInstance(); // set the first byte to the instance index
             for (uint8_t i = 1; i < 8; i++) {
@@ -149,9 +147,7 @@ class GenericDevice {
             frame(orig.frame),  // may need to allocate memory and deep copy - not sure yet
             currentData(nullptr),
             sourceAddress(orig.sourceAddress),
-            instance(orig.instance),
-            group(orig.group),
-            availableDGNs(orig.availableDGNs) { 
+            instance(orig.instance) {  //,group(orig.group), availableDGNs(orig.availableDGNs) { 
             // Copy constructor
             if (orig.currentData) {
                 // ********************** WARNING ****************************************************************
@@ -164,15 +160,14 @@ class GenericDevice {
         GenericDevice(uint8_t* data) :
              views(), 
              currentData(nullptr), 
-             instance(0), 
-             group(0) {
+             instance(0) { // , group(0) {
             // Constructor with parameters
             if (data != nullptr) {
                 if (currentData != nullptr) {
                     delete[] currentData; // delete old data
                 }
                 this->instance = Packet::getIndex(data);
-                this->group = Packet::getGroup(data);
+                // this->group = Packet::getGroup(data);
                 // ********************** WARNING ****************************************************************
                 // this wont work, it will alocate the size of the pointer - I believe it needs to be 8 bytes long
                 currentData = new uint8_t[sizeof(uint8_t) * 8];
@@ -192,8 +187,8 @@ class GenericDevice {
                 } 
                 sourceAddress = orig.sourceAddress;
                 instance = orig.instance;
-                group = orig.group;
-                availableDGNs = orig.availableDGNs;
+                // group = orig.group;
+                // availableDGNs = orig.availableDGNs;
                 frame = orig.frame;
                 // availableDGNs = nullptr; // Initialize to nullptr
                 //if (orig.availableDGNs != nullptr) {
