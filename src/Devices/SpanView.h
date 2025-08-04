@@ -34,7 +34,7 @@
 #ifndef SPAN_VIEW_H
 #define SPAN_VIEW_H
 #include "Arduino.h"
-#include <map>
+// #include <map>
 // #include <mutex>
 
 class GenericDevice;
@@ -43,15 +43,19 @@ class SpanUserCommand;
 class SpanView {
     private:
         GenericDevice* model;
+        boolean needToUpdateView = true;
 
         SpanView& operator=(SpanView& v) = delete;
 
         static boolean prepped;
 
     protected:
+        inline void updateTheView(void) { needToUpdateView = true; } // set the flag to indicate view needs to be updated   
+        inline void dontUpdateTheView(void) { needToUpdateView = false; } // reset the flag to indicate view does not need to be updated
+        inline const boolean isNeedToUpdateView(void) const { return needToUpdateView; } // return the flag to indicate view needs to be updated
         const float HomeKitPercentMax = (100.0F);
 
-        void setCallBack(char c, const char *s, void (*f)(const char *)); // call back from HomeSpan to tell the model what needs to be done next
+        // void setCallBack(char c, const char *s, void (*f)(const char *)); // call back from HomeSpan to tell the model what needs to be done next
 
         const char* getValuePair(const char* buff, int16_t& val1, int16_t& val2);
              
