@@ -54,13 +54,9 @@ class GenericDevice {
         uint8_t* currentData;
         uint8_t sourceAddress;
         uint8_t instance;
-        // uint8_t group; // maybe?
-        // std::list <RVC_DGN> availableDGNs; // list of available DGN numbers for this device 
 
         const uint8_t getInstance(void) const { return instance; }
         void setInstance(uint8_t curInstance) { instance = curInstance; }
-        // uint8_t getGroup(void) { return group; }
-        // void setGroup(uint8_t curGroup) { group = curGroup; }
 
         std::list<SpanView* >::iterator getViews(void) { 
             return views.begin(); 
@@ -81,9 +77,6 @@ class GenericDevice {
 
         inline void setCurrentData(const uint8_t* data) {
             if ((data != currentData) && (currentData != nullptr) && (data != nullptr)) {
-                //if (currentData != nullptr) {
-                //    delete[] currentData; // delete old data
-                //}
                 for (uint8_t i = 1; i < 8; i++) {
                     currentData[i] = data[i]; // copy the data
                 }
