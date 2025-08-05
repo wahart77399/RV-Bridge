@@ -35,6 +35,7 @@
 #include "Arduino.h"
 #include <mutex>
 #include "CAN_config.h"
+// #include "debug.h"
 
 class CoachESP32 {
     private:
@@ -46,6 +47,7 @@ class CoachESP32 {
         static const uint8_t sourceAddress = 145;
         static const gpio_num_t canTxPin = GPIO_NUM_25;
         static const gpio_num_t canRxPin = GPIO_NUM_26;
+        // static std::ostringstream oss;
         
 
         
