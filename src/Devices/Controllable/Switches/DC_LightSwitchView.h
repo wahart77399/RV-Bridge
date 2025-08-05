@@ -46,7 +46,6 @@ class DC_Switch;
 class DC_LightSwitchView : public SpanView , public SpanService {
     private:
         const uint8_t Lamp = 0; // not a dimmable switch
-        boolean needToUpdateView = true;
         static const char* name; //  = "LightBulb"; // from Span.h
         static const char* type; //  = "43"; // from Span.h
         static const char  ON_OFF_COMMAND; //  = 'o';
@@ -56,27 +55,14 @@ class DC_LightSwitchView : public SpanView , public SpanService {
 
         SpanCharacteristic* spanCharOn;
 
-        static SpanUserCommand* onOff;
-        static SpanUserCommand* status;
 
         const char* spanDeviceName;
-        // static std::mutex DC_LightSwithMutex;
-        static std::map<uint8_t, DC_Switch*> lightSwitches;
         static bool bridgeCreated;
         static void createBridge(void); 
 
-        
-
-        // void sendOnOff(int16_t);
 
         // creating cohesion between the DC_Switch and this class so that the model can friend the static callback cmdSendOnOff
         friend class DC_Switch;
-
-
-        // cmd callback for HomeSpan
-        static void cmdSendOnOff(const char* buff);
-        static void cmdOnOffStatus(const char* buff);
-        
 
 
     protected:
@@ -91,19 +77,13 @@ class DC_LightSwitchView : public SpanView , public SpanService {
             }
         }
         inline const char* getSpanDeviceName(void) const { return spanDeviceName; } // return the name of the device for this view
-        static void cmdCallback(RVC_DGN dgn, const char* buff);
-
-        static void prepUserCommands(void);
-        inline void updateTheView(void) { needToUpdateView = true; } // set the flag to indicate view needs to be updated   
-        inline void dontUpdateTheView(void) { needToUpdateView = false; } // reset the flag to indicate view does not need to be updated
-        inline const boolean isNeedToUpdateView(void) const { return needToUpdateView; } // return the flag to indicate view needs to be updated
+        
 
         const uint8_t RVCBrightMax = 200;
         // @brief need to review this... doesn't seem right SpanService(type, name)
         DC_LightSwitchView(GenericDevice* model, const char* spanDevName);
     public:
 
-        // static void cmdCallback(RVC_DGN dgn, const char* buff);
         
         /// @brief destructor
         virtual ~DC_LightSwitchView(void) { 
