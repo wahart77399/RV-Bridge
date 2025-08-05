@@ -35,7 +35,7 @@
 
 #include "SpanView.h"
 #include "HomeSpan.h"
-#include <mutex>
+// #include <mutex>
 #include "DGN.h"
 
 class DoorLock;
@@ -45,7 +45,6 @@ class DoorLock;
 class DoorLockView : public SpanView , public SpanService {
     private:
         
-        boolean needToUpdateView = true;
         static const char* name; //  = "LockMechanism"; // from Span.h
         static const char* type; //  = "45"; // from Span.h
         static const char  LOCK_COMMAND_ID;
@@ -59,12 +58,8 @@ class DoorLockView : public SpanView , public SpanService {
         SpanCharacteristic* spanCharCurrentLockState;
         SpanCharacteristic* spanCharTargetLockState;
 
-        static SpanUserCommand* lockUnLock;
-        static SpanUserCommand* lockStatus;
 
         const char* spanDeviceName;
-        // static std::mutex DC_LightSwithMutex;
-        static std::map<uint8_t, DoorLock*> locks;
         static bool bridgeCreated;
         static void createBridge(void); 
 
@@ -73,19 +68,10 @@ class DoorLockView : public SpanView , public SpanService {
         // void sendOnOff(int16_t);
 
         // creating cohesion between the DoorLock and this class so that the model can friend the static callback cmdSendOnOff
-        friend class DoorLock;;
-
-
-        // cmd callback for HomeSpan
-        static void cmdCallback(RVC_DGN dgn, const char* buff);
-        static void cmdLockUnLock(const char* buff);
-        static void cmdLockStatus(const char* buff);
+        friend class DoorLock;
         
 
-        static void prepUserCommands(void);
-        inline void updateTheView(void) { needToUpdateView = true; } // set the flag to indicate view needs to be updated   
-        inline void dontUpdateTheView(void) { needToUpdateView = false; } // reset the flag to indicate view does not need to be updated
-        inline const boolean isNeedToUpdateView(void) const { return needToUpdateView; } // return the flag to indicate view needs to be updated
+        // static void prepUserCommands(void);
 
     protected:
         // @brief need to review this... doesn't seem right SpanService(type, name)
