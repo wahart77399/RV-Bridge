@@ -103,7 +103,7 @@ class WaterPump : public GenericDevice {
             // Copy constructor implementation
         }
 
-        WaterPump(uint8_t address, uint8_t grp, std::list <RVC_DGN> dgns) : GenericDevice(address, WATER_PUMP_INDEX, grp, dgns) {
+        WaterPump(uint8_t address) : GenericDevice(address, WATER_PUMP_INDEX) { 
         }
 
         WaterPump(uint8_t* data) : GenericDevice(data) {
@@ -113,7 +113,6 @@ class WaterPump : public GenericDevice {
         virtual ~WaterPump() {
             // Destructor implementation
         } 
-        // virtual boolean executeCommand(RVC_DGN dgn, const uint8_t* sendData = nullptr, uint8_t sAddress = SOURCE_ADDRESS); 
 
         virtual boolean executeCommand(RVC_DGN dgn, const uint8_t* buffer, uint8_t val=SOURCE_ADDRESS);
 };
