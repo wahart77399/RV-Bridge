@@ -43,8 +43,6 @@ class DoorLock : public GenericDevice {
     private:
         static const uint8_t LOCK_INDEX = 1; // index of the lock state in the data
 
-        // friend void DoorLockView::updateView(void);
-        // friend boolean DoorLockView::update(void);
         friend class DoorLockView; // allow DoorLockView to access private members
 
         const uint8_t LOCK_IT = 0x01;
@@ -96,8 +94,8 @@ class DoorLock : public GenericDevice {
         virtual CAN_frame_t* buildCommand(RVC_DGN dgn) override;    
 
     public:
-        DoorLock(uint8_t address, uint8_t instance, uint8_t grp, std::list <RVC_DGN> dgns) : GenericDevice(address, instance, grp, dgns) { 
-            printf("DoorLock constructor called with address=%d, instance=%d, group=%d\n", address, instance, grp);
+        DoorLock(uint8_t address, uint8_t instance) : GenericDevice(address, instance) { 
+            printf("DoorLock constructor called with address=%d, instance=%d, group=%d\n", address, instance); 
             // Constructor with parameters implementation
         }
 
@@ -108,8 +106,7 @@ class DoorLock : public GenericDevice {
             // Destructor implementation
             
         } 
-        
-        
+         
         virtual boolean executeCommand(RVC_DGN dgn, const uint8_t* sendData = nullptr, uint8_t sAddress = SOURCE_ADDRESS); // execute command based on DGN and data received from the controller  
 };
 #endif
