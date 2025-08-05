@@ -39,7 +39,6 @@
 bool ThermostatView::categoryCreated = false;
 void ThermostatView::createCategory(void) {
     if (!categoryCreated) {
-         homeSpan.begin(Category::Thermostats,"Thermostats");
          categoryCreated = true;
     }
 }
@@ -124,15 +123,6 @@ void ThermostatView::FanController::setLevel(uint8_t level) {
     }
 } 
     //*/
-
-
-// const double tempCScale = 0.03125;
-// const double tempCScaleInv = 1.0 / tempCScale;
-// const double tempCRoundingOffset = -0.25;
-// const float  DEFAULT_TEMP = 72.0;
-
-
-
 
 
 typedef enum {
@@ -280,13 +270,13 @@ bool ThermostatView::updateView(void) {
         uint8_t instance = indexOfModel();   
         uint8_t index = -1;
         HVAC_Thermostat* mdl = (HVAC_Thermostat* )getModel();
-        if (mdl != nullptr) {
+        if ((mdl != nullptr) && (controller != nullptr)) {
             RVCFanMode fanMode = mdl->getFanMode();
             RVCMode opMode = mdl->getOperatingMode();
             RVCForcedFan fanSpeed = mdl->getFanSpeed();
             float coolTemp = mdl->getCoolTemp();
             float heatTemp = mdl->getHeatTemp();
-            controller.setInfo(opMode, fanMode, fanSpeed, heatTemp, coolTemp);
+            controller->setInfo(opMode, fanMode, fanSpeed, heatTemp, coolTemp);
             updated = true; 
         }
     }
@@ -294,24 +284,39 @@ bool ThermostatView::updateView(void) {
     return updated;
  }
 
- ThermostatView::ThermostatView(GenericDevice* model, const char* spanDevName) : SpanView(model), controller(this, model, spanDevName) {
+ ThermostatView::ThermostatView(GenericDevice* model, const char* spanDevName) : SpanView(model), controller(nullptr) {
 
  }
 
  void ThermostatView::createThermostatView(GenericDevice* model, const char* spanDevName) {
     printf("ThermostatView::createThermostatView called\n");
     SpanView::prepHomeSpan();
-    // SPAN_ACCESSORY(spanDevName);
+
+    ThermostatView* vw = new ThermostatView(model, spanDevName);
+
     ThermostatView::createCategory();
+
+    const char* append = " Fan";
+    size_t buffer_size = strlen(spanDevName) + strlen(append) + 1; 
+    char* fanName = new char[buffer_size];
+    strcpy(fanName, spanDevName);
+    strcat(fanName, append);
+    new SpanAccessory(); 
+    new Service::AccessoryInformation(); 
+    new Characteristic::Identify();
+    new Characteristic::Name(fanName);
+    ThermostatView::FanController* fn = new ThermostatView::FanController(vw, (HVAC_Thermostat*)model);
+
     new SpanAccessory(); 
     new Service::AccessoryInformation(); 
     new Characteristic::Identify();
     new Characteristic::Name(spanDevName);
     new Characteristic::TemperatureDisplayUnits(homeKitTemperatureDisplayFahrenheit);
-    // new Characteristic::ConfiguredName(spanDevName);
-    // SPAN_ACCESSORY(spanDevName);
-    ThermostatView* tmp = new ThermostatView(model, spanDevName);
-    if (tmp != nullptr)
+
+    ThermostatView::ThermostatController* controller = new ThermostatView::ThermostatController(vw, model, fn, spanDevName);
+    vw->setController(controller);
+
+    if (vw != nullptr)
         printf("ThermostatView::createThermostatView: tmp created successfully\n");
     else
         printf("ThermostatView::createThermostatView: tmp creation failed\n");   
