@@ -88,13 +88,11 @@ WaterPumpView::WaterPumpView(GenericDevice* model, const char* spanDevName) : Sp
 void WaterPumpView::createWaterPumpView(GenericDevice* model, const char* spanDevName) {
     printf("WaterPumpView::createWaterPumpView called\n");
     SpanView::prepHomeSpan();
-    // SPAN_ACCESSORY(spanDevName);
-    homeSpan.begin(Category::Switches,"HomeSpan Utilities");
+
     new SpanAccessory(); 
     new Service::AccessoryInformation(); 
     new Characteristic::Identify();
     new Characteristic::Name(spanDevName);
-    // SPAN_ACCESSORY(spanDevName);
     WaterPumpView* tmp = new WaterPumpView(model, spanDevName);
     if (tmp != nullptr)
         printf("WaterPumpView::createWaterPumpView: tmp created successfully\n");
