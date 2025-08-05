@@ -41,13 +41,16 @@
 // homeSpan is a global in the HomeSpan framework - it isused to manage the connection to homekit
 // enum HS_STATUS : int16_t;
 
+// #include "debug.h"
+
 class CoachWifi {
     private:
         const char* ssid = WIFI_SSID;
         const char* password = WIFI_PASSWORD;
         
 
-        static std::mutex wifiMutex;
+        // static std::mutex wifiMutex;
+        // static std::ostringstream oss;
         static CoachWifi* instance;
         static bool wifiConnected ;
         static bool hadWifiConnection;
