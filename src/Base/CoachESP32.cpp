@@ -6,6 +6,7 @@
 #include "Packet.h"
 #include "PacketQueue.h"
 
+// std::ostringstream CoachESP32::oss;
 
 CoachESP32::PinSetup CoachESP32::pinList[] = {
     { CoachESP32::indicatorPinR, OUTPUT, HIGH },
@@ -49,12 +50,13 @@ CoachESP32* CoachESP32::getInstance(CAN_device_t* cfg) {
 }
 
 void CoachESP32::initialize(void) {
-    printf("CoachESP32::initialize() called\n");
+    //CoachESP32::oss<< "CoachESP32::initialize() called" << std::endl;
+    //LOGIT(VERBOSE_LOG_LEVEL, CoachESP32::oss);
     initPins();
     flashPin(indicatorPinB, 20, 200);
     Serial.begin(115200);
-	printf("%u: RV Bridge - Startup\n", (uint32_t)millis());
-
+	//CoachESP32::oss << "CoachESP32::initialize - RV Bridge - Startup"  << std::endl;
+    //LOGIT(VERBOSE_LOG_LEVEL, oss);
     /* ******
 	#ifdef OVERRIDE_MAC_ADDRESS
  		uint8_t newMACAddress[] = OVERRIDE_MAC_ADDRESS;
@@ -62,13 +64,15 @@ void CoachESP32::initialize(void) {
  		printf("%u: MAC address updated to: %s\n", (uint32_t)millis(), WiFi.macAddress().c_str());
  	#endif
     ****** */
-	printf("%u: Init CAN module\n", (uint32_t)millis());
+	//CoachESP32::oss << "Init CAN module" << std::endl;
+    //LOGIT(VERBOSE_LOG_LEVEL, oss);
     if (CoachESP32::CAN_cfg != nullptr) {
         PacketQueue::initPacketQueue(*CoachESP32::CAN_cfg);
     }
     // Reduce processor frequency to lower current consumption
 	setCpuFrequencyMhz(160);
-    printf("CoachESP32 initialize complete\n");
+    //CoachESP32::oss << "CoachESP32 initialize complete" << std::endl;
+    //LOGIT(VERBOSE_LOG_LEVEL, oss);
 }
 
 void CoachESP32::adjustRGB(bool red, bool green, bool blue) {
@@ -78,7 +82,8 @@ void CoachESP32::adjustRGB(bool red, bool green, bool blue) {
 }
 
 void CoachESP32::pollESP32(void) {
-    //printf("CoachESP32::pollESP32 started\n");
+    //CoachESP32::oss << "CoachESP32::pollESP32 started" << std::endl;
+    //LOGIT(VERBOSE_LOG_LEVEL, oss);
     // std::lock_guard<std::mutex> lock(esp32Mutex);
     CoachESP32* coach = CoachESP32::getInstance();
     if (coach != nullptr) {
@@ -86,18 +91,20 @@ void CoachESP32::pollESP32(void) {
     }
     PacketQueue::processPacketQueue();
     // std::lock_guard<std::mutex> unlock(esp32Mutex);
-    //printf("CoachESP32::pollESP32 completed\n");
+    //CoachESP32::oss << "CoachESP32::pollESP32 completed" << std::endl;
+    // LOGIT(VERBOSE_LOG_LEVEL, oss);
 }
 
 
 void CoachESP32::processQueue(void) {
-    //printf("CoachESP32::processQueue started\n");
+    // CoachESP32::oss << "CoachESP32::processQueue started" << std::endl;
     if (CoachESP32::CAN_cfg != nullptr) {
         CAN_frame_t packet;
-        //printf("CoachESP32::processQueue started\n");
+        // CoachESP32::oss << "CoachESP32::processQueue started" << std::endl;
         if (PacketQueue::packetReceived(CoachESP32::CAN_cfg, &packet)) {
             // printf("INFO: Packet received \n");
         }
     }
-    //printf("CoachESP32::processQueue completed\n");
+    //CoachESP32::oss << "CoachESP32::processQueue completed" << std::endl;
+    //LOGIT(VERBOSE_LOG_LEVEL, oss);
 }
