@@ -37,76 +37,6 @@
 #include "Packet.h"
 #include "PacketQueue.h"
 
-std::map<uint8_t, DC_Switch*> DC_LightSwitchView::lightSwitches;
-SpanUserCommand* DC_LightSwitchView::onOff = nullptr;
-SpanUserCommand* DC_LightSwitchView::status = nullptr;
-
-const char  DC_LightSwitchView::ON_OFF_COMMAND = 'o';
-const char* DC_LightSwitchView::ON_OFF_COMMAND_DESCRIPTION = "<index>=<state:0-1>,... - send onOff to <index>";
-const char  DC_LightSwitchView::ON_OFF_STATUS = 'O';
-const char* DC_LightSwitchView::ON_OFF_STATUS_DESCRIPTION = "<index> to retrieve current state in HomeSpan";
-        
-
-// this is a static function used as a callback
-void DC_LightSwitchView::cmdSendOnOff(const char* buff) { 
-    // void cmdSendOnOff(const char* buff) { 
-    printf("DC_LightSwitchView::cmdSendOnOff called with buff=%s\n", buff);
-    RVC_DGN dgn = DC_DIMMER_COMMAND;
-    DC_LightSwitchView::cmdCallback(dgn, buff);
-    printf("DC_LightSwitchView::cmdSendOnOff completed\n");
-}
-
-void DC_LightSwitchView::cmdOnOffStatus(const char* buff) {
-    // void cmdOnOffStatus(const char* buff) {
-    printf("DC_LightSwitchView::cmdOnOffStatus called with buff=%s\n", buff);
-    RVC_DGN dgn = DC_DIMMER_STATUS_3;
-    DC_LightSwitchView::cmdCallback(dgn, buff);
-    printf("DC_LightSwitchView::cmdOnOffStatus completed\n");
-}
-
-void DC_LightSwitchView::cmdCallback(RVC_DGN dgn, const char* buff) {
-    printf("DC_LightSwitchView::cmdCallback called with dgn=%u, buff=%s\n", dgn, buff);
-    int16_t index;
-	int16_t val;
-
-	buff += 1;
-	
-	while (buff) {
-
-		buff = Packet::parseBufferForValuePair(buff, index, val);
-		if (index!=-1 && val!=-1) {
-			printf("%u: DC_LightSwitchView::cmdCallBack: index=%d, val=%d\n", (uint32_t)millis(), index, val);
-            // insure mutex locked before creating / adding models to the static member for all Light switches
-            // std::lock_guard<std::mutex> lock(DC_LightSwithMutex);
-            GenericDevice* mdl = lightSwitches[index];
-            uint8_t* theData = (uint8_t* ) buff;
-			if (mdl != nullptr) {
-                printf("DC_LightSwitchView::cmdCallback: mdl != nullptr - calling mdl->executeCommand\n");
-                mdl->executeCommand(dgn, theData);
-            }
-		}
-		else {
-			printf("%u: cmdSendOnOff: parameter error!\n", (uint32_t)millis());
-		}
-	}
-    printf("DC_LightSwitchView::cmdCallback completed\n");
-}
-
-void DC_LightSwitchView::prepUserCommands(void) {
-    printf("DC_LightSwitchView::prepUserCommands called\n");
-    if (DC_LightSwitchView::onOff == nullptr) {
-        // create the user commands for the light switch
-       DC_LightSwitchView::onOff = new SpanUserCommand(ON_OFF_COMMAND, ON_OFF_COMMAND_DESCRIPTION, DC_LightSwitchView::cmdSendOnOff);
-       printf("DC_LightSwitchView::prepUserCommands: onOff command created\n");
-        // DC_LightSwitchView::onOff = new SpanUserCommand(ON_OFF_COMMAND, ON_OFF_COMMAND_DESCRIPTION, cmdSendOnOff);
-        
-    }
-    if (DC_LightSwitchView::status == nullptr) {
-        DC_LightSwitchView::status = new SpanUserCommand(ON_OFF_STATUS, ON_OFF_STATUS_DESCRIPTION, DC_LightSwitchView::cmdOnOffStatus);
-        // DC_LightSwitchView::status = new SpanUserCommand(ON_OFF_STATUS, ON_OFF_STATUS_DESCRIPTION, cmdOnOffStatus);
-        printf("DC_LightSwitchView::prepUserCommands: status command created\n");
-    }
-}
 
 bool DC_LightSwitchView::bridgeCreated = false;
 
@@ -123,12 +53,7 @@ void DC_LightSwitchView::createBridge(void) {
     }
 }
 
-/**
-DC_LightSwitchView::~DC_LightSwitchView() { 
-    if (DC_LightSwitchView::spanCharOn != nullptr) 
-        delete spanCharOn; 
-}
-        */
+
 
 #include "ChassisMobility.h"
 bool DC_LightSwitchView::updateView(void) {
@@ -203,7 +128,6 @@ DC_LightSwitchView::DC_LightSwitchView(GenericDevice* model, const char* spanDev
     // SPAN_ACCESSORY(spanDeviceName);
     uint8_t index = indexOfModel();
     if (index < 255) {
-        // SPAN_ACCESSORY(spanDeviceName);
         REQ(On);
         OPT(Name);
         spanCharOn = new Characteristic::On();
@@ -212,7 +136,6 @@ DC_LightSwitchView::DC_LightSwitchView(GenericDevice* model, const char* spanDev
         printf("DC_LightSwitchView constructor: indexOfModel returned -1, spanCharOn not created\n");
     }
     
-    DC_LightSwitchView::prepUserCommands();
 
     printf("DC_LightSwitchView constructor completed\n");
 
