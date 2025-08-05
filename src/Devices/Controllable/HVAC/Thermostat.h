@@ -58,11 +58,8 @@ class HVAC_Thermostat : public GenericDevice {
         const uint8_t OPERATING_MODE_MASK = 0x0f;
         const uint8_t FAN_MODE_MASK = 0x30;
         const uint8_t SCHEDULE_MODE_MASK = 0xc0;
-         // (degF− 32) × 5/9 = degC | (\°C × 9/5) + 32 = °F
         const uint8_t MAX_TEMP = 100;
 
-
-        // uint16_t*   temperatureData;
         const uint8_t HEAT_TEMP_INDEX = 0;
         const uint8_t COLD_TEMP_INDEX = 1;
     public:
@@ -73,13 +70,6 @@ class HVAC_Thermostat : public GenericDevice {
 	        return (tempC - tempCOffset + 0.5) / tempCScale;
         }
 
-        // uint16_t*   getTemperatureData(void) const { return temperatureData; }
-        //void setTemperatureData(uint8_t* rawData) {
-        //    if (rawData != nullptr)
-        //        temperatureData = (uint16_t*) &(rawData[THERMOSTAT_HEAT_TEMP_MSB]);
-        //}
-
-        
 
     private:
         friend class ThermostatView;
@@ -109,10 +99,8 @@ class HVAC_Thermostat : public GenericDevice {
         }
 
         void setCoolTemp(const uint16_t tempC) {
-            // uint16_t* tempData = getTemperatureData();
             uint8_t* tempData = getCurrentData();
             if (tempData != nullptr) {
-                // tempData[COLD_TEMP_INDEX] = temp;
                 uint16_t temp = convFromTempC(tempC);
                 tempData[6] = temp >> 8;
                 tempData[5] = temp & 0xff;
@@ -124,7 +112,6 @@ class HVAC_Thermostat : public GenericDevice {
         void setHeatTemp(const uint16_t tempC) {
             uint8_t* tempData = getCurrentData();
             if (tempData != nullptr) {
-                // tempData[COLD_TEMP_INDEX] = temp;
                 uint16_t temp = convFromTempC(tempC);
                 tempData[4] = temp >> 8;
                 tempData[3] = temp & 0xff;
@@ -160,9 +147,7 @@ class HVAC_Thermostat : public GenericDevice {
 
         const uint16_t getCoolTemp(void) const {
             uint16_t temp = DEFAULT_TEMP;
-            // uint8_t* temp8 = &temp;
             uint8_t* tempData = getCurrentData();
-            // uint16_t* tempData = getTemperatureData();
             if (tempData != nullptr) {
                 uint16_t tmp = convToTempC(tempData[THERMOSTAT_COOL_TEMP_LSB]<<8 | tempData[THERMOSTAT_COOL_TEMP_MSB]); 
                 temp = (tmp < MAX_TEMP) ? tmp : DEFAULT_TEMP; //convFromTempC((double) tempC);
@@ -172,10 +157,8 @@ class HVAC_Thermostat : public GenericDevice {
         }
 
         const uint16_t getHeatTemp(void) const {
-                       uint16_t temp = DEFAULT_TEMP;
-            // uint8_t* temp8 = &temp;
+            uint16_t temp = DEFAULT_TEMP;
             uint8_t* tempData = getCurrentData();
-            // uint16_t* tempData = getTemperatureData();
             if (tempData != nullptr) {
                 uint16_t tmp = convToTempC(tempData[THERMOSTAT_HEAT_TEMP_LSB]<<8 | tempData[THERMOSTAT_HEAT_TEMP_MSB]); 
                 temp = (tmp < MAX_TEMP) ? tmp : DEFAULT_TEMP; //convFromTempC((double) tempC);
@@ -218,29 +201,27 @@ class HVAC_Thermostat : public GenericDevice {
         virtual CAN_frame_t* buildCommand(RVC_DGN dgn);
 
     public:
-        HVAC_Thermostat() : GenericDevice() { //, temperatureData(nullptr) {
+        HVAC_Thermostat() : GenericDevice() { 
             // Constructor implementation
-            // setTemperatureData(getCurrentData());
+            
         }
 
-        HVAC_Thermostat(const HVAC_Thermostat& orig) : GenericDevice(orig) { // , temperatureData(nullptr) {
+        HVAC_Thermostat(const HVAC_Thermostat& orig) : GenericDevice(orig) { 
             // Copy constructor implementation
-            // setTemperatureData(getCurrentData());
+            
         }
 
-        HVAC_Thermostat(uint8_t address, uint8_t instance, uint8_t grp, std::list <RVC_DGN> dgns) : GenericDevice(address, instance, grp, dgns) { // , temperatureData(nullptr) {     
-            // setTemperatureData(getCurrentData());
+        HVAC_Thermostat(uint8_t address, uint8_t instance) : GenericDevice(address, instance) {     
+            
         }
 
-        HVAC_Thermostat(uint8_t* data) : GenericDevice(data) { //  temperatureData(nullptr) {
+        HVAC_Thermostat(uint8_t* data) : GenericDevice(data) {
             // Constructor with parameters implementation
-            // setTemperatureData(getCurrentData());
         }
 
         virtual ~HVAC_Thermostat() {
             // Destructor implementation
         } 
-        // virtual boolean executeCommand(RVC_DGN dgn, const uint8_t* sendData = nullptr, uint8_t sAddress = SOURCE_ADDRESS); 
 
         virtual boolean executeCommand(RVC_DGN dgn, const uint8_t* buffer, uint8_t val=SOURCE_ADDRESS);
 };
