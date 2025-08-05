@@ -44,34 +44,16 @@ class DC_Switch;
 class DC_DimmableSwitchView : public DC_LightSwitchView {
     private:
         const uint8_t Lamp = 0; // not a dimmable switch
-        boolean needToUpdateView = true;
         static const char* name; //  = "DimmableBulb"; // from Span.h
         static const char* type; //  = "43"; // from Span.h
         static const char  DIMMABLE_FXN_COMMAND; //  = 'o';
         static const char* DIMMABLE_FXN_COMMAND_DESCRIPTION; // = "<index>=<state:0-1>,... - send onOff to <index>";
-        // static const char  DIMMABLE_FXN_STATUS; // = 'O';
-        // static const char* DIMMABLE_FXN_STATUS_DESCRIPTION; // = "<index> to retrieve current state in HomeSpan";
 
         SpanCharacteristic* spanCharBrightness;
-
-        static SpanUserCommand* setBrightness;
-        
-
-        
-
-        // void sendOnOff(int16_t);
 
         // creating cohesion between the DC_Switch and this class so that the model can friend the static callback cmdSendOnOff
         friend class DC_DimmableSwitch;
 
-
-        // cmd callback for HomeSpan
-        static void cmdSetBrightness(const char* buff);
-
-        static void prepUserCommands(void);
-        inline void updateTheView(void) { needToUpdateView = true; } // set the flag to indicate view needs to be updated   
-        inline void dontUpdateTheView(void) { needToUpdateView = false; } // reset the flag to indicate view does not need to be updated
-        inline const boolean isNeedToUpdateView(void) const { return needToUpdateView; } // return the flag to indicate view needs to be updated
 
     protected:
         const uint8_t RVCBrightMax = 200;
