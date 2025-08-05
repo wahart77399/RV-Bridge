@@ -1,3 +1,4 @@
+
 /*********************************************************************************
  *  MIT License
  *  
@@ -58,6 +59,7 @@ class ChassisMobility : public GenericDevice {
 
     protected:
         virtual void setData(RVC_DGN dgn, uint8_t* data) {
+            printf("ChassisMobility::setData: dgn=%d\n",dgn);
             if (data != nullptr) {
                 uint8_t* rawData = getCurrentData();
                 if (rawData != nullptr) { // set the current data to the new data
@@ -66,6 +68,7 @@ class ChassisMobility : public GenericDevice {
                             printf("ChassisMobility::setData: **************** WE DO NOT SUPPORT CHASSIS MOBILITY COMMAND ******************\n");
                             break;
                         case CHASSIS_MOBILITY_STATUS:
+                            printf("ChassisMobility::setData: CHASSIS_MOBILITY_STATUS = %d", data[CHASSIS_MOBILITY_BRAKE_INDEX]);
                             rawData[CHASSIS_MOBILITY_BRAKE_INDEX] = data[CHASSIS_MOBILITY_BRAKE_INDEX];
                             break;
                         case CHASSIS_MOBILITY_STATUS_2:
@@ -90,8 +93,8 @@ class ChassisMobility : public GenericDevice {
             ;
         }
 
-        ChassisMobility(uint8_t address) // , uint8_t grp, std::list <RVC_DGN> dgns) 
-            : GenericDevice(address, DEFAULT_CHASSIS_INDEX) {} // , grp, dgns) {}
+        ChassisMobility(uint8_t address) 
+            : GenericDevice(address, DEFAULT_CHASSIS_INDEX) {} 
 
         ChassisMobility(uint8_t* data) : GenericDevice(data) {
             ; // Constructor with parameters implementation
@@ -118,11 +121,7 @@ class ChassisMobility : public GenericDevice {
 
         static ChassisMobility* getInstance(void) {
             if (instance == nullptr) {
-                // std::list <RVC_DGN> dgns;
-                // dgns.push_back(CHASSIS_MOBILITY_COMMAND);
-                // dgns.push_back(CHASSIS_MOBILITY_STATUS);
-                // dgns.push_back(CHASSIS_MOBILITY_STATUS_2);
-                instance = new ChassisMobility(148); // ,CHASSIS_GROUP, dgns);
+                instance = new ChassisMobility(148); 
             }
             return instance;
         }
@@ -140,7 +139,6 @@ class ChassisMobility : public GenericDevice {
             return result;
         }
 
-        // virtual void printPacketData(RVC_DGN dgn, uint8_t* data, PacketPrint printPacket);
 
         virtual boolean executeCommand(RVC_DGN dgn, const uint8_t* sendData = nullptr, uint8_t sAddress = SOURCE_ADDRESS); // {} // do nothing
 };
