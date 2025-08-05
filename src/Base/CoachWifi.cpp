@@ -1,6 +1,7 @@
 #include "CoachWifi.h"
 #include "HomeSpan.h"
 
+// std::ostringstream CoachWifi::oss;
 uint64_t CoachWifi::millis64(void) {
 	volatile static uint32_t low32 = 0, high32 = 0;
 	uint32_t new_low32 = millis();
@@ -14,7 +15,7 @@ uint64_t CoachWifi::millis64(void) {
 }
 
 // create the mutex
-std::mutex CoachWifi::wifiMutex;
+// std::mutex CoachWifi::wifiMutex;
 CoachWifi* CoachWifi::instance = nullptr;
 bool CoachWifi::wifiConnected = false;
 bool CoachWifi::hadWifiConnection = false;
@@ -36,38 +37,48 @@ CoachWifi::CoachWifi (void) : ssid(WIFI_SSID), password(WIFI_PASSWORD) {
 constexpr const char* versionString = "v2.0.0";
 
 void CoachWifi::initialize() {
-    printf("CoachWifi::initialized started \n");
+    // // oss << "CoachWifi::initialized started" << std::endl;
+	// LOGIT(VERBOSE_LOG_LEVEL, oss); 
 	homeSpan.setWifiCredentials((char* )WIFI_SSID,(char* )WIFI_PASSWORD);
     homeSpan.setSketchVersion(versionString);
     homeSpan.setWifiCallback(CoachWifi::wifiReady);
     homeSpan.setStatusCallback(CoachWifi::wifiStatusChanged);
-	printf("%u homeSpan.begin() called with Bridges\n", Category::Bridges);
+	
+	// oss << "homeSpan.begin() called with Bridges" << std::endl;
+	// LOGIT(VERBOSE_LOG_LEVEL, oss);
     homeSpan.begin(Category::Bridges, "RV-Bridge", DEFAULT_HOST_NAME, "RV-Bridge-ESP32");
-	printf("CoachWifi::initialized completed \n");
+	//oss << "CoachWifi::initialized completed \n";
+	//LOGIT(VERBOSE_LOG_LEVEL, oss);
 }
 
 
 void CoachWifi::wifiStatusChanged(HS_STATUS status) {
-	printf("CoachWifi::wifiStatusChanged called with status: %d\n", status);
+	//oss << "CoachWifi::wifiStatusChanged called with status: " << status << std::endl; 
+	//LOGIT(VERBOSE_LOG_LEVEL, oss);
     // std::lock_guard<std::mutex> lock(wifiMutex);
 	if (status == HS_WIFI_CONNECTING) {
 		wifiConnected = false;
 		if (hadWifiConnection) {
-			printf("%u: WIFI: Lost Connection..\n", (uint32_t)millis());
+			// oss << (uint32_t)millis() << ": WIFI: Lost Connection." << std::endl;
+			// LOGIT(NOT_SO_VERBOSE_LOG_LEVEL, oss);
+			printf("CoachWifi::wifiStatusChanged - lost connection\n");
 		}
 	}
     // std::lock_guard<std::mutex> unlock(wifiMutex);
-	printf("CoachWifi::wifiStatusChanged completed\n");
+	//oss << "CoachWifi::wifiStatusChanged completed" << std::endl;
+	// LOGIT(VERBOSE_LOG_LEVEL, oss);
 }
 
 void CoachWifi::wifiReady() {
-	printf("CoachWifi::wifiReady started\n");
+	//oss << "CoachWifi::wifiReady started\n";
+	// LOGIT(VERBOSE_LOG_LEVEL, oss);
     // std::lock_guard<std::mutex> lock(wifiMutex);
 	wifiConnected = true;
 	hadWifiConnection = true;
-	printf("%u: WIFI: Ready..\n", (uint32_t)millis());
+	// DEBUG("%u: WIFI: Ready..\n", (uint32_t)millis());
     // std::lock_guard<std::mutex> unlock(wifiMutex);
-	printf("CoachWifi::wifiReady completed\n");
+	//oss << "CoachWifi::wifiReady completed\n";
+	// LOGIT(VERBOSE_LOG_LEVEL, oss);
 }
 
 void CoachWifi::pollSpan(void) {
