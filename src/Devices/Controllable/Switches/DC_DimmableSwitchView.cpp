@@ -2,34 +2,13 @@
 #include "DC_DimmableSwitchView.h"
 #include "DC_DimmableSwitch.h"
 
-
-SpanUserCommand* DC_DimmableSwitchView::setBrightness = nullptr;
 const char* name = "DimmableLamp"; 
 const char* type = "43"; // from Span.h
 const char  DC_DimmableSwitchView::DIMMABLE_FXN_COMMAND = 'b';
 const char* DC_DimmableSwitchView::DIMMABLE_FXN_COMMAND_DESCRIPTION = "<index>=<state:0-1>,... - send Brightness to <index>";
-// const char  DC_DimmableSwitchView::DIMMABLE_FXN_STATUS = 'B';
-// const char* DC_DimmableSwitchView::DIMMABLE_FXN_STATUS_DESCRIPTION = "<index> to retrieve current state in HomeSpan";
 
-void DC_DimmableSwitchView::cmdSetBrightness(const char* buff) {
-    // void cmdOnOffStatus(const char* buff) {
-    printf("DC_DimmableSwitchView::cmdOnOffStatus called with buff=%s\n", buff);
-    RVC_DGN dgn = DC_DIMMER_STATUS_3;
-    DC_LightSwitchView::cmdCallback(dgn, buff);
-    printf("DC_DimmableSwitchView::cmdOnOffStatus completed\n");
-}
 
 #include <algorithm>
-void DC_DimmableSwitchView::prepUserCommands(void) {
-    printf("DC_DimmableSwitchView::prepUserCommands called\n");
-    if (DC_DimmableSwitchView::setBrightness == nullptr) {
-        // create the user commands for the light switch
-       DC_DimmableSwitchView::setBrightness = new SpanUserCommand(DIMMABLE_FXN_COMMAND, DIMMABLE_FXN_COMMAND_DESCRIPTION, DC_DimmableSwitchView::cmdSetBrightness);
-       printf("DC_DimmableSwitchView::prepUserCommands: onOff command created\n");
-        // DC_DimmableSwitchView::onOff = new SpanUserCommand(ON_OFF_COMMAND, ON_OFF_COMMAND_DESCRIPTION, cmdSendOnOff);
-        
-    }
-}
 
 #include "ChassisMobility.h"
 #include "PacketQueue.h"
@@ -121,7 +100,7 @@ DC_DimmableSwitchView::DC_DimmableSwitchView(GenericDevice* model, const char* s
         printf("DC_DimmableSwitchView constructor: indexOfModel returned -1, spanCharOn not created\n");
     }
     
-    DC_DimmableSwitchView::prepUserCommands();
+    // DC_DimmableSwitchView::prepUserCommands();
 
     printf("DC_DimmableSwitchView constructor completed\n");
 

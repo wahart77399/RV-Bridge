@@ -61,7 +61,6 @@ class DC_DimmableSwitch : public  DC_Switch {
         friend bool DC_DimmableSwitchView::updateView(void);
         friend boolean DC_DimmableSwitchView::update(void);    
     protected:
-        // virtual CAN_frame_t* buildCommand(RVC_DGN dgn);
 
         const uint8_t getBrightnessValue(void) const { return getBrightness(); }    
 
@@ -75,8 +74,8 @@ class DC_DimmableSwitch : public  DC_Switch {
             ;
         }
 
-         DC_DimmableSwitch(uint8_t address, uint8_t instance, uint8_t grp, std::list <RVC_DGN> dgns) : DC_Switch(address, instance, grp, dgns) { 
-            printf(" DC_DimmableSwitch constructor called with address=%d, instance=%d, group=%d\n", address, instance, grp);
+         DC_DimmableSwitch(uint8_t address, uint8_t instance) : DC_Switch(address, instance) { 
+            printf(" DC_DimmableSwitch constructor called with address=%d, instance=%d \n", address, instance); 
             // Constructor with parameters implementation
         }
 
@@ -88,7 +87,6 @@ class DC_DimmableSwitch : public  DC_Switch {
             
         } 
 
-        // virtual void printPacketData(RVC_DGN dgn, uint8_t* data, PacketPrint printPacket);
 
 };
 #endif

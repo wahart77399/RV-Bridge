@@ -47,15 +47,13 @@ class WaterPumpView : public SpanView {
         const uint8_t OFF = 0;
         const uint8_t ON = 1;
         
-        boolean needToUpdateView = true;
+        
         // static bool bridgeCreated;
         // static void createBridge(void); 
 
         friend class WaterPump;
 
-        inline void updateTheView(void) { needToUpdateView = true; } // set the flag to indicate view needs to be updated   
-        inline void dontUpdateTheView(void) { needToUpdateView = false; } // reset the flag to indicate view does not need to be updated
-        inline const boolean isNeedToUpdateView(void) const { return needToUpdateView; } // return the flag to indicate view needs to be updated
+        
 
         struct WaterPumpController: Service::Switch {
 

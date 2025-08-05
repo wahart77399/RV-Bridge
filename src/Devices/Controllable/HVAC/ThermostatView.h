@@ -50,15 +50,11 @@ class ThermostatView : public SpanView {
     private:
         // static
         
-        boolean needToUpdateView = true;
         static bool categoryCreated;
         static void createCategory(void); 
 
         friend class HVAC_Thermostat;
 
-        inline void updateTheView(void) { needToUpdateView = true; } // set the flag to indicate view needs to be updated   
-        inline void dontUpdateTheView(void) { needToUpdateView = false; } // reset the flag to indicate view does not need to be updated
-        inline const boolean isNeedToUpdateView(void) const { return needToUpdateView; } // return the flag to indicate view needs to be updated
         static inline float degCfromDegF(float degF) {
 	        return degF / 1.8;
         }
@@ -89,7 +85,7 @@ class ThermostatView : public SpanView {
 
             } 
 	
-	        boolean update();
+	    boolean update();
             void setModeSpeed(uint8_t fanMode, uint8_t speed);
             RVCFanMode getMode(void) const;
             uint16_t getSpeed(void) const;
@@ -110,18 +106,25 @@ class ThermostatView : public SpanView {
  
                 ThermostatView::FanController*       fan;
 
-                // double convToTempC(uint16_t value);
-                // uint16_t convFromTempC(double tempC);
-                // float degCfromDegF(float degF);
-                // float dtempCfromTempF(float tempF);
-
-                ThermostatController(ThermostatView* vw, GenericDevice* mdl, const char* spanDeviceName) : Service::Thermostat() {
+                ThermostatController(ThermostatView* vw, GenericDevice* mdl, ThermostatView::FanController* fn, const char* spanDeviceName) : Service::Thermostat() {
                     ambientTemp = new Characteristic::CurrentTemperature(tempCfromTempF(DEFAULT_TEMP));
                     targetTemp = new Characteristic::TargetTemperature(tempCfromTempF(DEFAULT_TEMP));
                     currentState = new Characteristic::CurrentHeatingCoolingState(heatingCoolingStateOff);
                     targetState = new Characteristic::TargetHeatingCoolingState(heatingCoolingStateOff);
-                    fan = new ThermostatView::FanController(vw, (HVAC_Thermostat*) mdl); 
                     targetTemp->setRange(tempCfromTempF(50), tempCfromTempF(95), degCfromDegF(1.0))->setVal(tempCfromTempF(68));
+
+                    // prep fan
+
+                    const char* append = " Fan";
+                    size_t buffer_size = strlen(spanDeviceName) + strlen(append) + 1; 
+                    char* fanName = new char[buffer_size];
+                    strcpy(fanName, spanDeviceName);
+                    strcat(fanName, append);
+                    new SpanAccessory(); 
+                    new Service::AccessoryInformation(); 
+                    new Characteristic::Identify();
+                    new Characteristic::Name(fanName);
+                    fan = fn;  
                     this->model = (HVAC_Thermostat* )mdl;
                     view = vw;
                 }
@@ -133,7 +136,10 @@ class ThermostatView : public SpanView {
 
         }; 
         
-        ThermostatController controller;
+        ThermostatController* controller;
+
+        void setController(ThermostatView::ThermostatController* ctl) { controller = ctl; }
+
         ThermostatView(ThermostatView& vw) = delete;
 
         ThermostatView& operator=(const ThermostatView&) = delete; // Prevent assignment
@@ -141,7 +147,8 @@ class ThermostatView : public SpanView {
     protected:
                 // @brief need to review this... doesn't seem right SpanService(type, name)
         ThermostatView(GenericDevice* model, const char* spanDevName);
-        // bool updateView(void); //  { this->updateView(); return true;}
+        
+
 
     public:
                
