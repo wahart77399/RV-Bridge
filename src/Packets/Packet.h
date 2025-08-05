@@ -40,6 +40,7 @@
 #include <mutex>
 #include "PacketKit.h"
 #include "DGN.h"
+// #include "debug.h"
 
 typedef enum {
 	packetPrintNo = 0,
@@ -55,6 +56,7 @@ class Packet : protected PacketKit
     private:
         //static std::mutex packetMutex;
         static PacketPrint packetPrintMode;
+        // static std::ostringstream oss;
 
         // @brief need to make sure this address is not being used elsewhere on the bus - this address will be the address of the ESP32/RV-Bridge from where messages will be sent.
         static const uint8_t sourceAddress = SOURCE_ADDRESS; 
@@ -64,42 +66,21 @@ class Packet : protected PacketKit
         static constexpr uint32_t packetBlinkTime = 25;
         static constexpr uint32_t heatbeatRate = 3000;
         static constexpr uint32_t heartbeatBlinkTime = 10;
-        // static constexpr uint16_t sendQueueSize = 8;
-        // static constexpr uint32_t sendPacketIntervalmS = 50;
-        // static constexpr uint32_t minSendPacketIntervalmS = 5;
-        
-        // other static variables
-        // static elapsedMillis heartbeatTime;
-
-        // static elapsedMillis lastPacketSendTime; //= 1000;
-        // static elapsedMillis lastPacketRecvTime; // = 1000;
-
-        // static CAN_frame_t packetQueue[sendQueueSize];
-        // static bool packetShortGap[sendQueueSize];
-        // static uint16_t packetQueueHead; //  = 0;
-        // static uint16_t packetQueueTail; // = 0;
-        // static bool doCANWrite; //  = true;
-
-        // static bool sendIndicator;
-	    // static bool recvIndicator;
         
         Packet() = delete; // Prevent instantiation
         Packet(const Packet&) = delete; // Prevent copy
         Packet& operator=(const Packet&) = delete; // Prevent assignment
 
-        static boolean isRemoteTransmissionRequest(CAN_frame_t* packet); /* {
-            boolean result = false;
-            if (packet != nullptr) {
-                result = (packet->FIR.B.RTR == CAN_RTR);
-            }
-            return result;
-        } */
+        static boolean isRemoteTransmissionRequest(CAN_frame_t* packet); 
 
         static uint32_t makeMsg(uint32_t dgn, uint8_t sourceID=0, uint8_t priority=6);
 
         static inline void printRemoteTransmissionRequest(CAN_frame_t *packet) {
             if (isRemoteTransmissionRequest(packet)) {
-                printf("%u: RTR from 0x%08X, DLC %d\r\n", (uint32_t)millis(), packet->MsgID, packet->FIR.B.DLC);
+                // std::ostringstream shortOss;
+                //shortOss << "Packet::printRemoteTransmissionRequest" << std::endl;
+                // LOGIT(VERBOSE_LOG_LEVEL, shortOss);
+                printf("Packet::printRemoteTransmissionRequest\n");
             }
         }
 
