@@ -123,8 +123,8 @@ class DC_Switch : public GenericDevice {
             ;
         }
 
-        DC_Switch(uint8_t address, uint8_t instance, uint8_t grp, std::list <RVC_DGN> dgns) : GenericDevice(address, instance, grp, dgns) { 
-            printf("DC_Switch constructor called with address=%d, instance=%d, group=%d\n", address, instance, grp);
+        DC_Switch(uint8_t address, uint8_t instance) : GenericDevice(address, instance) {  
+            printf("DC_Switch constructor called with address=%d, instance=%d\n", address, instance); 
             setOnFlag(false); // initialize the switch to off
             // Constructor with parameters implementation
         }
@@ -137,7 +137,6 @@ class DC_Switch : public GenericDevice {
             
         } 
 
-        // virtual void printPacketData(RVC_DGN dgn, uint8_t* data, PacketPrint printPacket);
 
         virtual boolean executeCommand(RVC_DGN dgn, const uint8_t* buffer, uint8_t val=SOURCE_ADDRESS); // execute command based on DGN and data received from the controller
 };
