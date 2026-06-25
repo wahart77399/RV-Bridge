@@ -29,6 +29,7 @@ boolean ChassisMobility::executeCommand(RVC_DGN dgn, const uint8_t* data, uint8_
                 // then we don't send a command on the CAN bus, we update our views (HOME SPAN)
                 // the -> the views will requst the data from the buffer
                 setData(dgn, rawData);
+                updateViews();
                 cmdExecuted = true;
                 break;
             default:

@@ -1,5 +1,11 @@
+#include "RVConstants.h"
+// #ifdef HOME_KIT_1
 #ifndef HVAC_DEFINITIONS_H
 #define HVAC_DEFINITIONS_H
+
+//#define CUSTOM_CHAR_HEADER
+
+#include "Arduino.h"
 
 // RVC Definitions
  typedef enum {
@@ -36,3 +42,4 @@ typedef enum {
 constexpr uint8_t INITIAL_ROTATION_SPEED = 0;
 constexpr uint8_t DEFAULT_TEMP = 72;
 #endif
+// #endif

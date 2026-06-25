@@ -1,0 +1,42 @@
+Selected Y/N,Device Type,RVC Index,  Source Address, Device Name
+Y,           Dimmable,       82,     141,            Living Room Light
+Y,           Dimmable,       84,     141,            Bedroom Light
+Y,           Dimmable,       85,     141,            Bathroom Light
+Y,           LightBulb,      98,     141,            Driver Side Security Light
+Y,           LightBulb,      99,     141,            Passenger Side Security Light
+Y,           Lock,           1,      191,            Front Door
+Y,           Lock,           2,      191,            Bay Door Group 1
+N,           Lock,           3,      191,            Bay Door Group 2
+N,           Lock,           4,      191,            Bay Door Group 3
+N,           Lock,           5,      191,            Bay Door Group 4
+N,           Awning,         1,      ???,            Front Awning
+N,           Awning,         2,      ???,            Rear Awning
+N,           Awning,         3,      ???,            Door Awning
+N,           Shades,         ?,      ???,            Driver Cabin Day Shades
+N,           Shades,         ?,      ???,            Driver Cabin Night Shades
+N,           Shades,         ?,      ???,            Living Room Day Shades
+N,           Shades,         ?,      ???,            Living Room Night Shades
+N,           Shades,         ?,      ???,            Dining Room Day Shades
+N,           Shades,         ?,      ???,            Dining Room Night Shades
+N,           Shades,         ?,      ???,            Kitchen Day Shades
+N,           Shades,         ?,      ???,            Kitchen Night Shades
+N,           Shades,         ?,      ???,            Bedroom Day Shades
+N,           Shades,         ?,      ???,            Bedroom Night Shades
+N,           Shades,         ?,      ???,            Bathroom Day Shades
+N,           Shades,         ?,      ???,            Bathroom Night Shades
+N,           Shades,         ?,      ???,            Half Bathroom Day Shades
+N,           Shades,         ?,      ???,            Half Bathroom Night Shades
+Y,           Thermostat,     1,      103,            Living Room Thermostat
+Y,           Thermostat,     2,      103,            Kitchen Thermostat
+Y,           Thermostat,     4,      103,            Bedroom Thermostat
+N,           FloorHeat,      ?,      ???,            Front Floor Heat
+N,           FloorHeat,      ?,      ???,            Mid Floor Heat
+N,           FloorHeat,      ?,      ???,            Rear Floor Heat
+Y,           WaterPump,      0,      250,            Water Pump
+Y,           Generator,      0,      250,            Generator
+N,           Battery,        ?,      250,            House Battery Bank
+N,           Charger.        ?,      250,            Charger
+N,           Inverter,       ?,      250,            Inverter
+Y,           Tanks,          0,      250,            Fresh Water Tank
+Y,           Tanks,          2,      250,            Gray Water Tank
+Y,           Tanks,          1,      250,            Black Water Tank

@@ -46,8 +46,8 @@ typedef enum {
     GENERIC_CONFIGURATION_STATUS = 0x1FED8,
 
     // window shade (day & night shades)
-    WINDOW_SHADE_CONTROL_STATUS = 0x1FEDE,
-    WINDOW_SHADE_CONTROL_COMMAND = 0x1FEDF,
+    WINDOW_SHADE_CONTROL_STATUS = 0x1FEDE, // valid for Newmar 2021+ models with window shades
+    WINDOW_SHADE_CONTROL_COMMAND = 0x1FEDF, // valid for Newmar 2021+ models with window shades
 
     // chassis
     CHASSIS_MOBILITY_STATUS = 0x1FFF4,
@@ -225,9 +225,9 @@ typedef enum {
     LOCK_COMMAND = 0x1FEE4,
 
     // Awnings
-    AWNING_STATUS = 0x1FEF3,
+    AWNING_STATUS = 0x1FEF3, // valid for Newmar 2021+ models with awnings
     AWNING_STATUS_2 = 0x1FDCD,
-    AWNING_COMMAND = 0x1FEF2,
+    AWNING_COMMAND = 0x1FEF2, // valid for Newmar 2021+ models with awnings
     AWNING_COMMAND_2 = 0x1FDCC,
 
     // Battery - read the readme on the battery status 

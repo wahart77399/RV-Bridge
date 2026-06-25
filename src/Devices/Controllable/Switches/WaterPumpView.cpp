@@ -30,6 +30,8 @@
 //    RV-Bridge: A HomeKit to RV-C interface for the ESP32    //
 //                                                            //
 ////////////////////////////////////////////////////////////////
+#include "RVConstants.h"
+#ifdef HOME_KIT_1
 
 #include "WaterPumpView.h"
 #include "WaterPump.h"
@@ -46,6 +48,7 @@ boolean WaterPumpView::WaterPumpController::update(void) {                      
             model->turnPumpOn(isOn());
             printf("WaterPumpView::WaterPumpController::update - on: %d\n", model->isPumpOn());
             model->executeCommand(WATER_PUMP_COMMAND, rawData);
+            result = true;
         }     
         view->updateTheView();
         return(result);                               // return true
@@ -100,3 +103,5 @@ void WaterPumpView::createWaterPumpView(GenericDevice* model, const char* spanDe
         printf("WaterPumpView::createWaterPumpView: tmp creation failed\n");   
     printf("WaterPumpView::createWaterPumpView completed\n");
 }
+
+#endif

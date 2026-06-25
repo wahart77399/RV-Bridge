@@ -1,6 +1,8 @@
 #ifndef DEVICE_FACTORY_H
 #define DEVICE_FACTORY_H
+
 #include "Arduino.h"
+#define CUSTOM_CHAR_HEADER  // this must be done prior to #include of HomeSpan call anywhere. 
 #include <cstdint>
 #include <mutex>
 #include <map>
@@ -10,30 +12,28 @@
 #include "GenericDevice.h"
 
 
+
 // Forward declaration of device types
-class DeviceCommand;
+//class DeviceCommand;
 // controllables
 
 // HVAC
-class AirConditioner;
-class Furnace;
-class HeatPump;
+//class AirConditioner;
+//class Furnace;
+//class HeatPump;
 class Thermostat;
 
 // Switches
-class BinarySwitch;
-class SlideSwitch;
-class Fan;
-class HeatedFloor;
-class Awaning;
+//class HeatedFloor;
+// class Awning;
 class Generator;
 
 // Sensors
 class Battery;
 class Inverter;
-class Charger;
+//class Charger;
 class Tanks;  // gray, black, fresh
-class ATS;  // automatic transfer switch
+class AutomaticTransferSwitch;  // automatic transfer switch
 class ChassisMobility;
 
 
@@ -51,6 +51,7 @@ class DeviceFactory {
         static DeviceFactory* instance;
         // static ChassisMobility* chassis;
         static boolean devicesCreated;
+        static const char*   fileName;
 
         // static std::map<uint8_t, GenericDevice*> iD2DeviceMap; // Map to hold devices by instance number
         static std::map<RVC_DGN, std::map<uint8_t, GenericDevice*>> DGN2DeviceMap; // Map of a map to hold devices by DGN number -> look up a devicd by DGN number and instance 
@@ -77,6 +78,7 @@ class DeviceFactory {
         void create2022Essex4551Devices(void);
         void create2019DutchStar4369Devices(void);
         void create2022KingAire4551Devices(void);
+        boolean createFromConfigFile(void);
     public:
         // Singleton instance
         static DeviceFactory* getInstance(void); 

@@ -1,4 +1,5 @@
-
+#include "RVConstants.h"
+#ifdef HOME_KIT_1
 /*********************************************************************************
  *  MIT License
  *  
@@ -39,3 +40,4 @@
 void doNothing(void) {
     printf("do nothing\n"); // do nothing
 }
+#endif

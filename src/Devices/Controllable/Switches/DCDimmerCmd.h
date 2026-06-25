@@ -32,6 +32,8 @@
 //    RV-Bridge: A HomeKit to RV-C interface for the ESP32    //
 //                                                            //
 ////////////////////////////////////////////////////////////////
+#include "RVConstants.h"
+#ifdef HOME_KIT_1
 /*******************
  * 
  * enum for on/off and dimmer switches to be used throughout the hierarchy of DC_Switch and potentially other switches
@@ -57,4 +59,8 @@ typedef enum {
 
 	DCDimmerCmdNA = 255
 } DCDimmerCmd;
+
+constexpr uint8_t DIMMER_STATUS_3_SWITCH_OFF = 0x6;
+constexpr uint8_t MAX_PERCENT = 100;
 #endif
+#endif //HOME_KIT_1

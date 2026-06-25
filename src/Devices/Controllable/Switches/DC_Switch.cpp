@@ -30,7 +30,8 @@
 //    RV-Bridge: A HomeKit to RV-C interface for the ESP32    //
 //                                                            //
 ////////////////////////////////////////////////////////////////
-
+#include "RVConstants.h"
+#ifdef HOME_KIT_1
 #include "Arduino.h"
 #include "DC_Switch.h"
 #include "Packet.h"
@@ -221,3 +222,4 @@ boolean DC_Switch::executeCommand(RVC_DGN dgn, const uint8_t* data, uint8_t sAdd
     return cmdExecuted; // Command execution failed
 }
 
+#endif // ifdef HOME_KIT_1

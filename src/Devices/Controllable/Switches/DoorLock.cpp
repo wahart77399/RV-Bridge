@@ -1,3 +1,5 @@
+#include "RVConstants.h"
+#ifdef HOME_KIT_1
 #include "Arduino.h"
 #include "DoorLock.h"
 #include "ESP32CAN.h"
@@ -88,3 +90,5 @@ boolean DoorLock::executeCommand(RVC_DGN dgn, const uint8_t* data, uint8_t sAddr
     }
     return cmdExecuted; // Command execution failed
 }
+
+#endif // ifdef HOME_KIT_1

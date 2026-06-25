@@ -32,7 +32,10 @@
 //    RV-Bridge: A HomeKit to RV-C interface for the ESP32    //
 //                                                            //
 ////////////////////////////////////////////////////////////////
+
 #include "Arduino.h"
+
+#define CUSTOM_CHAR_HEADER  // this must be done prior to #include of HomeSpan call anywhere. 
 #include "HomeSpan.h"
 #include <mutex>
 

@@ -33,6 +33,7 @@
 
 #include "Arduino.h"
 
+#define CUSTOM_CHAR_HEADER  // this must be done prior to #include of HomeSpan call anywhere. 
 #include "elapsedMillis.h"
 // #include "HomeSpan.h" 
 // #include "ESP32CAN.h"

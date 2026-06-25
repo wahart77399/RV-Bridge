@@ -1,4 +1,6 @@
 
+#include "RVConstants.h"
+#ifdef HOME_KIT_1
 #ifndef WATER_PUMP_H
 #define WATER_PUMP_H // once I'm ready to define this, move this below ifndef
 /*********************************************************************************
@@ -118,3 +120,4 @@ class WaterPump : public GenericDevice {
 };
 
 #endif
+#endif // ifdef HOME_KIT_1

@@ -30,6 +30,8 @@
 //    RV-Bridge: A HomeKit to RV-C interface for the ESP32    //
 //                                                            //
 ////////////////////////////////////////////////////////////////
+#include "RVConstants.h"
+#ifdef HOME_KIT_1
 
 #include "DoorLockView.h"
 #include "DoorLock.h"
@@ -39,6 +41,8 @@
 
 
 bool DoorLockView::bridgeCreated = false;
+const uint8_t DoorLockView::VALID_LOCK_STATE = 0x01;
+const uint8_t DoorLockView::VALID_UNLOCKED_STATE = 0x00;
 
 void DoorLockView::createBridge(void) {
     if (!DoorLockView::bridgeCreated) {
@@ -57,6 +61,21 @@ void DoorLockView::createBridge(void) {
 #include "ChassisMobility.h"
 #include "PacketQueue.h"
 
+
+boolean DoorLockView::DoorLockController::update(void) {                              // update() method
+        boolean result = false;
+        view->dontUpdateTheView(); 
+        if (model != nullptr) {
+            uint8_t* rawData = model->getCurrentData();
+            model->setLockedFlag(isLocked());
+            printf("DoorLockView::DoorLockController::update - on: %d\n", model->getLockedFlag());
+            model->executeCommand(LOCK_COMMAND, rawData);
+            result = true;
+        }     
+        view->updateTheView();
+        return(result);                               // return true
+} // update
+
 bool DoorLockView::updateView(void) {
     // the light switch may have been turned on/off at the wall and thus needs to be reflected in the SpanView
     // 
@@ -65,83 +84,29 @@ bool DoorLockView::updateView(void) {
     if (isNeedToUpdateView() && ChassisMobility::isParked()) { // don't mess with the state of the lock when the change is is initiated by the controller and not the model
         uint8_t instance = indexOfModel();   
         uint8_t index = -1;
-        if ((spanCharTargetLockState != nullptr) && (spanCharCurrentLockState != nullptr)) {
-            DoorLock* mdl = (DoorLock* )getModel();
-            if (mdl != nullptr) {
-                printf("DoorLockView::updateView - mdl not null\n");
-                index = mdl->index();
-                // toggle the door lock state
-                boolean locked = mdl->isLocked();
-                spanCharCurrentLockState->setVal(locked);
-                PacketQueue::clearLastPacketReceiveTime();
-                if (index == 1)
-                    printf("DoorLockView::updateView - locked = %d, spancharCurrentLockState->getVal() = %d\n", locked, spanCharCurrentLockState->getVal());
-                updated = true;
-            }        
-        }
+        DoorLock* mdl = (DoorLock* )getModel();
+        if (mdl != nullptr) {
+            // printf("DoorLockView::updateView - mdl not null\n");
+            index = mdl->index();
+            // toggle the door lock state
+            boolean locked = mdl->isLocked();
+            if (locked)
+                controller.lockIt();
+            else
+                controller.unLockIt();
+            // PacketQueue::clearLastPacketReceiveTime();
+            // if (index == 1)
+                // printf("DoorLockView::updateView - locked = %d, spancharCurrentLockState->getVal() = %d\n", locked, controller.isLocked());
+            updated = true;
+        }        
     }
     // printf("DoorLockView::updateView completed \n"); 
     return updated;
 }
 
-boolean DoorLockView::update(void) {
-    // printf("DoorLockView::update called\n");
-    dontUpdateTheView(); // reset the flag - don't run thru updateView since the controller and View are sending the update
-    bool updated = false;
-    if ((spanCharTargetLockState != nullptr) && (spanCharCurrentLockState != nullptr)) {
-        // printf("DoorLockView::update - spanCharTargetLockState->getNewVal = %d\n", spanCharTargetLockState->getNewVal());
-        // printf("DoorLockView::update - spanCharCurrentLockState->getVal = %d\n", spanCharCurrentLockState->getVal());
-        DoorLock* model = (DoorLock* )getModel();
-        if (model != nullptr) {
-            uint8_t* rawData = (uint8_t* )model->getCurrentData();
-            if (rawData != nullptr) {
-                    // rawData[1] = (spanCharTargetLockState->getNewVal() ? model->LOCK_IT : model->UNLOCK_IT);
-                model->setLockedFlag(spanCharTargetLockState->getNewVal() == DoorLockView::VALID_LOCK_STATE);
-                    // printf("DoorLockView::update: rawData[1] set to %d\n", rawData[1]);
-                    // printf("DoorLockView::update: model->isLocked() = %d\n", model->isLocked());
-                    // printf("DoorLockView::update: model->setLockedFlag called with %d\n", spanCharTargetLockState->getNewVal());
-                // printf("DoorLockView::update: rawData[1] set to %d\n", model->isLocked());
-                    // model->setLockedFlag(rawData[1] == model->LOCK_IT);
-                    // model->executeCommand(LOCK_COMMAND, spanCharTargetLockState->getNewVal() ? "1" : "0");
-                model->executeCommand(LOCK_COMMAND, rawData);
-                    // printf("DoorLockView::update: model->executeCommand called with %s\n", spanCharTargetLockState->getNewVal() ? "1" : "0");
-            }
-            updated = true;
-        }
-    }
-    updateTheView(); // set the flag to indicate view needs to be updated
-    return updated; // return true to indicate success
-}
-
-const char* DoorLockView::name = "LockMechanism"; // from Span.h
-const char* DoorLockView::type = "45"; // from Span.h
 
 DoorLockView::DoorLockView(GenericDevice* model, const char* spanDevName) 
-        : SpanView(model), 
-          SpanService(DoorLockView::type, DoorLockView::name), 
-          spanCharCurrentLockState(nullptr), 
-          spanCharTargetLockState(nullptr),
-          spanDeviceName(spanDevName) {
-    printf("DoorLockView constructor called for %s\n", spanDeviceName);
-    
-    uint8_t index = indexOfModel();
-    if (index < 255) {
-        REQ(LockCurrentState);
-        REQ(LockTargetState);
-        OPT(ConfiguredName);
-        OPT_DEP(Name);
-        spanCharTargetLockState = new Characteristic::LockTargetState(); 
-        spanCharCurrentLockState = new Characteristic::LockCurrentState(); 
-        
-        printf("DoorLockView constructor model index = %d\n", indexOfModel());
-    } else {
-        printf("DoorLockView constructor: indexOfModel returned -1, spanCharOn not created\n");
-    }
-    
-    // DoorLockView::prepUserCommands();
-
-    printf("DoorLockView constructor completed\n");
-
+        : SpanView(model), controller(this, model, spanDevName) {
 }
 
 void DoorLockView::createDoorLockView(GenericDevice* model, const char* spanDevName) {
@@ -159,3 +124,5 @@ void DoorLockView::createDoorLockView(GenericDevice* model, const char* spanDevN
         printf("DoorLockView::createDoorLockView: tmp creation failed\n");   
     printf("DoorLockView::createDoorLockView completed\n");
 }
+
+#endif // ifdef HOME_KIT_1

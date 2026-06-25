@@ -1,4 +1,5 @@
-
+#ifndef CHASSIS_MOBILITY_H
+#define CHASSIS_MOBILITY_H
 /*********************************************************************************
  *  MIT License
  *  
@@ -41,9 +42,11 @@ constexpr uint8_t DEFAULT_CHASSIS_INDEX = 0;
 
 class ChassisMobility : public GenericDevice {
     private:
+        friend class ChassisMobilityView;
         const uint8_t CHASSIS_MOBILITY_BRAKE_INDEX=4;
-        const uint8_t BRAKE_MASK = 0x03;
-        const uint8_t BRAKE_ENGAGED = 0x01;
+        const uint8_t BRAKE_MASK = 0x01;
+        const uint8_t BRAKE_ENGAGED = 0x01; // xxxx xx01
+        const uint8_t BRAKE_RELEASED = 0x00; // xxxx xx00
         static ChassisMobility* instance;
     
 
@@ -52,14 +55,15 @@ class ChassisMobility : public GenericDevice {
             boolean result = false;
             if (rawData != nullptr) { // set the current data to the new data 
                 uint8_t brakeData = rawData[CHASSIS_MOBILITY_BRAKE_INDEX] & BRAKE_MASK;
-                result = (brakeData == BRAKE_ENGAGED);
+                printf("ChassisMobility::isBrakeEngaged = %x, rawData = %x\n", brakeData, rawData[CHASSIS_MOBILITY_BRAKE_INDEX]);
+                result = (brakeData != BRAKE_RELEASED);
             }
             return result;
         }
 
     protected:
         virtual void setData(RVC_DGN dgn, uint8_t* data) {
-            printf("ChassisMobility::setData: dgn=%d\n",dgn);
+            // printf("ChassisMobility::setData: dgn=%d\n",dgn);
             if (data != nullptr) {
                 uint8_t* rawData = getCurrentData();
                 if (rawData != nullptr) { // set the current data to the new data
@@ -68,7 +72,7 @@ class ChassisMobility : public GenericDevice {
                             printf("ChassisMobility::setData: **************** WE DO NOT SUPPORT CHASSIS MOBILITY COMMAND ******************\n");
                             break;
                         case CHASSIS_MOBILITY_STATUS:
-                            printf("ChassisMobility::setData: CHASSIS_MOBILITY_STATUS = %d", data[CHASSIS_MOBILITY_BRAKE_INDEX]);
+                            // printf("ChassisMobility::setData: CHASSIS_MOBILITY_STATUS = %d", data[CHASSIS_MOBILITY_BRAKE_INDEX]);
                             rawData[CHASSIS_MOBILITY_BRAKE_INDEX] = data[CHASSIS_MOBILITY_BRAKE_INDEX];
                             break;
                         case CHASSIS_MOBILITY_STATUS_2:

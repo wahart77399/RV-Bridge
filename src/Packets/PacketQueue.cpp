@@ -1,3 +1,5 @@
+
+//#define CUSTOM_CHAR_HEADER
 #include "PacketQueue.h"
 #include "Packet.h"
 #include "CoachESP32.h"
@@ -46,7 +48,7 @@ void PacketQueue::queuePacket(CAN_frame_t* packet, bool shortGap) {
         // std::lock_guard<std::mutex> lock(packetQueueMutex);
         uint16_t nextIndex = (PacketQueue::packetQueueHead + 1) % sendQueueSize; 
         // printf("PacketQueue::queuePacket: Queuing packet with MsgID=%#x\n", packet->MsgID);
-        printf("PacketQueue::queuePacket: nextIndex=%d, packetQueueTail=%d\n", nextIndex, PacketQueue::packetQueueTail);
+        // printf("PacketQueue::queuePacket: nextIndex=%d, packetQueueTail=%d\n", nextIndex, PacketQueue::packetQueueTail);
         while (nextIndex == PacketQueue::packetQueueTail) {	// wait if queue is full
             printf("%u: PacketQueue::queuePacket: Queue is full, waiting...\n", (uint32_t)millis());
             PacketQueue::processPacketQueue();
@@ -55,7 +57,7 @@ void PacketQueue::queuePacket(CAN_frame_t* packet, bool shortGap) {
         PacketQueue::packetQueueHead = nextIndex;
         PacketQueue::packetQueue[packetQueueHead] = *packet;
         PacketQueue::packetShortGap[packetQueueHead] = shortGap;
-        printf("%u: PacketQueue::queuePacket: Added packet to queue at index %d, packetQueueHead=%d, packetQueueTail=%d\n", (uint32_t)millis(), nextIndex, packetQueueHead, packetQueueTail);
+        // printf("%u: PacketQueue::queuePacket: Added packet to queue at index %d, packetQueueHead=%d, packetQueueTail=%d\n", (uint32_t)millis(), nextIndex, packetQueueHead, packetQueueTail);
     }
     else {
         printf("PacketQueue::queuePacket %u: Error: Attempted to queue a null packet.\n", (uint32_t)millis());

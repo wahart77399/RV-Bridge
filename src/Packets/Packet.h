@@ -33,14 +33,12 @@
 //                                                            //
 ////////////////////////////////////////////////////////////////
 #include "Arduino.h"
-
 #include "elapsedMillis.h"
 #include "ESP32CAN.h"
 #include "CAN_config.h"
 #include <mutex>
 #include "PacketKit.h"
 #include "DGN.h"
-// #include "debug.h"
 
 typedef enum {
 	packetPrintNo = 0,

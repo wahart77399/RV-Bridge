@@ -32,6 +32,8 @@
 //    RV-Bridge: A HomeKit to RV-C interface for the ESP32    //
 //                                                            //
 ////////////////////////////////////////////////////////////////
+#include "RVConstants.h"
+#ifdef HOME_KIT_1
 #include "Arduino.h"
 #include "GenericDevice.h"
 #include "Packet.h"
@@ -43,7 +45,7 @@ constexpr uint8_t DC_DIMMER_STATUS_3_BRIGHTNESS_INDEX = 2; // index in the data 
 
 class DC_Switch : public GenericDevice {
     protected:
-        const uint8_t SWITCH_OFF = 0x6;
+        const uint8_t SWITCH_OFF = DIMMER_STATUS_3_SWITCH_OFF;
     private:
         const uint8_t SWITCH_ON = 0xc8;
         const uint8_t STATUS_SWITCH_OFF = 0x00;
@@ -68,8 +70,7 @@ class DC_Switch : public GenericDevice {
         /// @param buff 
         // friend void DC_LightSwitchView::cmdSendOnOff(const char *buff);
         // friend void DC_LightSwitchView::cmdOnOffStatus(const char* buff);
-        friend bool DC_LightSwitchView::updateView(void);
-        friend boolean DC_LightSwitchView::update(void);
+        friend class DC_LightSwitchView;
         const bool isOn(void) const { return getOnFlag()>SWITCH_OFF; }
 
     protected:
@@ -107,7 +108,7 @@ class DC_Switch : public GenericDevice {
                         rawData[DC_DIMMER_COMMAND_BRIGHTNESS_INDEX] = RVCBrightMax;  // else do nothing
                 } else
                     rawData[DC_DIMMER_COMMAND_BRIGHTNESS_INDEX] = SWITCH_OFF;
-                updateViews();
+                // updateViews();
             }
         }
         virtual CAN_frame_t* buildCommand(RVC_DGN dgn);
@@ -141,3 +142,4 @@ class DC_Switch : public GenericDevice {
         virtual boolean executeCommand(RVC_DGN dgn, const uint8_t* buffer, uint8_t val=SOURCE_ADDRESS); // execute command based on DGN and data received from the controller
 };
 #endif // DC_SWITCH_H
+#endif // ifdef HOME_KIT_1

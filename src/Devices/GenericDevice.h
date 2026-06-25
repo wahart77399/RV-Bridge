@@ -46,8 +46,10 @@ class SpanView;
 
 
 class GenericDevice {
-    private:
+    protected:
         const uint8_t INVALID_DATA = 0xff;
+    private:
+        
         const uint8_t DC_LAST_COMMAND = 5; 
         std::list <SpanView*>   views;
         CAN_frame_t frame; // frame to be used for sending commands
@@ -193,6 +195,7 @@ class GenericDevice {
         }
 
         virtual void printDevice(void);
+        uint8_t getSourceAddress(void) const { return sourceAddress; }
     public:
 
         ~GenericDevice() {

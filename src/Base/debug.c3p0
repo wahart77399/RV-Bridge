@@ -1,0 +1,23 @@
+#include "debug.h"
+// const RVC_LOG_LEVEL RVC_Log_Level = MIN_LOG_LEVEL;
+
+void LOGIT(RVC_LOG_LEVEL level, std::ostringstream& s) { 
+    switch (RVC_Log_Level) {
+        case (MIN_LOG_LEVEL):
+            if (level == MIN_LOG_LEVEL) 
+                printf("LOGIT MIN_LOG_LEVEL: %s", s.str());   //             std::cout << s.str();
+            break;
+        case (NOT_SO_VERBOSE_LOG_LEVEL):
+            if (level == NOT_SO_VERBOSE_LOG_LEVEL) 
+                printf("LOGIT NOT_SO_VERBOSE_LOG_LEVEL: %s", s.str()); // std::cout << s.str();
+            break;
+        case (VERBOSE_LOG_LEVEL):
+            if (level == NOT_SO_VERBOSE_LOG_LEVEL) 
+                printf("LOGIT VERBOSE_LOG_LEVEL %s", s.str()); // std::cout << s.str();
+            break;
+        case (NO_LOG_LEVEL):
+        default:
+            break;
+    }
+    s.clear();
+}

@@ -1,5 +1,7 @@
+
 #include "CoachWifi.h"
 #include "HomeSpan.h"
+#include "RVConstants.h"
 
 // std::ostringstream CoachWifi::oss;
 uint64_t CoachWifi::millis64(void) {
@@ -46,7 +48,12 @@ void CoachWifi::initialize() {
 	
 	// oss << "homeSpan.begin() called with Bridges" << std::endl;
 	// LOGIT(VERBOSE_LOG_LEVEL, oss);
+	#ifdef HOME_KIT_1
     homeSpan.begin(Category::Bridges, "RV-Bridge", DEFAULT_HOST_NAME, "RV-Bridge-ESP32");
+	#endif
+	#ifdef HOME_KIT_2
+    homeSpan.begin(Category::Bridges, "RV-Bridge-2", DEFAULT_HOST_NAME, "RV-Bridge-ESP32");
+	#endif
 	//oss << "CoachWifi::initialized completed \n";
 	//LOGIT(VERBOSE_LOG_LEVEL, oss);
 }

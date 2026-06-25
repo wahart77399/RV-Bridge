@@ -33,45 +33,56 @@
 //                                                            //
 ////////////////////////////////////////////////////////////////
 
+#include "RVConstants.h"
+#ifdef HOME_KIT_1
+
 #include "SpanView.h"
 #include "HomeSpan.h"
-// #include <mutex>
+#include "PacketQueue.h"
 #include "DGN.h"
 
 class DoorLock;
 
 // DC SwitchView provides the view of the HomeKit - it is both a View from MVC is built as a facade to the SpanService
 // see HomeSpan.h for more info
-class DoorLockView : public SpanView , public SpanService {
+class DoorLockView : public SpanView  {
     private:
         
-        static const char* name; //  = "LockMechanism"; // from Span.h
-        static const char* type; //  = "45"; // from Span.h
         static const char  LOCK_COMMAND_ID;
-        static const char* LOCK_COMMAND_DESCRIPTION; // = "<index>=<state:0-1>,... - send lock/unlock to <index>";
-        static const char  LOCK_STATUS_ID; // = 'O';
-        static const char* LOCK_STATUS_DESCRIPTION; // = "<index> to retrieve current state in HomeSpan";
+        // static const char* LOCK_COMMAND_DESCRIPTION; // = "<index>=<state:0-1>,... - send lock/unlock to <index>";
+        // static const char  LOCK_STATUS_ID; // = 'O';
+        // static const char* LOCK_STATUS_DESCRIPTION; // = "<index> to retrieve current state in HomeSpan";
 
-        static const uint8_t VALID_LOCK_STATE = 0x01; // valid lock state
+        static const uint8_t VALID_LOCK_STATE; //  = 0x01; // valid lock state
+        static const uint8_t VALID_UNLOCKED_STATE; 
         
-        
-        SpanCharacteristic* spanCharCurrentLockState;
-        SpanCharacteristic* spanCharTargetLockState;
-
-
         const char* spanDeviceName;
         static bool bridgeCreated;
         static void createBridge(void); 
 
-        
-
-        // void sendOnOff(int16_t);
-
-        // creating cohesion between the DoorLock and this class so that the model can friend the static callback cmdSendOnOff
         friend class DoorLock;
-        
 
-        // static void prepUserCommands(void);
+        struct DoorLockController: Service::LockMechanism {
+
+                DoorLock*           model;
+                DoorLockView*       view;
+                SpanCharacteristic* currentState;
+                SpanCharacteristic* targetState;
+
+
+
+                DoorLockController(DoorLockView* vw, GenericDevice* mdl, const char* spanDeviceName) : Service::LockMechanism() {
+                    currentState = new Characteristic::LockCurrentState();
+                    targetState = new Characteristic::LockTargetState();
+                    this->model = (DoorLock* )mdl;
+                    view = vw;
+                }
+                boolean update(void); 
+                boolean isLocked(void) { return targetState->getNewVal() == DoorLockView::VALID_LOCK_STATE; }
+                void lockIt(void) { currentState->setVal(DoorLockView::VALID_LOCK_STATE);PacketQueue::clearLastPacketReceiveTime();}
+                void unLockIt(void) {currentState->setVal(DoorLockView::VALID_UNLOCKED_STATE);PacketQueue::clearLastPacketReceiveTime();}
+        }; 
+        DoorLockController controller;
 
     protected:
         // @brief need to review this... doesn't seem right SpanService(type, name)
@@ -87,10 +98,10 @@ class DoorLockView : public SpanView , public SpanService {
         // update HomeSpan view per changes in model
         virtual bool updateView(void);
 
-        virtual boolean update(void); 
-
         static void createDoorLockView(GenericDevice* model, const char* spanDevName); 
         
         
 };
 #endif 
+
+#endif // HOME_KIT_1

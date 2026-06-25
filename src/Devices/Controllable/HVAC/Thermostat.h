@@ -1,4 +1,3 @@
-
 #ifndef THERMOSTAT_H
 #define THERMOSTAT_H // once I'm ready to define this, move this below ifndef
 /*********************************************************************************
@@ -33,16 +32,19 @@
 //    RV-Bridge: A HomeKit to RV-C interface for the ESP32    //
 //                                                            //
 ////////////////////////////////////////////////////////////////
+
+//#define CUSTOM_CHAR_HEADER
 #include "Arduino.h"
 #include "GenericDevice.h"
 #include "DGN.h"
 #include "Packet.h"
 
 #include "HVAC_defintions.h"
+#include "RVConstants.h"
 
-constexpr double  tempCOffset = -273.0;
-constexpr double  tempCScale = 0.03125;
-constexpr double  tempCRoundingOffset = -0.25;
+// constexpr double  tempCOffset = -273.0;
+// constexpr double  tempCScale = 0.03125;
+// constexpr double  tempCRoundingOffset = -0.25;
 
 class HVAC_Thermostat : public GenericDevice {
 
@@ -63,13 +65,14 @@ class HVAC_Thermostat : public GenericDevice {
         const uint8_t HEAT_TEMP_INDEX = 0;
         const uint8_t COLD_TEMP_INDEX = 1;
     public:
+        /*
         static inline double convToTempC(uint16_t value) {
 	        return tempCOffset + value * tempCScale + tempCRoundingOffset;  
         }
         static inline uint16_t convFromTempC(double tempC) {
 	        return (tempC - tempCOffset + 0.5) / tempCScale;
         }
-
+        */
 
     private:
         friend class ThermostatView;
@@ -102,8 +105,8 @@ class HVAC_Thermostat : public GenericDevice {
             uint8_t* tempData = getCurrentData();
             if (tempData != nullptr) {
                 uint16_t temp = convFromTempC(tempC);
-                tempData[6] = temp >> 8;
-                tempData[5] = temp & 0xff;
+                tempData[THERMOSTAT_COOL_TEMP_LSB] = temp >> 8;
+                tempData[THERMOSTAT_COOL_TEMP_MSB] = temp & 0xff;
                 printf("HVAC_Thermostat::setCoolTemp end - temp = tempData[5] %d, tempData[6] %d, Temp = %d", tempData[5], tempData[6], tempC);
             }
         }
@@ -113,8 +116,8 @@ class HVAC_Thermostat : public GenericDevice {
             uint8_t* tempData = getCurrentData();
             if (tempData != nullptr) {
                 uint16_t temp = convFromTempC(tempC);
-                tempData[4] = temp >> 8;
-                tempData[3] = temp & 0xff;
+                tempData[THERMOSTAT_HEAT_TEMP_LSB] = temp >> 8;
+                tempData[THERMOSTAT_HEAT_TEMP_MSB] = temp & 0xff;
             }
         }
 

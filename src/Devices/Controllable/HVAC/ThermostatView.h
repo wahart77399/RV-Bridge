@@ -1,4 +1,5 @@
-
+#include "RVConstants.h"
+#ifdef HOME_KIT_1
 #ifndef THERMOSTAT_VIEW_H
 #define THERMOSTAT_VIEW_H
 
@@ -102,6 +103,7 @@ class ThermostatView : public SpanView {
 	            SpanCharacteristic* targetTemp;
 	            SpanCharacteristic* targetState;
 	            SpanCharacteristic* currentState;
+                SpanCharacteristic* temperatureDisplayUnits;
 
  
                 ThermostatView::FanController*       fan;
@@ -111,6 +113,7 @@ class ThermostatView : public SpanView {
                     targetTemp = new Characteristic::TargetTemperature(tempCfromTempF(DEFAULT_TEMP));
                     currentState = new Characteristic::CurrentHeatingCoolingState(heatingCoolingStateOff);
                     targetState = new Characteristic::TargetHeatingCoolingState(heatingCoolingStateOff);
+                    temperatureDisplayUnits = new Characteristic::TemperatureDisplayUnits(homeKitTemperatureDisplayFahrenheit);
                     targetTemp->setRange(tempCfromTempF(50), tempCfromTempF(95), degCfromDegF(1.0))->setVal(tempCfromTempF(68));
 
                     // prep fan
@@ -165,3 +168,4 @@ class ThermostatView : public SpanView {
 };
 
 #endif
+#endif // ifdef HOME_KIT_1

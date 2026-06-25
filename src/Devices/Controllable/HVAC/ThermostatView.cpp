@@ -30,6 +30,8 @@
 //    RV-Bridge: A HomeKit to RV-C interface for the ESP32    //
 //                                                            //
 ////////////////////////////////////////////////////////////////
+#include "RVConstants.h"
+#ifdef HOME_KIT_1
 
 #include "ThermostatView.h"
 #include "Thermostat.h"
@@ -200,7 +202,7 @@ void ThermostatView::ThermostatController::setInfo(RVCMode opMode, RVCFanMode fa
                         // do nothing
                 }
                 if (fabs(coolTemp - targetTemp->getVal<double>()) > 0.2) {
-	    			    printf("ThermostatView::ThermostatController - Cool Thermostat #%d: targetTemp = %f\n", model->index(), coolTemp);
+	    			    // printf("ThermostatView::ThermostatController - Cool Thermostat #%d: targetTemp = %f\n", model->index(), coolTemp);
 		    		    targetTemp->setVal(coolTemp);
 		        }
                 
@@ -218,7 +220,7 @@ void ThermostatView::ThermostatController::setInfo(RVCMode opMode, RVCFanMode fa
                         // do nothing
                 }
                 if (fabs(heatTemp - targetTemp->getVal<double>()) > 0.2) {
-	    			    printf("ThermostatView::ThermostatController - Heat Thermostat #%d: targetTemp = %f\n", model->index(), heatTemp);
+	    			    // printf("ThermostatView::ThermostatController - Heat Thermostat #%d: targetTemp = %f\n", model->index(), heatTemp);
 		    		    targetTemp->setVal(heatTemp);
 		        }
                 break;
@@ -322,3 +324,4 @@ bool ThermostatView::updateView(void) {
         printf("ThermostatView::createThermostatView: tmp creation failed\n");   
     printf("ThermostatView::createThermostatView completed\n");
 }
+#endif // ifdef HOME_KIT_1

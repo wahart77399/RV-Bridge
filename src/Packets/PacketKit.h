@@ -1,7 +1,6 @@
 #ifndef PACKETKIT_H
 #define PACKETKIT_H 
 
-//#include "DGN.h"
 
 class PacketKit {
     protected:

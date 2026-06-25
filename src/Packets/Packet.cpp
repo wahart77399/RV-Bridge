@@ -33,6 +33,7 @@
 ////////////////////////////////////////////////////////////////
 #include "Arduino.h"
 
+// #define CUSTOM_CHAR_HEADER
 #include "Packet.h"
 #include "DGN.h"
 #include "DeviceFactory.h"
@@ -92,30 +93,43 @@ void Packet::displayPacket(CAN_frame_t* packet, PacketPrint printPacket) {
 		uint8_t* data = getData(packet);
 		uint8_t index = getIndex(data);
 		RVC_DGN dgn = DGN::getDGN(packet);
+		// if ((dgn == WINDOW_SHADE_CONTROL_COMMAND) || (dgn == WINDOW_SHADE_CONTROL_STATUS)) {  //  || 
+		if ((dgn == AWNING_COMMAND) || (dgn == AWNING_COMMAND_2) || (dgn == AWNING_STATUS) || (dgn == AWNING_STATUS_2)) { //  || 
+		//	GOOD -> (dgn == FLOOR_HEAT_COMMAND) || (dgn == FLOOR_HEAT_STATUS)) { 
 		// if ((dgn==DC_DIMMER_COMMAND_2) || (dgn==DC_DIMMER_COMMAND) || (dgn == DC_DIMMER_STATUS_1) || (dgn == DC_DIMMER_STATUS_2) || (dgn == DC_DIMMER_STATUS_3)) { // rvc dgns are this or better
 		// if (((dgn == LOCK_COMMAND) || (dgn == LOCK_STATUS)) && (index == 1)) {
 		// NO FANS FOUND if ((dgn == ROOF_FAN_COMMAND_1) || (dgn == ROOF_FAN_COMMAND_2) || (dgn == ROOF_FAN_STATUS_1) || (dgn == ROOF_FAN_STATUS_2)) {
 		// NO BATTERY information on RVC if ((dgn == BATTERY_COMMAND) || (dgn == BATTERY_STATUS_1) || (dgn == BATTERY_STATUS_2) || (dgn == BATTERY_STATUS_3)) {
 		// if ((dgn == WATER_PUMP_COMMAND) || (dgn == WATER_PUMP_STATUS)) {
-		if (((dgn == THERMOSTAT_COMMAND_1) || (dgn == THERMOSTAT_STATUS_1)) && (index < 5)) {
+		// if (((dgn == THERMOSTAT_COMMAND_1) || (dgn == THERMOSTAT_STATUS_1)) && (index < 5)) {
+		// if (((dgn == DC_SOURCE_STATUS_1) /* || (dgn == DC_SOURCE_STATUS_2) ||  (dgn == DC_SOURCE_STATUS_3) || (dgn == DC_SOURCE_STATUS_4) */ )) { // || 
+		//	(dgn == DC_SOURCE_STATUS_5) || (dgn == DC_SOURCE_STATUS_6) || (dgn == DC_SOURCE_STATUS_7) || (dgn == DC_SOURCE_STATUS_8) ||
+		//	(dgn == DC_SOURCE_STATUS_9) || (dgn == DC_SOURCE_STATUS_10) || (dgn == DC_SOURCE_STATUS_11) || (dgn == DC_SOURCE_STATUS_12) || 
+		//	(dgn == DC_SOURCE_STATUS_13))) {
+			// || ((dgn == ATS_AC_STATUS_1) || (dgn == ATS_AC_STATUS_2) || (dgn == ATS_AC_STATUS_3) || (dgn == ATS_AC_STATUS_4))
+		// if ((dgn == INVERTER_AC_STATUS_1) || (dgn == INVERTER_STATUS)) { /* || (dgn == INVERTER_AC_STATUS_2) || (dgn == INVERTER_AC_STATUS_3) || (dgn == INVERTER_AC_STATUS_4)) { */
+		// if (dgn == TANK_STATUS) {
+		// if ((dgn == ATS_AC_STATUS_1)) { //  || (dgn == ATS_AC_STATUS_2) || (dgn == ATS_AC_STATUS_3) || (dgn == ATS_AC_STATUS_4) || (dgn == ATS_COMMAND)) {
 			uint8_t priority = getPriority(packet);
 			
-        	if (data != nullptr) {
+        	if ((data != nullptr)) { //  && ( (index == 2)))  {
 				// uint16_t* temperatureData = (uint16_t*) &(data[3]);
 				// uint16_t tempHot = data[4];
 				// uint16_t resultH = HVAC_Thermostat::convToTempC(data[4]<<8 | data[3]);
 				// uint16_t tempCool = data[6];
 				// uint16_t resultC = HVAC_Thermostat::convToTempC(data[6]<<8 | data[5]);
 				// std::ostringstream oss;
-				/**
-				Packet::oss << "Packet::displayPacket: DGN: " << std::hex << dgn << ", Source Address: " << sourceAddr << ", index: " << index << ", Priority: " << priority  
+				
+				/* Packet::oss << "Packet::displayPacket: DGN: " << std::hex << dgn << ", Source Address: " << sourceAddr << ", index: " << index << ", Priority: " << priority  
 					<< "Data : d[0]=" << std::hex << data[0] << "d[1]=" << std::hex << data[1] << "d[2]=" << std::hex << data[2] 
 					<< "d[3]=" << std::hex << data[3] << "d[4]=" << std::hex << data[4] << "d[5]=" << std::hex << data[5]
 					<< "d[6]=" << std::hex << data[6] << "d[7]=" << std::hex << data[7] << std::endl;
 				LOGIT(MIN_LOG_LEVEL, Packet::oss); 
 				*/
-				printf("printf Packet::displayPacket: DGN %#x, Source Address %#x, Data : d[0]=%d, d[1]=%#x, d[2]=%#x, d[3]=%#x, d[4]=%#x, d[5]=%#x, d[6]=%#x, d[7]=%#x\n", 
-				 		dgn, sourceAddr, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+				// if ((index == 0x42) || (index == 2))
+				//	printf("printf Packet::displayPacket: DGN %#x, index = %#x, Source Address %#x, Data : d[0]=%#x, d[1]=%#x, d[2]=%#x, d[3]=%#x, d[4]=%#x, d[5]=%#x, d[6]=%#x, d[7]=%#x\n", 
+				//  			dgn, index, sourceAddr, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+				//; // do nothing - just a place to put a breakpoint if needed
 			}
         }
     }

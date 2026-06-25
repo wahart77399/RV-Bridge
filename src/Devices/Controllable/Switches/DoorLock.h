@@ -1,4 +1,6 @@
 
+#include "RVConstants.h"
+#ifdef HOME_KIT_1
 #ifndef DOOR_LOCKS_H
 #define DOOR_LOCKS_H 
 /*********************************************************************************
@@ -110,3 +112,4 @@ class DoorLock : public GenericDevice {
         virtual boolean executeCommand(RVC_DGN dgn, const uint8_t* sendData = nullptr, uint8_t sAddress = SOURCE_ADDRESS); // execute command based on DGN and data received from the controller  
 };
 #endif
+#endif // ifdef HOME_KIT_1

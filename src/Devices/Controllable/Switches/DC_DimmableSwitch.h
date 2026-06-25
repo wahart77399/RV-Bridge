@@ -1,4 +1,6 @@
 
+#include "RVConstants.h"
+#ifdef HOME_KIT_1
 #ifndef DC_DIMMABLE_SWITCH_H
 #define DC_DIMMABLE_SWITCH_H // once I'm ready to define this, move this below ifndef
 /*********************************************************************************
@@ -36,6 +38,7 @@
 #include "Arduino.h"
 #include "DC_Switch.h"
 #include "DC_DimmableSwitchView.h"
+#include "DCDimmerCmd.h"
 
 class DC_DimmableSwitch : public  DC_Switch {
     private:
@@ -43,23 +46,33 @@ class DC_DimmableSwitch : public  DC_Switch {
         void setBrightness(uint8_t brightness) {
             uint8_t* rawData = (uint8_t* )getCurrentData();
             if (rawData != nullptr) {
-                rawData[DC_DIMMER_COMMAND_BRIGHTNESS_INDEX] = brightness; // set the brightness value
-             updateViews(); // update all views
+                if ((brightness >= DIMMER_STATUS_3_SWITCH_OFF) && (brightness <= MAX_PERCENT))
+                    rawData[DC_DIMMER_COMMAND_BRIGHTNESS_INDEX] = brightness; // set the brightness value
+                else if (brightness < DIMMER_STATUS_3_SWITCH_OFF)
+                    rawData[DC_DIMMER_COMMAND_BRIGHTNESS_INDEX] = DIMMER_STATUS_3_SWITCH_OFF;
+                else
+                    rawData[DC_DIMMER_COMMAND_BRIGHTNESS_INDEX] = MAX_PERCENT;
+                updateViews(); // update all views
             }
         }
 
         uint8_t getBrightness(void) const {
-            uint8_t brightness = 0x6;
+            uint8_t brightness = DIMMER_STATUS_3_SWITCH_OFF;
             uint8_t* rawData = (uint8_t* )getCurrentData();
             if (rawData != nullptr) {
                 brightness = rawData[DC_DIMMER_COMMAND_BRIGHTNESS_INDEX]; // get the brightness value
             }
+            if (brightness == DIMMER_STATUS_3_SWITCH_OFF)
+                brightness = 0;
+            else if ((brightness > DIMMER_STATUS_3_SWITCH_OFF) && (brightness <= MAX_PERCENT))
+                ; // do nothing
+            else 
+                brightness = MAX_PERCENT;
             return brightness;
         }
 
         // creating cohesion between the view/controller and the model
-        friend bool DC_DimmableSwitchView::updateView(void);
-        friend boolean DC_DimmableSwitchView::update(void);    
+        friend class DC_DimmableSwitchView;   
     protected:
 
         const uint8_t getBrightnessValue(void) const { return getBrightness(); }    
@@ -89,4 +102,5 @@ class DC_DimmableSwitch : public  DC_Switch {
 
 
 };
+#endif
 #endif

@@ -1,3 +1,5 @@
+#include "RVConstants.h"
+#ifdef HOME_KIT_1
 #ifndef DC_LIGHTSWITCHVIEW_H
 #define DC_LIGHTSWITCHVIEW_H
 
@@ -36,27 +38,48 @@
 
 #include "SpanView.h"
 #include "HomeSpan.h"
-#include <mutex>
 #include "DGN.h"
+#include "PacketQueue.h"
 
 class DC_Switch;
 
 // DC SwitchView provides the view of the HomeKit - it is both a View from MVC is built as a facade to the SpanService
 // see HomeSpan.h for more info
-class DC_LightSwitchView : public SpanView , public SpanService {
+class DC_LightSwitchView : public SpanView {
     private:
         const uint8_t Lamp = 0; // not a dimmable switch
-        static const char* name; //  = "LightBulb"; // from Span.h
-        static const char* type; //  = "43"; // from Span.h
+        // static const char* name; //  = "LightBulb"; // from Span.h
+        // static const char* type; //  = "43"; // from Span.h
         static const char  ON_OFF_COMMAND; //  = 'o';
         static const char* ON_OFF_COMMAND_DESCRIPTION; // = "<index>=<state:0-1>,... - send onOff to <index>";
         static const char  ON_OFF_STATUS; // = 'O';
         static const char* ON_OFF_STATUS_DESCRIPTION; // = "<index> to retrieve current state in HomeSpan";
+        
+        struct DC_LightSwitchController: Service::Switch {
 
-        SpanCharacteristic* spanCharOn;
+                DC_Switch*          model;
+                DC_LightSwitchView* view;
+                SpanCharacteristic* power;
 
 
-        const char* spanDeviceName;
+
+                DC_LightSwitchController(DC_LightSwitchView* vw, GenericDevice* mdl, const char* spanDeviceName) : Service::Switch() {
+                    power = new Characteristic::On();
+                    this->model = (DC_Switch* )mdl;
+                    view = vw;
+                }
+                boolean update(void); 
+                boolean isOn(void) { return power->getNewVal(); }
+                void turnOn(boolean val) { power->setVal(val);  PacketQueue::clearLastPacketReceiveTime();}
+        }; 
+
+        DC_LightSwitchController controller;
+        DC_LightSwitchView(DC_LightSwitchView& vw) = delete;
+
+        DC_LightSwitchView& operator=(const DC_LightSwitchView&) = delete; // Prevent assignment
+
+
+        
         static bool bridgeCreated;
         static void createBridge(void); 
 
@@ -67,16 +90,14 @@ class DC_LightSwitchView : public SpanView , public SpanService {
 
     protected:
         inline void turnOnLight(void) {
-            if (spanCharOn != nullptr) {
-                spanCharOn->setVal(true); // turn on the light
-            }
+            controller.turnOn(true); // turn on the light
         }
+
         inline void turnOffLight(void) {
-            if (spanCharOn != nullptr) {
-                spanCharOn->setVal(false); // turn off the light
-            }
+            controller.turnOn(false);  // turn off the light
         }
-        inline const char* getSpanDeviceName(void) const { return spanDeviceName; } // return the name of the device for this view
+
+        // inline const char* getSpanDeviceName(void) const { return spanDeviceName; } // return the name of the device for this view
         
 
         const uint8_t RVCBrightMax = 200;
@@ -92,8 +113,9 @@ class DC_LightSwitchView : public SpanView , public SpanService {
         // update HomeSpan view per changes in model
         virtual bool updateView(void);
 
-        virtual boolean update(void); 
-
         static void createDC_LightSwitchView(GenericDevice* model, const char* spanDevName); 
+                /// @brief destructor
+
 };
 #endif // DC_SWITCHVIEW_H
+#endif // HOME_KIT_1

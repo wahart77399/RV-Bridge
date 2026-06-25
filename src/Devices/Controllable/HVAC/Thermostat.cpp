@@ -1,3 +1,5 @@
+// #include "RVConstants.h"
+// #ifdef HOME_KIT_1
 #include "Arduino.h"
 #include "ESP32CAN.h"
 #include "CAN_config.h"
@@ -94,3 +96,4 @@ boolean HVAC_Thermostat::executeCommand(RVC_DGN dgn, const uint8_t* data, uint8_
     }
     return cmdExecuted; // Command execution failed
 }
+// #endif
