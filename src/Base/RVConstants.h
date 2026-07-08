@@ -34,8 +34,8 @@
 ////////////////////////////////////////////////////////////////
 #include "Arduino.h"
 
-#define HOME_KIT_1
-// #define HOME_KIT_2
+// #define HOME_KIT_1
+#define HOME_KIT_2
 constexpr uint8_t INVALID_SIZE = 255;
 constexpr uint16_t INVALID_TANK_SIZE = 0x01f4;
 constexpr float_t INVALID_TEMPERATURE = -273.0F;
@@ -55,8 +55,8 @@ constexpr double  tempCOffset = -273.0;
 constexpr double  tempCScale = 0.03125;
 constexpr double  tempCRoundingOffset = -0.25;
 
-const float_t AAC_LOWER_LIMIT = -80.0;
-const float_t AAC_UPPER_LIMIT = 80.0;
+const float_t AAC_LOWER_LIMIT = -81.0;
+const float_t AAC_UPPER_LIMIT = 81.0;
 
 typedef enum {
     INVERTER_INPUT =  0x00,

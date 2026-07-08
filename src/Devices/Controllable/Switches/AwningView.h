@@ -45,8 +45,8 @@
 
 class Awning;
 
-constexpr float    DOOR_AWNING_EXTEND_CYCLE_TIME_SEC    = 14000.0F; // time to fully extend door awning 14 seconds
-constexpr float    DOOR_AWNING_RETRACT_CYCLE_TIME_SEC   = 14000.0F; // time to fully retract door awning 14 seconds
+constexpr float    DOOR_AWNING_EXTEND_CYCLE_TIME_SEC    = 15000.0F; // time to fully extend door awning 14 seconds
+constexpr float    DOOR_AWNING_RETRACT_CYCLE_TIME_SEC   = 15000.0F; // time to fully retract door awning 14 seconds
 constexpr float    FRONT_AWNING_EXTEND_CYCLE_TIME_SEC   = 44000.0F; // time to fully extend front awning 44 seconds
 constexpr float    FRONT_AWNING_RETRACT_CYCLE_TIME_SEC  = 46000.0F; // time to fully retract front awning 46 seconds
 constexpr float    BACK_AWNING_EXTEND_CYCLE_TIME_SEC    = 44000.0F; // time to fully extend back awning 44 seconds
@@ -74,6 +74,7 @@ class AwningView : public SpanView  {
                 SpanCharacteristic* currentState;
                 SpanCharacteristic* targetState;
                 SpanCharacteristic* obstructionDetected;
+                // SpanCharacteristic* out; // send it fully out
 
                 // desired commands
                 boolean            extendCommand = false;
@@ -91,14 +92,17 @@ class AwningView : public SpanView  {
                 
                 // remember fully retracted in HOMEKIT window coverings is 100
                 AwningController(AwningView* vw, GenericDevice* mdl, const char* spanDeviceName, float extendTime, float retractTime) : Service::WindowCovering(), 
-                                    timeToFullyExtend(extendTime), timeToFullyRetract(retractTime), targetExtendedPosition(0.0F), currentExtendedPosition(100.0F), startTime(0), travelTime(0), awningMoving(false) {
-                    currentState = new Characteristic::CurrentPosition(AWNING_FULLY_RETRACTED_PCT); // default to fully retracted
+                                    timeToFullyExtend(extendTime), timeToFullyRetract(retractTime), targetExtendedPosition(0.0F), currentExtendedPosition(0.0F), startTime(0), travelTime(0), awningMoving(false) {
+                    currentState = new Characteristic::CurrentPosition(AWNING_FULLY_EXTENDED_PCT); // default to fully extended
                     currentState->setRange(AWNING_FULLY_EXTENDED_PCT, AWNING_FULLY_RETRACTED_PCT, AWNING_STEP_PCT);
                     currentState->setDescription("Awning Current Position");
                     targetState = new Characteristic::TargetPosition(AWNING_FULLY_RETRACTED_PCT);   // default to fully open
                     targetState->setRange(AWNING_FULLY_EXTENDED_PCT, AWNING_FULLY_RETRACTED_PCT, AWNING_STEP_PCT);
                     targetState->setDescription("Awning Target Position");
                     obstructionDetected = new Characteristic::ObstructionDetected();
+                    // out = new Characteristic::On();
+                    // out->setVal(false); // default to not out
+                    // out->setDescription("Send Awning Out(on) or In(off)");
                     this->model = (Awning* )mdl;
                     view = vw;
                 }
@@ -112,7 +116,7 @@ class AwningView : public SpanView  {
                 boolean isReadyToStop(void) { 
                     unsigned long stime = startTime;
                     if ((isAwningInMotion() && (stime >= travelTime)) || (stopCommand == true)) {
-                        printf("AwningView::AwningController::isReadyToStop stime=%d, travelTime =%d, stopCommand =%d \n", stime, travelTime, stopCommand);
+                        // printf("AwningView::AwningController::isReadyToStop stime=%d, travelTime =%d, stopCommand =%d \n", stime, travelTime, stopCommand);
                         clearCommands();
                         stopCommand = true; // we are done moving
                         stopMoving();
@@ -147,12 +151,37 @@ class AwningView : public SpanView  {
                 boolean isAwningInMotion(void)          { return awningMoving; }
                 boolean isAwningFullyExtended(void);
                 boolean isAwningFullyRetracted(void);
+                boolean isOut(void) { return (currentState->getVal() == AWNING_FULLY_EXTENDED_PCT); }
+                // void extending(boolean val) { out->setVal(val); PacketQueue::clearLastPacketReceiveTime();}
+                //void retracting(void) { out->setVal(false);retractAwning(AWNING_MIN_PERCENT); }
                 void setAwningObstruction(boolean val)  { obstructionDetected->setVal(val); }
 
         }; 
         AwningController*           controller;
 
+        struct AwningExtendRetractController : public Service::Switch {
+                Awning*             model;
+                AwningView*         view;
+                AwningController*   awningController;
+                SpanCharacteristic* out; // send it fully out
+
+                AwningExtendRetractController(AwningView* vw, GenericDevice* mdl, AwningController* awnCtrl) : Service::Switch() {
+                    model = (Awning* )mdl;
+                    view = vw;
+                    awningController = awnCtrl;
+                    out = new Characteristic::On();
+                    out->setVal(false); // default to not out
+                    out->setDescription("Send Awning Out(on) or In(off)");
+                }
+
+                void extending(boolean val) { out->setVal(val); PacketQueue::clearLastPacketReceiveTime();}
+                boolean update(void); 
+                void loop(void);
+        };
+        AwningExtendRetractController* extendRetractController;
+
         void setController(AwningController* ctrl) {controller = ctrl; }
+        void setExtendRetractController(AwningExtendRetractController* ctrl) {extendRetractController = ctrl; }
 
     protected:
         // @brief need to review this... doesn't seem right SpanService(type, name)

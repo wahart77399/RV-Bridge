@@ -55,7 +55,7 @@ class ChassisMobility : public GenericDevice {
             boolean result = false;
             if (rawData != nullptr) { // set the current data to the new data 
                 uint8_t brakeData = rawData[CHASSIS_MOBILITY_BRAKE_INDEX] & BRAKE_MASK;
-                printf("ChassisMobility::isBrakeEngaged = %x, rawData = %x\n", brakeData, rawData[CHASSIS_MOBILITY_BRAKE_INDEX]);
+                // printf("ChassisMobility::isBrakeEngaged = %x, rawData = %x\n", brakeData, rawData[CHASSIS_MOBILITY_BRAKE_INDEX]);
                 result = (brakeData != BRAKE_RELEASED);
             }
             return result;

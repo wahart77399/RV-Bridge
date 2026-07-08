@@ -44,6 +44,7 @@ class Awning : public GenericDevice {
 
         uint8_t*        commandData;
         AWNING_MOTION   motion; 
+        boolean         extended; // is the awning extended or retracted
 
         // void movingAwning(AWNING_MOTION mooving) { motion = mooving; }
         // const boolean isAwningMoving(void) { return motion != NO_MOTION; }
@@ -65,9 +66,10 @@ class Awning : public GenericDevice {
         void  extend(uint8_t percent = AWNING_MAX_PERCENT) {
             uint8_t* rawData = getCommandData();
             if (rawData != nullptr) {
+                extended = true;
                 rawData[AWNING_COMMAND_DIRECTION_INDEX] = AWNING_EXTEND_COMMAND;
                 motion = EXTENDING;
-                if ((percent >= AWNING_MIN_PERCENT) && (percent <= AWNING_MAX_PERCENT)) {
+                if ((percent >= (AWNING_MIN_PERCENT + AWNING_PCT_FUDGE_FACTOR)) && (percent <= (AWNING_MAX_PERCENT - AWNING_PCT_FUDGE_FACTOR))) {
                     rawData[AWNING_COMMAND_POSITION_INDEX] = ((float_t) percent) / AWNING_PERCENT_PRECISION; // set the extend percentage
 
                     // printf("Awning::extend - percent good %d\n", rawData[AWNING_COMMAND_POSITION_INDEX]);
@@ -121,13 +123,15 @@ class Awning : public GenericDevice {
             if (rawData != nullptr) {
                 rawData[AWNING_COMMAND_DIRECTION_INDEX] = AWNING_RETRACT_COMMAND;
                 motion = RETRACTING;
-                if ((percent >= AWNING_MIN_PERCENT) && (percent <= AWNING_MAX_PERCENT)) {
+                if ((percent >= (AWNING_MIN_PERCENT + AWNING_PCT_FUDGE_FACTOR)) && (percent <= (AWNING_MAX_PERCENT - AWNING_PCT_FUDGE_FACTOR))) {
                     rawData[AWNING_COMMAND_POSITION_INDEX] = ((float_t)(percent)) / AWNING_PERCENT_PRECISION; // set the retract percentage
                     // printf("Awning::retract - percent good %d\n", rawData[AWNING_COMMAND_POSITION_INDEX]);
-                } else if (percent < AWNING_MIN_PERCENT) {
+                } else if (percent < (AWNING_MIN_PERCENT + AWNING_PCT_FUDGE_FACTOR)) {
                     rawData[AWNING_COMMAND_POSITION_INDEX] = AWNING_MIN_PERCENT;
+                    extended = false;
                     // printf("Awning::retract - percent max %d\n", rawData[AWNING_COMMAND_POSITION_INDEX]);
                 } else {
+                    extended = false;
                     rawData[AWNING_COMMAND_POSITION_INDEX] = ((float_t)AWNING_MIN_PERCENT)/AWNING_PERCENT_PRECISION;
                     // printf("Awning::retract - percent calc %d\n", rawData[AWNING_COMMAND_POSITION_INDEX]);
                 // updateViews(); // update all views
@@ -135,6 +139,7 @@ class Awning : public GenericDevice {
                 executeCommand(AWNING_COMMAND, rawData);
             }
         }
+        boolean isExtended(void) const { return extended; }
         // status information
         /*
         const uint8_t retractedAmount(void) const {
@@ -222,7 +227,7 @@ class Awning : public GenericDevice {
         }
 
     public:
-        Awning() : GenericDevice(), motion(NO_MOTION) {
+        Awning() : GenericDevice(), motion(NO_MOTION), extended(false) {
             // Constructor implementation
             commandData = new uint8_t[sizeof(uint8_t) * 8]; // allocate 8 bytes for the data
             commandData[0] = index(); // set the first byte to the instance index
@@ -240,7 +245,7 @@ class Awning : public GenericDevice {
             }
         }
 
-        Awning(uint8_t address, uint8_t instance) : GenericDevice(address, instance), motion(NO_MOTION) {     
+        Awning(uint8_t address, uint8_t instance) : GenericDevice(address, instance), motion(NO_MOTION), extended(false) {     
             // Constructor with parameters implementation
                         // availableDGNs = dgns;
             commandData = new uint8_t[sizeof(uint8_t) * 8]; // allocate 8 bytes for the data
@@ -251,7 +256,7 @@ class Awning : public GenericDevice {
             clearExtendedAmount();
         }
 
-        Awning(uint8_t* data) : GenericDevice(data), motion(NO_MOTION) {
+        Awning(uint8_t* data) : GenericDevice(data), motion(NO_MOTION), extended(false) {
             // Constructor with parameters implementation
             commandData = new uint8_t[sizeof(uint8_t) * 8]; // allocate 8 bytes for the data
             commandData[0] = index(); // set the first byte to the instance index

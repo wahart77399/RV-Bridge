@@ -18,7 +18,7 @@ boolean Inverter::executeCommand(RVC_DGN dgn, const uint8_t* data, uint8_t sAddr
         switch (dgn) {
             case (INVERTER_AC_STATUS_1):
             case (INVERTER_STATUS):
-                // printf("Inverter::executeCommand case LOCK_STATUS\n");
+                //  printf("Inverter::executeCommand case INVERTER_STATUS\n");
                 // then we don't send a command on the CAN bus, we update our views (HOME SPAN)
                 // the -> the views will requst the data from the buffer
                 setData(dgn, rawData);

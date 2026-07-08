@@ -7,7 +7,7 @@
 
 bool GeneratorView::updateView(void) {
         // 
-    // printf("DoorLockView::updateView called\n");
+    // printf("GeneratorView::updateView called\n");
     bool updated = false;
     uint8_t instance = indexOfModel();   
     uint8_t index = -1;
@@ -30,13 +30,13 @@ bool GeneratorView::updateView(void) {
         if ((leg1VoltMeter != nullptr) && (leg2VoltMeter != nullptr) &&
             (leg1AmpMeter != nullptr) && (leg2AmpMeter != nullptr)) {
             if (line == Generator::GENERATOR_LINE_1_OUTPUT) {   
+                // printf("GeneratorView::updateView: leg1 Voltage=%f, leg1 Current=%f\n", volt, amp);
                 leg1VoltMeter->setVoltage(volt);
                 leg1AmpMeter->setLegCurrent(amp);
-                // printf("GeneratorView::updateView: leg1 Voltage=%f, leg1 Current=%f\n", volt, amp);
             } else if (line == Generator::GENERATOR_LINE_2_OUTPUT) {
+                // printf("GeneratorView::updateView: leg2 Voltage=%f, leg2 Current=%f\n", volt, amp);
                 leg2VoltMeter->setVoltage(volt);
                 leg2AmpMeter->setLegCurrent(amp);
-                // printf("GeneratorView::updateView: leg2 Voltage=%f, leg2 Current=%f\n", volt, amp);
             } else {
                 leg1VoltMeter->setVoltage(volt);
                 leg2VoltMeter->setVoltage(volt);
@@ -48,7 +48,7 @@ bool GeneratorView::updateView(void) {
         PacketQueue::clearLastPacketReceiveTime();
         updated = true; 
     }
-    // printf("DoorLockView::updateView completed \n"); 
+    //printf("GeneratorView::updateView completed \n"); 
     return updated;
  }
 

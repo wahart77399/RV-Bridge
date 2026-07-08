@@ -96,7 +96,7 @@ class InverterView : public SpanView  {
                     new Characteristic::TemperatureDisplayUnits(homeKitTemperatureDisplayFahrenheit );
                     current->setRange(AAC_LOWER_LIMIT,AAC_UPPER_LIMIT, 1); // shore current is limited to 50 amps, but generator is not 
                 }
-                void rmsCurrent(double val) { /* printf("InverterView::InverterCurrent::rmsCurrent val = %f\n", tempCfromTempF(val));*/ current->setVal(tempCfromTempF(val)); }
+                void rmsCurrent(double val) { /* printf("InverterView::InverterCurrent::rmsCurrent val = %f\n", tempCfromTempF(val)); */ current->setVal(tempCfromTempF(val)); }
                 void currentFault(boolean faulted) { fault->setVal(faulted); }
         }; 
         // InverterCurrent* currentView;

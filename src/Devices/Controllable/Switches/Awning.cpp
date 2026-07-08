@@ -22,14 +22,14 @@ CAN_frame_t* Awning::buildCommand(RVC_DGN dgn) {
                 printf("Awning::buildCommand: ******** WARNING *********** AWNING_COMMAND_2 called - need to support this command\n");
                 break;
             case AWNING_COMMAND: {                // Handle second DC Dimmer command
-                printf("Awning::buildCommand: Handling AWINING_COMMAND\n");
+                // printf("Awning::buildCommand: Handling AWINING_COMMAND\n");
                 uint8_t* d = frame->data.u8;
                 if ((d != nullptr) && (cData != nullptr)) {
                     // Handle switch ON command for second dimmer
                     for (int i = 1; i < 8; i++)
                         d[i] = cData[i];
-                    printf("Awning::buildCommand AWNING_COMMAND received with d[0] = %8x, d[1] = %8x, d[2] = %8x, d[3] = %8x, d[4] = %8x, d[5] = %8x, d[6] = %8x, d[7] = %8x.\n", 
-                            d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);       
+                    // printf("Awning::buildCommand AWNING_COMMAND received with d[0] = %8x, d[1] = %8x, d[2] = %8x, d[3] = %8x, d[4] = %8x, d[5] = %8x, d[6] = %8x, d[7] = %8x.\n", 
+                    //        d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);       
                 } else {
                     // Handle unknown command for second dimmer
                     printf("Unknown command received.\n");
@@ -65,7 +65,7 @@ boolean Awning::executeCommand(RVC_DGN dgn, const uint8_t* data, uint8_t sAddres
         uint8_t* rawData = (uint8_t* )data;
         switch (dgn) {
             case AWNING_COMMAND:
-                printf("Awning::executeCommand AWNING_COMMANBD\n");
+                // printf("Awning::executeCommand AWNING_COMMANBD\n");
                 if (sAddress == SOURCE_ADDRESS) { // then we originated the command}
                     // printf("Awning::executeCommand: Handling LOCK_COMMAND\n");
                     // need to send the command on the CAN BUS

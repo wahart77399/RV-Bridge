@@ -8,7 +8,7 @@
 
 bool PowerSensorView::updateView(void) {
         // 
-    // printf("PowerSensorView::updateView called\n");
+    printf("PowerSensorView::updateView called\n");
     bool updated = false;
     uint8_t instance = indexOfModel();   
     uint8_t index = -1;
@@ -23,7 +23,7 @@ bool PowerSensorView::updateView(void) {
         // if (volt < 250)
         voltageView->rmsVoltage(volt);
         voltageView->voltageFault(vFault);
-        //printf("PowerSensorView::updateView adjusted current = %f \n", adjAmp);
+        printf("PowerSensorView::updateView adjusted current = %f \n", amp);
         // if (amp < 100)
         currentView->rmsCurrent(amp);
         currentView->currentFault(aFault);
@@ -32,7 +32,7 @@ bool PowerSensorView::updateView(void) {
         PacketQueue::clearLastPacketReceiveTime();
         updated = true; 
     }
-    // printf("PowerSensorView::updateView completed \n"); 
+    printf("PowerSensorView::updateView completed \n"); 
     return updated;
  }
 

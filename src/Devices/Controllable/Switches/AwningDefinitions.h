@@ -10,6 +10,7 @@ constexpr uint8_t AWNING_MIN_PERCENT = 0;
 constexpr uint8_t AWNING_STEP = 5;
 constexpr float_t AWNING_PERCENT_PRECISION = 0.5; // this is the value returned when no data is available
 constexpr uint8_t AWNING_MAX_VALUE = 200; // 200 * 0.5 = 100%
+constexpr uint8_t AWNING_PCT_FUDGE_FACTOR = 1;
 
 constexpr uint8_t DOOR_AWNING = 1;
 constexpr const char* DOOR_AWNING_NAME = "Door Awning";

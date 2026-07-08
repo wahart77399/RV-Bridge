@@ -48,8 +48,12 @@ class Generator : PowerSensor {
         const uint8_t line(void) const {
             uint8_t result = GENERATOR_LINE_INVALID;
             uint8_t* rawData = getCurrentData();
+            // printf("Generator::line: rawData[0]=0x%02X\n", rawData[GENERATOR_BYTE_0]);
+            // printf("Generator::line: rawData[0] & GENERATOR_OUTPUT_INDEX_MASK=0x%02X\n", rawData[GENERATOR_BYTE_0] & GENERATOR_OUTPUT_INDEX_MASK);
+            // printf("Generator::line: rawData[0] & GENERATOR_LINE_MASK=0x%02X\n", rawData[GENERATOR_BYTE_0] & GENERATOR_LINE_MASK);
             if (rawData != nullptr) {
                 uint8_t tmp = rawData[GENERATOR_BYTE_0] & GENERATOR_LINE_MASK;
+                //printf("Generator::line: tmp=0x%02X\n", tmp);
                 if (tmp == GENERATOR_LINE_1)
                     result = GENERATOR_LINE_1_OUTPUT;
                 else if (tmp == GENERATOR_LINE_2)

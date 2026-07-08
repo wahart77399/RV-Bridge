@@ -93,8 +93,11 @@ void Packet::displayPacket(CAN_frame_t* packet, PacketPrint printPacket) {
 		uint8_t* data = getData(packet);
 		uint8_t index = getIndex(data);
 		RVC_DGN dgn = DGN::getDGN(packet);
-		// if ((dgn == WINDOW_SHADE_CONTROL_COMMAND) || (dgn == WINDOW_SHADE_CONTROL_STATUS)) {  //  || 
-		if ((dgn == AWNING_COMMAND) || (dgn == AWNING_COMMAND_2) || (dgn == AWNING_STATUS) || (dgn == AWNING_STATUS_2)) { //  || 
+		// if ((dgn == GENERATOR_AC_STATUS_1) || (dgn == GENERATOR_AC_STATUS_2) || (dgn == GENERATOR_AC_STATUS_3) || (dgn == GENERATOR_AC_STATUS_4)) {
+			// printf("Packet::displayPacket: Generator DGN received with DGN=0x%08X, ID 0x%08X, DLC %d, data 0x%08X \n",dgn, packet->MsgID, packet->FIR.B.DLC, *((uint32_t*)data));
+		if ((dgn == WINDOW_SHADE_CONTROL_COMMAND) || (dgn == WINDOW_SHADE_CONTROL_STATUS)) {  //  || 
+			printf("Packet::displayPacket: Window Shade DGN received with DGN=0x%08X, ID 0x%08X, DLC %d, data 0x%08X \n",dgn, packet->MsgID, packet->FIR.B.DLC, *((uint32_t*)data));
+		// if ((dgn == AWNING_COMMAND) || (dgn == AWNING_COMMAND_2) || (dgn == AWNING_STATUS) || (dgn == AWNING_STATUS_2)) { //  || 
 		//	GOOD -> (dgn == FLOOR_HEAT_COMMAND) || (dgn == FLOOR_HEAT_STATUS)) { 
 		// if ((dgn==DC_DIMMER_COMMAND_2) || (dgn==DC_DIMMER_COMMAND) || (dgn == DC_DIMMER_STATUS_1) || (dgn == DC_DIMMER_STATUS_2) || (dgn == DC_DIMMER_STATUS_3)) { // rvc dgns are this or better
 		// if (((dgn == LOCK_COMMAND) || (dgn == LOCK_STATUS)) && (index == 1)) {
@@ -113,8 +116,8 @@ void Packet::displayPacket(CAN_frame_t* packet, PacketPrint printPacket) {
 			uint8_t priority = getPriority(packet);
 			
         	if ((data != nullptr)) { //  && ( (index == 2)))  {
-				// uint16_t* temperatureData = (uint16_t*) &(data[3]);
-				// uint16_t tempHot = data[4];
+				//uint16_t* temperatureData = (uint16_t*) &(data[3]);
+				//uint16_t tempHot = data[4];
 				// uint16_t resultH = HVAC_Thermostat::convToTempC(data[4]<<8 | data[3]);
 				// uint16_t tempCool = data[6];
 				// uint16_t resultC = HVAC_Thermostat::convToTempC(data[6]<<8 | data[5]);
@@ -127,8 +130,8 @@ void Packet::displayPacket(CAN_frame_t* packet, PacketPrint printPacket) {
 				LOGIT(MIN_LOG_LEVEL, Packet::oss); 
 				*/
 				// if ((index == 0x42) || (index == 2))
-				//	printf("printf Packet::displayPacket: DGN %#x, index = %#x, Source Address %#x, Data : d[0]=%#x, d[1]=%#x, d[2]=%#x, d[3]=%#x, d[4]=%#x, d[5]=%#x, d[6]=%#x, d[7]=%#x\n", 
-				//  			dgn, index, sourceAddr, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+				printf("printf Packet::displayPacket: DGN %#x, index = %#x, Source Address %#x, Data : d[0]=%#x, d[1]=%#x, d[2]=%#x, d[3]=%#x, d[4]=%#x, d[5]=%#x, d[6]=%#x, d[7]=%#x\n", 
+						dgn, index, sourceAddr, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
 				//; // do nothing - just a place to put a breakpoint if needed
 			}
         }

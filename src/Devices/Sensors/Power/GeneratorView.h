@@ -65,7 +65,7 @@ class GeneratorView : SpanView {
                 // leg 1
                 legCurrent->setDescription("Leg 1 Current");
                 new Characteristic::TemperatureDisplayUnits(homeKitTemperatureDisplayFahrenheit );
-                legCurrent->setRange(tempCfromTempF(AAC_LOWER_LIMIT), tempCfromTempF(AAC_UPPER_LIMIT));
+                legCurrent->setRange(tempCfromTempF(AAC_LOWER_LIMIT), tempCfromTempF(AAC_UPPER_LIMIT), 1);
                 // leg1Current.setRange(0, 50); // need to get rid of magic numbers - but from 0 to 50 amps
                 // leg1Current.setDescription("Leg 1 Current");
                 // leg 2   

@@ -25,7 +25,7 @@ boolean ChassisMobility::executeCommand(RVC_DGN dgn, const uint8_t* data, uint8_
                 printf("****************** Chassis Mobility Status 2 not supported.  ************************** \n");
                 break;
             case (CHASSIS_MOBILITY_STATUS):
-                // printf("ChassisMobility::executeCommand case LOCK_STATUS\n");
+                // printf("ChassisMobility::executeCommand case CHASSIS_MOBILITY_STATUS\n");
                 // then we don't send a command on the CAN bus, we update our views (HOME SPAN)
                 // the -> the views will requst the data from the buffer
                 setData(dgn, rawData);

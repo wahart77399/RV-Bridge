@@ -165,7 +165,7 @@ void  DeviceFactory::create2022Essex4551Devices() {
     DGN2DeviceMap[FLOOR_HEAT_STATUS][3] = floorHeat;
     FloorHeatView::createFloorHeatView(floorHeat, "Bed n Bath Floor Heat");
     // Awnings 
-    /* more work to debug and work on timing
+    /* more work to debug and work on timing */
     Awning* awning = new Awning(136, FRONT_AWNING); // , LOCK_GROUP, lockDgns);
     DGN2DeviceMap[AWNING_COMMAND][FRONT_AWNING] = awning;
     DGN2DeviceMap[AWNING_STATUS][FRONT_AWNING] = awning;
@@ -174,11 +174,12 @@ void  DeviceFactory::create2022Essex4551Devices() {
     DGN2DeviceMap[AWNING_COMMAND][BACK_AWNING] = awning;
     DGN2DeviceMap[AWNING_STATUS][BACK_AWNING] = awning;
     AwningView::createAwningView(awning, BACK_AWNING_NAME, BACK_AWNING_EXTEND_CYCLE_TIME_SEC, BACK_AWNING_RETRACT_CYCLE_TIME_SEC);
+    /* */
     awning = new Awning(136, DOOR_AWNING); 
     DGN2DeviceMap[AWNING_COMMAND][DOOR_AWNING] = awning;
     DGN2DeviceMap[AWNING_STATUS][DOOR_AWNING] = awning;
     AwningView::createAwningView(awning, DOOR_AWNING_NAME, DOOR_AWNING_EXTEND_CYCLE_TIME_SEC, DOOR_AWNING_RETRACT_CYCLE_TIME_SEC);
-    */
+    /* */
     // shades
 #endif
     // Door locks
@@ -323,7 +324,9 @@ GenericDevice* DeviceFactory::getDeviceByData(RVC_DGN dgn, uint8_t* data) {
             (dgn != GENERATOR_AC_STATUS_1) && (dgn != GENERATOR_AC_STATUS_2) && (dgn != GENERATOR_AC_STATUS_3) && (dgn != GENERATOR_AC_STATUS_4) &&
             (dgn != INVERTER_AC_STATUS_1) && (dgn != INVERTER_STATUS)) {
             uint8_t index = Packet::getIndex(data);
-            result = DeviceFactory::DGN2DeviceMap[dgn][index];  
+            result = DeviceFactory::DGN2DeviceMap[dgn][index]; 
+
+            // printf("DeviceFactory::getDeviceByData: DGN=0x%08X, index=%d\n", dgn, index);
         } else if ((dgn == ATS_AC_STATUS_1) || (dgn == ATS_AC_STATUS_2) || (dgn == ATS_AC_STATUS_3) || (dgn == ATS_AC_STATUS_4)) { // need to get the index differently for ATS_AC_STATUS data
 #ifdef HOME_KIT_2
             // need to deal with this differently per the RVC Spec on Byte 0
@@ -363,6 +366,9 @@ GenericDevice* DeviceFactory::getDeviceByData(RVC_DGN dgn, uint8_t* data) {
             if ((tmp > GENERATOR_INSTANCE_0_INVALID) && (tmp < GENERATOR_INSTANCE_11_INVALID)) {
                 outputIndex = tmp;
                 result = DeviceFactory::DGN2DeviceMap[dgn][outputIndex];
+                // if (dgn == GENERATOR_AC_STATUS_1) {
+                    // printf("DeviceFactory::getDeviceByData: Generator DGN=0x%08X, index=%d\n", dgn, outputIndex);
+                //}
             }   
 #endif         
             ; // do nothing
