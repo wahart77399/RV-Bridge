@@ -73,6 +73,8 @@ void DeviceFactory::createDevices(void) {
 // #include "PowerSensorView.h"
 #include "Awning.h" // can't implement - AWNING_STATUS does not report position properly so can't get position properly managed in loop
 #include "AwningView.h"
+#include "Shades.h"
+#include "ShadesView.h"
 #endif
 
 void  DeviceFactory::create2022Essex4551Devices() {
@@ -181,6 +183,30 @@ void  DeviceFactory::create2022Essex4551Devices() {
     AwningView::createAwningView(awning, DOOR_AWNING_NAME, DOOR_AWNING_EXTEND_CYCLE_TIME_SEC, DOOR_AWNING_RETRACT_CYCLE_TIME_SEC);
     /* */
     // shades
+    Shades* shades = new Shades(static_cast<uint8_t>(146), static_cast<uint8_t>(LIVING_ROOM_DAY_SHADE));
+    DGN2DeviceMap[WINDOW_SHADE_CONTROL_COMMAND][LIVING_ROOM_DAY_SHADE] = shades;
+    DGN2DeviceMap[WINDOW_SHADE_CONTROL_STATUS][LIVING_ROOM_DAY_SHADE] = shades;
+    ShadesView::createShadesView(shades, LIVING_ROOM_DAY_SHADE_NAME);
+    shades = new Shades(static_cast<uint8_t>(146), static_cast<uint8_t>(LIVING_ROOM_NIGHT_SHADE));
+    DGN2DeviceMap[WINDOW_SHADE_CONTROL_COMMAND][LIVING_ROOM_NIGHT_SHADE] = shades;
+    DGN2DeviceMap[WINDOW_SHADE_CONTROL_STATUS][LIVING_ROOM_NIGHT_SHADE] = shades;
+    ShadesView::createShadesView(shades, LIVING_ROOM_NIGHT_SHADE_NAME);
+    shades = new Shades(static_cast<uint8_t>(146), static_cast<uint8_t>(BEDROOM_DAY_SHADE));
+    DGN2DeviceMap[WINDOW_SHADE_CONTROL_COMMAND][BEDROOM_DAY_SHADE] = shades;
+    DGN2DeviceMap[WINDOW_SHADE_CONTROL_STATUS][BEDROOM_DAY_SHADE] = shades;
+    ShadesView::createShadesView(shades, BEDROOM_DAY_SHADE_NAME);
+    shades = new Shades(static_cast<uint8_t>(146), static_cast<uint8_t>(BEDROOM_NIGHT_SHADE));
+    DGN2DeviceMap[WINDOW_SHADE_CONTROL_COMMAND][BEDROOM_NIGHT_SHADE] = shades;
+    DGN2DeviceMap[WINDOW_SHADE_CONTROL_STATUS][BEDROOM_NIGHT_SHADE] = shades;
+    ShadesView::createShadesView(shades, BEDROOM_NIGHT_SHADE_NAME);
+    shades = new Shades(static_cast<uint8_t>(146), static_cast<uint8_t>(BATHROOM_DAY_SHADE));
+    DGN2DeviceMap[WINDOW_SHADE_CONTROL_COMMAND][BATHROOM_DAY_SHADE] = shades;
+    DGN2DeviceMap[WINDOW_SHADE_CONTROL_STATUS][BATHROOM_DAY_SHADE] = shades;
+    ShadesView::createShadesView(shades, BATHROOM_DAY_SHADE_NAME);
+    shades = new Shades(static_cast<uint8_t>(146), static_cast<uint8_t>(BATHROOM_NIGHT_SHADE));
+    DGN2DeviceMap[WINDOW_SHADE_CONTROL_COMMAND][BATHROOM_NIGHT_SHADE] = shades;
+    DGN2DeviceMap[WINDOW_SHADE_CONTROL_STATUS][BATHROOM_NIGHT_SHADE] = shades;
+    ShadesView::createShadesView(shades, BATHROOM_NIGHT_SHADE_NAME);
 #endif
     // Door locks
 

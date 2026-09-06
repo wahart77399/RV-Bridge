@@ -44,6 +44,7 @@ class SpanView;
 
 // generic
 
+constexpr size_t DATA_SIZE = 8;
 
 class GenericDevice {
     protected:
@@ -129,7 +130,7 @@ class GenericDevice {
             instance(index) { // },            group(grp) { 
             
             // availableDGNs = dgns;
-            currentData = new uint8_t[sizeof(uint8_t) * 8]; // allocate 8 bytes for the data
+            currentData = new uint8_t[DATA_SIZE]; // new uint8_t[sizeof(uint8_t) * 8]; // allocate 8 bytes for the data
             currentData[0] = getInstance(); // set the first byte to the instance index
             for (uint8_t i = 1; i < 8; i++) {
                 currentData[i] = INVALID_DATA; // initialize to invalid data
@@ -147,8 +148,8 @@ class GenericDevice {
             if (orig.currentData) {
                 // ********************** WARNING ****************************************************************
                 // this wont work, it will alocate the size of the pointer - I believe it needs to be 8 bytes long
-                currentData = new uint8_t[sizeof(uint8_t) * 8];
-                memcpy(currentData, orig.currentData, sizeof(orig.currentData));
+                currentData = new uint8_t[DATA_SIZE]; // new uint8_t[sizeof(uint8_t) * 8];
+                memcpy(currentData, orig.currentData, DATA_SIZE); // sizeof(orig.currentData));
             }             
         }
 
@@ -165,7 +166,7 @@ class GenericDevice {
                 // this->group = Packet::getGroup(data);
                 // ********************** WARNING ****************************************************************
                 // this wont work, it will alocate the size of the pointer - I believe it needs to be 8 bytes long
-                currentData = new uint8_t[sizeof(uint8_t) * 8];
+                currentData = new uint8_t[DATA_SIZE]; // new uint8_t[sizeof(uint8_t) * 8];
                 memcpy(currentData, data, sizeof(data));
             }  
         }
@@ -177,8 +178,8 @@ class GenericDevice {
                 if (orig.currentData) {
                     // ********************** WARNING ****************************************************************
                     // this wont work, it will alocate the size of the pointer - I believe it needs to be 8 bytes long
-                    currentData = new uint8_t[sizeof(orig.currentData)];
-                    memcpy(currentData, orig.currentData, sizeof(orig.currentData));
+                    currentData = new uint8_t[DATA_SIZE]; // new uint8_t[sizeof(orig.currentData)];
+                    memcpy(currentData, orig.currentData, DATA_SIZE); //sizeof(orig.currentData));
                 } 
                 sourceAddress = orig.sourceAddress;
                 instance = orig.instance;

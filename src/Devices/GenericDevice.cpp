@@ -75,12 +75,13 @@ void GenericDevice::addView(SpanView* v) { // this transfers ownership of the vi
 
 void GenericDevice::deleteViews() { // must delete owned memory
     std::list<SpanView*>::iterator iter;
-    for (iter = views.end(); !isLastView(iter); ++iter) {
-        if ((*iter) != nullptr) {
-            delete (*iter); // Delete the SpanView
-            (*iter) = nullptr; // Set the pointer to nullptr after deletion
+     for (SpanView* v : views) {
+        if (v != nullptr) {
+            delete v; // Delete the SpanView
+            v = nullptr; // Set the pointer to nullptr after deletion
         }
-    }
+     }
+     views.clear();
 }
 
 /**
