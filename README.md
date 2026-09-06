@@ -17,9 +17,13 @@ The architecture relies heavily on the Model View Controller pattern. The Model 
 ---
 ## Libraries
 lib_deps =
+     
      elapsedMillis
+     
      miwagner/ESP32CAN@^0.0.1
+     
      homespan/HomeSpan@^1.9.1
+     
 ---
 ## Archive
 Archive has all of the original code from Randy Ubillos. I created this so that I had ease of access to the original code.
@@ -38,7 +42,9 @@ This is a general class hierarchy, meaning Controllable and Sensors are specific
 DeviceView is a generic term for each View into a specific device. It is the translator of messages to/from HomeKit via the library HomeSpan. In general, when updates occur from HomeKit for controllables, it will translate the message and use the controller to update the model via the ESP32CAN library. Some of the earlier MVC models, like WaterPump, I wrote use update without the controller, that’s a flaw I intended to come back and fix. Sensors do not have a controller since they don’t control anything, they just read values.
 
 NOTE: Since HomeKit does NOT have a unit for volume,  voltage, current or percentage, I use temperature in Fahrenheit to represent those values.
-![RV-Bridge Hierarchy](/images/Class Hierarchy.png)
+
+<img width="850" height="490" alt="Class Hierarchy" src="https://github.com/user-attachments/assets/5788e130-3d93-4321-b525-be7026ab2faa" />
+
 
 ---
 ## Packets
