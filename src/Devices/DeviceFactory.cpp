@@ -78,6 +78,7 @@ void DeviceFactory::createDevices(void) {
 #endif
 
 void  DeviceFactory::create2022Essex4551Devices() {
+    // all devices live live until reboot, the dgn maps do NOT own the memory.
     printf("DeviceFactory::create2022Essex4551Devices Start\n");
     // Create devices for 2022 Essex 4551
         // by id -> create the device and assign pointer in map by ID
