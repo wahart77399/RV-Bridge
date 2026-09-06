@@ -318,6 +318,7 @@ bool ThermostatView::updateView(void) {
     ThermostatView::ThermostatController* controller = new ThermostatView::ThermostatController(vw, model, fn, spanDevName);
     vw->setController(controller);
 
+    delete [] fanName;
     if (vw != nullptr)
         printf("ThermostatView::createThermostatView: tmp created successfully\n");
     else

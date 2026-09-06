@@ -1,4 +1,6 @@
-#ifdef HOME_KIT
+//
+#include "RVConstants.h" 
+#ifdef HOME_KIT_2
 #include "Arduino.h"
 #include "Shades.h"
 #include "ESP32CAN.h"

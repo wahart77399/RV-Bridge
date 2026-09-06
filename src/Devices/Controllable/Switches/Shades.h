@@ -1,4 +1,5 @@
-#ifdef HOME_KIT
+#include "RVConstants.h"
+#ifdef HOME_KIT_2
 #ifndef SHADES_H // once I'm ready to define this, move this below ifndef
 #define SHADES_H
 
@@ -47,6 +48,8 @@ class Shades : public GenericDevice {
         friend class ShadesView;
 
         uint8_t* commandData;
+        boolean  closed; // is the shade closed or open
+        SHADE_MOTION motion; // is the shade opening or closing or stopped
 
         uint8_t* getCommandData(void) const { return commandData; }
 
@@ -104,7 +107,7 @@ class Shades : public GenericDevice {
             return result;
         }
 
-        boolean isMOtorInReverse(void) const {
+        boolean isMotorInReverse(void) const {
             // WINDOW_SHADE_CONTROL_STATUS only
             boolean result = false;
             uint8_t* data = getCurrentData();
@@ -249,6 +252,38 @@ class Shades : public GenericDevice {
             return result;
         }
         
+               // command 
+        void  close(uint8_t percent = SHADES_MAX_PERCENT) {
+            uint8_t* rawData = getCommandData();
+            if (rawData != nullptr) {
+                closed = true;
+                rawData[SHADE_COMMAND_INDEX] = SHADE_COMMAND_TOGGLE_REVERSE; // set the command to close
+                motion = CLOSING;
+                executeCommand(WINDOW_SHADE_CONTROL_COMMAND, rawData);
+            }
+        }
+        void  open(uint8_t percent = SHADES_MIN_PERCENT) {
+            uint8_t* rawData = getCommandData();
+            if (rawData != nullptr) {
+                closed = false;
+                rawData[SHADE_COMMAND_INDEX] = SHADE_COMMAND_TOGGLE_FORWARD; // set the command to reverse
+                motion = OPENING;
+                executeCommand(WINDOW_SHADE_CONTROL_COMMAND, rawData);
+            }
+        }
+
+        void  stop(void) {
+            uint8_t* rawData = getCommandData();
+            if (rawData != nullptr) {
+                SHADES_COMMANDS cmd = SHADE_COMMAND_TOGGLE_REVERSE;
+                if ((!closed) || (motion == OPENING)) {
+                    cmd = SHADE_COMMAND_TOGGLE_FORWARD;
+                } 
+                rawData[SHADE_COMMAND_INDEX] = cmd; // set the command to stop
+                motion = STOPPED;
+                executeCommand(WINDOW_SHADE_CONTROL_COMMAND, rawData);
+            }
+        }
     protected:
 
         virtual CAN_frame_t* buildCommand(RVC_DGN dgn);
@@ -276,7 +311,7 @@ class Shades : public GenericDevice {
         }
 
     public:
-        Shades() : GenericDevice() { 
+        Shades() : GenericDevice(), closed(false), motion(STOPPED) { 
             // Constructor implementation
             commandData = new uint8_t[sizeof(uint8_t) * 8]; // allocate 8 bytes for the data
             commandData[0] = index(); // set the first byte to the instance index
@@ -285,7 +320,7 @@ class Shades : public GenericDevice {
             }
         }
 
-        Shades(const Shades& orig) : GenericDevice(orig) { 
+        Shades(const Shades& orig) : GenericDevice(orig), closed(orig.closed), motion(orig.motion) { 
             // Copy constructor implementation
             commandData = new uint8_t[sizeof(uint8_t) * 8]; // allocate 8 bytes for the data
             for (uint8_t i = 0; i < 8; i++) {
@@ -293,7 +328,7 @@ class Shades : public GenericDevice {
             }
         }
 
-        Shades(uint8_t address, uint8_t instance) : GenericDevice(address, instance) {     
+        Shades(uint8_t address, uint8_t instance) : GenericDevice(address, instance), closed(false), motion(STOPPED) {     
             commandData = new uint8_t[sizeof(uint8_t) * 8]; // allocate 8 bytes for the data
             commandData[0] = index(); // set the first byte to the instance index
             for (uint8_t i = 1; i < 8; i++) {
@@ -301,7 +336,7 @@ class Shades : public GenericDevice {
             }
         }
 
-        Shades(uint8_t* data) : GenericDevice(data) {
+        Shades(uint8_t* data) : GenericDevice(data), closed(false), motion(STOPPED) {
             // Constructor with parameters implementation
             commandData = new uint8_t[sizeof(uint8_t) * 8]; // allocate 8 bytes for the data
             commandData[0] = index(); // set the first byte to the instance index

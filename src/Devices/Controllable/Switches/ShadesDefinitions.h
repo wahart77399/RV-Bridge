@@ -1,6 +1,37 @@
-#ifdef HOME_KIT
+#include "RVConstants.h"
+#ifdef HOME_KIT_2
 #ifndef SHADES_DEFINITIONS_H
 #define SHADES_DEFINITIONS_H
+
+
+#include "Arduino.h"
+
+constexpr uint8_t LIVING_ROOM_DAY_SHADE = 88;
+constexpr const char* LIVING_ROOM_DAY_SHADE_NAME = "Living Room Day Shade";
+constexpr uint8_t LIVING_ROOM_NIGHT_SHADE = 89;
+constexpr const char* LIVING_ROOM_NIGHT_SHADE_NAME = "Living Room Night Shade";
+constexpr uint8_t BEDROOM_DAY_SHADE = 90;
+constexpr const char* BEDROOM_DAY_SHADE_NAME = "Bedroom Day Shade";
+constexpr uint8_t BEDROOM_NIGHT_SHADE = 91;
+constexpr const char* BEDROOM_NIGHT_SHADE_NAME = "Bedroom Night Shade";
+constexpr uint8_t BATHROOM_DAY_SHADE = 92;
+constexpr const char* BATHROOM_DAY_SHADE_NAME = "Bathroom Day Shade";
+constexpr uint8_t BATHROOM_NIGHT_SHADE = 93;
+constexpr const char* BATHROOM_NIGHT_SHADE_NAME = "Bathroom Night Shade";
+
+constexpr uint8_t SHADES_MAX_PERCENT = 100;
+constexpr uint8_t SHADES_MIN_PERCENT = 0;
+constexpr uint8_t SHADES_STEP = 5;
+constexpr float_t SHADES_PERCENT_PRECISION = 0.5; // this is the value returned when no data is available
+constexpr uint8_t SHADES_MAX_VALUE = 200; // 200 * 0.5 = 100%
+constexpr uint8_t SHADES_PCT_FUDGE_FACTOR = 1;
+
+constexpr uint8_t DOOR_NIGHT_SHADE = 1;
+constexpr const char* DOOR_NIGHT_SHADE_NAME = "Door Night Shade";
+constexpr uint8_t FRONT_WINDOW_NIGHT_SHADE = 2;
+constexpr const char* FRONT_WINDOW_NIGHT_SHADE_NAME = "Front Window Night Shade";
+constexpr uint8_t DRIVERS_NIGHT_SHADE = 3;
+constexpr const char* DRIVERS_NIGHT_SHADE_NAME = "Drivers Night Shade";
 
 typedef enum {
     SHADE_INSTANCE_INDEX     = 0,
@@ -80,8 +111,15 @@ typedef enum {
     SHADE_COMMAND_UNLOCK          = 0x22,
     SHADE_COMMAND_TILT            = 0x10, // not supported yet
     SHADE_COMMAND_TOGGLE_FORWARD  = 0x85,
-    SHADE_COMMAND_TOGGLE_REVERSE  = 0x41
+    SHADE_COMMAND_TOGGLE_REVERSE  = 0x45
 } SHADES_COMMANDS;
+
+// Shade Status definitions
+typedef enum {
+    STOPPED              = 0x00, // 0000 0000
+    CLOSING              = 0x01, // 0000 0001
+    OPENING              = 0x02 // 0000 0010
+} SHADE_MOTION;
 
 #endif // SHADES_DEFINITIONS_H
 #endif // HOME_KIT

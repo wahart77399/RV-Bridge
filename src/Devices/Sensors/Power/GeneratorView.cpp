@@ -90,7 +90,7 @@ GeneratorView::GeneratorView(GenericDevice* model, const char* spanDevName)
     new Characteristic::Name(voltName);
     GeneratorView::LegVoltage* volt1 = new GeneratorView::LegVoltage(voltName); // vw, (Generator* )model, voltName);
 
-    delete voltName;   
+    delete[] voltName;   
     voltName = new char[buffer_size_1];
     strcpy(voltName, spanDevName);
     strcat(voltName, vappend);
@@ -109,7 +109,7 @@ GeneratorView::GeneratorView(GenericDevice* model, const char* spanDevName)
     new Characteristic::Name(ampName);
     GeneratorView::LegAmperage* amp1 = new GeneratorView::LegAmperage(ampName);
 
-    delete ampName;   
+    delete[] ampName;   
     ampName = new char[buffer_size_2];
     strcpy(ampName, spanDevName);
     strcat(ampName, aappend);
@@ -120,6 +120,8 @@ GeneratorView::GeneratorView(GenericDevice* model, const char* spanDevName)
     new Characteristic::Name(ampName);
     GeneratorView::LegAmperage* amp2 = new GeneratorView::LegAmperage(ampName);
     vw->setLegAmperages(amp1, amp2);
+    delete[] ampName;
+    delete[] voltName;
     
     if (vw != nullptr)
         printf("GeneratorView::createGeneratorView: tmp created successfully\n");
