@@ -210,8 +210,10 @@ class Battery : public GenericDevice {
             uint8_t* data = getSource3Data();
             uint16_t result = OUT_OF_RANGE_DATA;
             if (data != nullptr) {
-                result = convFromTempC(getLilEndian(data[DC_SOURCE_AC_RIPPLE_MSB_INDEX], data[DC_SOURCE_AC_RIPPLE_LSB_INDEX]));
+                result = /* convFromTempC */ (getLilEndian(data[DC_SOURCE_AC_RIPPLE_MSB_INDEX], data[DC_SOURCE_AC_RIPPLE_LSB_INDEX]));
                 // printf("Battery::rmsRipple = %d\n", result);
+                if (result == INVALID_RMS_RIPPLE)
+                    result = OUT_OF_RANGE_DATA;
             }
             return result;
         }
@@ -295,17 +297,32 @@ class Battery : public GenericDevice {
 
 
     public:
-        Battery() : GenericDevice() {
+        Battery() : GenericDevice(), source2Data(nullptr), source3Data(nullptr), source4Data(nullptr) {
             // Constructor implementation
         }
 
 
-        Battery(const Battery& orig) : GenericDevice(orig) {
+        Battery(const Battery& orig) : GenericDevice(orig), source2Data(nullptr), source3Data(nullptr), source4Data(nullptr) {
             // Copy constructor implementation
+            if (orig.source2Data != nullptr) {
+                source2Data = new uint8_t[sizeof(uint8_t) * 8];
+                for (uint8_t i = 0; i < 8; i++)
+                    source2Data[i] = orig.source2Data[i];
+            }
+            if (orig.source3Data != nullptr) {
+                source3Data = new uint8_t[sizeof(uint8_t) * 8];
+                for (uint8_t i = 0; i < 8; i++)
+                    source3Data[i] = orig.source3Data[i];
+            }
+            if (orig.source4Data != nullptr) {
+                source4Data = new uint8_t[sizeof(uint8_t) * 8];
+                for (uint8_t i = 0; i < 8; i++)
+                    source4Data[i] = orig.source4Data[i];
+            }
         }
 
 
-        Battery(uint8_t address, uint8_t index, uint8_t pri) : GenericDevice(address, index) { 
+        Battery(uint8_t address, uint8_t index, uint8_t pri) : GenericDevice(address, index), source2Data(nullptr), source3Data(nullptr), source4Data(nullptr) { 
             uint8_t* data = getCurrentData();
             if (data != nullptr)
                 data[DC_SOURCE_PRIORITY_INDEX] = pri;
@@ -337,6 +354,9 @@ class Battery : public GenericDevice {
 
         virtual ~Battery() {
             // Destructor implementation
+            delete[] source2Data;
+            delete[] source3Data;
+            delete[] source4Data;
         } 
 
 
