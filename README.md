@@ -1,4 +1,109 @@
-# RV-Bridge: HomeKit to RV-C Adapter
+# RV-Bridge: HomeKit to RV-C Adapter 
+This is a forked version of Randy Ubillos's RV-Bridge
+
+## Overview
+### Credit and Origin
+The RV-Bridge was originally developed by Randy Ubillos, you may find the original documentation from him, here at https://github.com/rubillos/RV-Bridge. After reviewing his code, I felt it needed significant work to make it more modular and Object Oriented and less monolithic. I forked from his GitHub and re-architected the design. My GitHub link is:
+https://github.com/wahart77399/RV-Bridge
+
+## Development and Hardware
+I use Randy’s original hardware and 3D casing. Unfortunately, the ESP32 board he used did not allow me to run a debugger, so you will note a lot of commented out print statements as I debugged the solution. 
+One important note, I used two esp32 boards due to limited memory on the board, so you will see that I have HOME_KIT1 and HOME_KIT2 defined to separate the functionality. Interestingly, after the fact, I don’t think it was necessary, so, you may be able to remove the definitions.
+
+---
+## MVC
+The architecture relies heavily on the Model View Controller pattern. The Model is the RVC side of the house, the View is the Apple HomeKit and the Controller, if it is not a sensor, is typically a class defined within the View and private to the view. The controller interacts with the model per any changes made within the View (HomeKit). For example, in the ThermostatView, there are 2 controllers, one for the fan and one for the thermostat settings. Why did I make them private within the View Class? I did this to “encapsulate and hide” specific attributes from other non-related classes. This means that the Model, View, and Controller are cohesive and only share what they need to share but not to other un-related classes / objects. 
+
+---
+## Libraries
+lib_deps =
+     elapsedMillis
+     miwagner/ESP32CAN@^0.0.1
+     homespan/HomeSpan@^1.9.1
+---
+## Archive
+Archive has all of the original code from Randy Ubillos. I created this so that I had ease of access to the original code.
+
+---
+## Main
+The main.cpp is located directly under the src directory tree. It manages the initialization and start of the code.
+
+---
+## Base
+The base directory maintains any global constants that all classes may need. In addition, there are two classes, CoachESP32 and CoachWifi. CoachESP32 controls the ESP32 board and communicates with it. The CoachWifi controls access to the Wifi of the Coach to communicate with Apple HomeKit’s hub, one or more Apple TVs. WifiCreds is a placeholder, this will need to be productized for the average user so that it does not need to be re-compiled every time and in my opinion It should be encrypted somehow.
+
+---
+## Class Hierarchy
+This is a general class hierarchy, meaning Controllable and Sensors are specific devices within the directory structure. Controllable devices include switches, sliders, thermostats, etc. Sensors include power, tanks, and the like. 
+DeviceView is a generic term for each View into a specific device. It is the translator of messages to/from HomeKit via the library HomeSpan. In general, when updates occur from HomeKit for controllables, it will translate the message and use the controller to update the model via the ESP32CAN library. Some of the earlier MVC models, like WaterPump, I wrote use update without the controller, that’s a flaw I intended to come back and fix. Sensors do not have a controller since they don’t control anything, they just read values.
+
+NOTE: Since HomeKit does NOT have a unit for volume,  voltage, current or percentage, I use temperature in Fahrenheit to represent those values.
+![RV-Bridge Hierarchy](/images/Class Hierarchy.png)
+
+---
+## Packets
+There are several files in the Packet directory, including:
+DGN.h - this contains all the DGN’s defined in the RVC specification
+PacketKit.h, Packet.h and Packet.cpp - manages packets sent to the queue on the ESP32. This is also where you will find several print statements commented out where I was discovering what DGNs were communicating on the RVC bus.
+PacketQueue.h and PacketQueue.cpp - the packet queue code 
+Packets are referenced or used by models and controllers.
+
+---
+## Devices
+All devices are created during initialization by a singleton pattern class called DeviceFactory. There is code commented out that can read a configuration file for all the devices, but I never really tested it and used it. I would encourage the use so that this code is not recompiled for each coach model and year. The config file should be read for the devices and attributes needed. The device factory will create each device accordingly.
+
+### Generic Device
+GenericDevice is model base class and has much of the functionality that all devices use as well as the management of the views. 
+
+### SpanView
+SpanView is the base class for all views. Views are HomeKit displays of the specific device. If the device is controllable, then a controller will be embedded privately in the view. Note all devices are ‘friends’ to their views since the view would not exist without the device. Hence, they are cohesive.
+
+### Controllable
+All controllable devices (switches and HVAC devices) are located in this directory. 
+
+#### Switches
+Switches, including adjustable switches, are located in a sub directory, switches, under controllable. This includes:
+* WaterPump
+* DoorLock
+* DC_Switch
+* DC_DimmableSwitch
+* Awning: Awnings are timed since they don’t return a step value as they are extended or retracted.
+  They also need a safety switch to protect from accidentally extending while traveling. 
+* Shades: They are just like awnings.
+
+#### HVAC
+The HVAC devices included are:
+* Thermostat: manages and controls the temperature, heat/cool/off setting and the fan settings
+* FloorHeat: turns on the floor heat to a desired temperature setting
+
+### Sensors
+Sensors are devices that are NOT controlled. I chose not to control the Generator and some of the other devices simply for safety sake. Generator could easily be controlled if you choose to do so.
+Non-power sensors include:
+* ChassisMobility: detects whether the parking brake is on and if the transmission is in drive/reverse. This is defined as a motion sensor.
+* Tanks: tanks are reported in temperature as a percentage. As stated earlier, HomeKit does not have a percent or volume metric to report on. Tanks included are:
+   * Fresh Water
+   * Gray Tank
+   * Black Tank
+
+#### Power
+Power is a set of sensors to monitor batteries, inverters, a generator, and automatic transfer switches.
+Power devices have an inheritance that is set up to simplify the code; all power devices, except Battery, are inherited from PowerSensor. The following Power devices are available:
+* AutomaticTransferSwitch
+* Battery
+* Generator
+* Inverter
+---
+## Other Considerations
+In my coach, I’ve added the capability of including Ring devices into the HomeKit. Ring devices are not native to HomeKit, but can be added via a tool similar to my RV-Bridge, HOOBS or Homebridge.org . HOOBS can be found here:  https://www.hoobs.com
+I use a “HOOBS Box”, not the “HOOBS Pro”. However, I would also consider using a HOOBS MicroSD simply because you can use your own Raspberry PI solution and won’t necessarily be dependent on another vendor to provide the hardware. The options are there for you.
+HOOBS has a long list of potential plugins beyond Ring that can be implemented. 
+
+In addition, I use the EVE Home app for any automation, EVE Home is more sophisticated and includes the ability to perform conditional statements where HomeKit does not. In addition, EVE Home is a vendor for motion sensors, security devices, etc.
+
+Finally, I don’t use any RV based networking system like Winegard, I use Unifi’s Ubiquiti. If Ubiquiti was used, you could set up a firewall and link it to Starlink, use an 8 port POE switch, connect the HOOBS solution directly into the switch, and provide a wired connection to an AP on the ceiling and one in the basement for sensors. This would secure the Coach. Also, if clients wanted it, they could opt in to the Unifi Ubiquiti 5G Max which allows for dual sims and Starlink with a dual WAN on the Unifi Ubiquiti UCG-Max or UCG-Ultra. The UCG can be configured to be primary/secondary or load balanced.
+
+---
+## Randy's Original Readme
 
 ![RV-Bridge](/images/box_wire_scale.jpeg)
 
