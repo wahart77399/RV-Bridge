@@ -1,7 +1,8 @@
 #include "RVConstants.h"
 #ifdef HOME_KIT_2
-#define AWNNIG_VIEW_H
 #ifndef AWNING_VIEW_H
+#define AWNNIG_VIEW_H
+
 
 /*********************************************************************************
  *  MIT License

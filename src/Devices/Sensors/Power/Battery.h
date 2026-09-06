@@ -60,6 +60,10 @@ class Battery : public GenericDevice {
         uint8_t* getSource3Data(void) const { return source3Data; }
         uint8_t* getSource4Data(void) const { return source4Data; }
 
+        static inline uint32_t rd_le32(const uint8_t* p) {
+            return (uint32_t)p[0] | ((uint32_t)p[1] << 8) | ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
+        }
+
         void setDataFromSource(uint8_t* source, uint8_t* destination) {
             if ((source != nullptr) && (destination != nullptr)) {
                 for (int i = DC_SOURCE_PRIORITY_INDEX; i < (DC_SOURCE_CURRENT_LSB_2_INDEX + 1); i++)
@@ -84,10 +88,10 @@ class Battery : public GenericDevice {
         }
 
         // SOURCE 1 STATUS Data
-        const uint16_t directCurrentVoltage(void) const {
+        const float_t directCurrentVoltage(void) const {
             uint8_t* data = getSource1Data();
             uint16_t value = 0;
-            uint16_t result = 0;
+            float_t result = 0;
             if (data != nullptr) {
                 value = getLilEndian(data[DC_SOURCE_VOLTAGE_MSB_INDEX], data[DC_SOURCE_VOLTAGE_LSB_INDEX]);
                 if (value < VDC_MAX)
@@ -96,28 +100,17 @@ class Battery : public GenericDevice {
             return result;
         }
 
-        const uint32_t directCurrentAmperage(void) const {
+        const float directCurrentAmperage(void) const {
             uint8_t* data = getSource1Data();
-            uint32_t result = 0;
+            float result = 0.0f;
             uint32_t value = 0;
             if (data != nullptr) {
-                //uint8_t* result8 = (uint8_t* ) (&result);
-                uint32_t* data32 = (uint32_t* )&(data[DC_SOURCE_CURRENT_MSB_1_INDEX]);
-                // uint8_t*  tmp = (uint8_t* ) (&value); 
-
-                // printf("Battery::directCurrentAmperage d[4]=%8x, d[5]=%8x, d[6]=%8x, d[7]=%8x\n", data[4], data[5], data[6], data[7]);
-                // value = ((*data32 & 0xFF000000) >> 24) |
-                //          ((*data32 & 0x00FF0000) >> 8) |
-                //         ((*data32 & 0x0000FF00) << 8) |
-                //         ((*data32 & 0x000000FF) << 24);
-                // int32_t tmp2 = (int32_t) value;
-                // printf("Battery::directCurrentAmperage data32 = %d\n", *data32);
-                // result = (value - ADC_ZERO) * ADC_PRECISION
-                int32_t conversion = (*data32 - ADC_ZERO); // * ADC_PRECISION;
-                // printf("Battery::directCurrentAmperage value %d, conversion %d\n", *data32, conversion);
-                conversion = conversion * ADC_PRECISION;
-                // printf("Battery::directCurrentAmperage result %d\n", conversion);
-                result = conversion;
+                const uint8_t* cur = &data[DC_SOURCE_CURRENT_MSB_1_INDEX];
+                uint32_t raw = rd_le32(cur);
+                if (raw != 0xFFFFFFFFu) {
+                    result = (static_cast<float>(static_cast<int64_t>(raw) - static_cast<int64_t>(ADC_ZERO))) 
+                              * static_cast<float>(ADC_PRECISION);
+                }
             }
             return result;
         }
@@ -190,8 +183,10 @@ class Battery : public GenericDevice {
             uint8_t* data = getSource3Data();
             uint16_t result = OUT_OF_RANGE_DATA;
             if (data != nullptr) {
-                result = convFromTempC(getLilEndian(data[DC_SOURCE_CAP_REMAINS_MSB_INDEX], data[DC_SOURCE_CAP_REMAINS_LSB_INDEX]));
+                result = /* convFromTempC( */ getLilEndian(data[DC_SOURCE_CAP_REMAINS_MSB_INDEX], data[DC_SOURCE_CAP_REMAINS_LSB_INDEX]); //);
                 // printf("Battery::remaining capacity = %d\n", result);
+                if (result == INVALID_AMP_HOURS)
+                    result = OUT_OF_RANGE_DATA;
             } else {
                 printf("Battery::remaining capacity data is not valid\n");
             }

@@ -55,13 +55,7 @@ class Awning : public GenericDevice {
         friend class AwningView;
 
         // status information
-        /*
-        const boolean isExtending(void) const {
-            // boolean extending = false;
-            boolean extending = (motion == EXTENDING);
-            return extending;
-        }
-        */
+
         // command 
         void  extend(uint8_t percent = AWNING_MAX_PERCENT) {
             uint8_t* rawData = getCommandData();
@@ -86,18 +80,7 @@ class Awning : public GenericDevice {
                 executeCommand(AWNING_COMMAND, rawData);
             }
         }
-        // status information
-        /*
-        const uint8_t extendedAmount(void) const {
-            uint8_t result = 0;
-            uint8_t* data = getCurrentData();
-            if (data != nullptr) {
-                uint8_t tmp = data[AWNING_STATUS_POSITION_INDEX] * AWNING_PERCENT_PRECISION;
-                result = (tmp > AWNING_MAX_PERCENT) ? AWNING_MAX_PERCENT : tmp;
-            }
-            return result;
-        }
-        */
+
         void clearExtendedAmount(void) { 
             uint8_t* data = getCurrentData();
             if (data != nullptr)
@@ -140,57 +123,7 @@ class Awning : public GenericDevice {
             }
         }
         boolean isExtended(void) const { return extended; }
-        // status information
-        /*
-        const uint8_t retractedAmount(void) const {
-            uint8_t result = 0;
-            uint8_t* data = getCurrentData();
-            if (data != nullptr) {
-                uint8_t tmp = data[AWNING_STATUS_POSITION_INDEX] * AWNING_PERCENT_PRECISION;
-                result = (tmp > AWNING_MAX_PERCENT) ? AWNING_MIN_PERCENT : (AWNING_MAX_PERCENT - tmp);
-            }
-            return result;
-        }
 
-        // status information
-        const boolean isRetracting(void) const {
-            boolean retracting = (motion == RETRACTING); // = false;
-            return retracting;
-        }
-        // status information
-        const boolean isStopped(void) const {
-            boolean stopped = (motion == NO_MOTION); // false;
-            return stopped;
-        }
-        // status information
-        const boolean isExtended(void) const {  
-            boolean extended = false;
-            uint8_t* data = getCurrentData();
-            if (data != nullptr) {
-                extended = (data[AWNING_STATUS_POSITION_INDEX] >= (AWNING_MIN_PERCENT));
-            }
-            return extended;
-
-        }
-        // status information
-        const boolean isRetracted(void) const {
-            boolean retracted = false;
-            uint8_t* data = getCurrentData();
-            if (data != nullptr) {
-                retracted = (data[AWNING_STATUS_POSITION_INDEX] <= (AWNING_MIN_PERCENT));
-            }
-            return retracted;
-        }
-        // status information
-        const boolean isInMotion(void) const {
-            boolean inMotion = false;
-            uint8_t* data = getCurrentData();
-            if (data != nullptr) {
-                inMotion = (data[AWNING_STATUS_MOTION_INDEX] != NO_MOTION);
-            }
-            return inMotion;
-        }
-        */
  
 
         // Add private members and methods specific to Awning here

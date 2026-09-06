@@ -85,7 +85,7 @@ bool DC_LightSwitchView::updateView(void) {
             index = mdl->index();;
             // toggle the switch state
             boolean on = mdl->isOn();
-            printf("DC_SwitchView::updateView - on=%d\n", on);
+            // printf("DC_SwitchView::updateView - on=%d\n", on);
             controller.turnOn(on);
             if (index == 0)
                 printf("DC_SwitchView::updateView - power = %d, controller.isOn() = %d\n", on, controller.isOn());

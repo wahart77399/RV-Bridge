@@ -82,6 +82,7 @@ const uint32_t ADC_MAX = 2221082;
 const uint16_t VDC_OFFSET = 0;
 const float_t ADC_OFFSET = 2000000;
 const uint32_t ADC_ZERO = 0x77359400;
+const uint16_t INVALID_AMP_HOURS = 0xffffu;
 
 #endif
 #endif // ifdef HOME_KIT_2

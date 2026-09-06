@@ -22,10 +22,10 @@ bool TanksView::updateView(void) {
         tank->setTankSize(tankSize);
         if (levelPercent < 100) {
             tank->setTankLevel(levelPercent);
-            tank->setTankFullState(FILLING_TANK); // set the tank full state to filling
+            // tank->setTankFullState(FILLING_TANK); // set the tank full state to filling
         } else {
             tank->setTankLevel(100); // set to 100% if the level is greater than 100%
-            tank->setTankFullState(FULL_TANK); // set the tank full state
+            // tank->setTankFullState(FULL_TANK); // set the tank full state
         }
         PacketQueue::clearLastPacketReceiveTime();
         updated = true; 

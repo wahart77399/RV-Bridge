@@ -122,7 +122,7 @@ class PowerSensor : public GenericDevice {
                     result = lastValidAmps;
                 } else {
                     result = lastValidAmps = 0; // out of range
-                    printf("PowerSensor::rmsCurrent - out of range amp reading for more than 5 mins - setting to 0\n");
+                    // printf("PowerSensor::rmsCurrent - out of range amp reading for more than 5 mins - setting to 0\n");
                 }
 
             } else {

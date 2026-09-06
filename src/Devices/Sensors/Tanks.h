@@ -7,6 +7,7 @@
 #include "Arduino.h"
 #include "GenericDevice.h"
 #include "TanksDefinition.h"
+#include <map>
 
 
 
@@ -30,6 +31,7 @@ class Tanks : public GenericDevice {
         static const uint8_t BLACK_WATER_SECOND_INSTANCE; //  = 17;
         static const uint8_t GRAY_WATER_SECOND_INSTANCE; //   = 18;
         static const uint8_t LPG_SECOND_INSTANCE; //          = 19;
+        static const std::map<uint8_t, std::string> tankNames; // = { {FRESH_WATER_INSTANCE, "Fresh Water"}, {BLACK_WATER_INSTANCE, "Black Water"}, {GRAY_WATER_INSTANCE, "Gray Water"}, {LPG_INSTANCE, "LPG"} }    ;
 
     private:
         friend class TanksView;

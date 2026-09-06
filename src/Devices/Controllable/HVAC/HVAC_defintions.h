@@ -41,5 +41,6 @@ typedef enum {
 
 constexpr uint8_t INITIAL_ROTATION_SPEED = 0;
 constexpr uint8_t DEFAULT_TEMP = 72;
+constexpr float  TEMP_STEP_C = 5.0f/9.0f; // 5 degrees F = 2.78 degrees C
 #endif
 // #endif

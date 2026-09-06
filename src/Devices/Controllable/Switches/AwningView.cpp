@@ -71,26 +71,6 @@ boolean AwningView::AwningController::update(void) {
 
     view->dontUpdateTheView(); 
     currentExtendedPosition = currentState->getVal<float>();
-    /*
-    if (out->updated() && (model != nullptr) && (ChassisMobility::isParked())) {
-        boolean outValue = out->getNewVal<boolean>();
-        printf("AwningView::AwningController::update outValue = %d\n", outValue);
-        if (outValue) {
-            // fully extend the awning
-            clearCommands();
-            readyToExtend();
-            targetExtendedPosition = AWNING_MIN_PERCENT;
-            travelTime = timeToFullyExtend;
-            printf("AwningView::AwningController::update fully extend, travelTime = %d\n", travelTime);
-        } else {
-            // fully retract the awning
-            clearCommands();
-            readyToRetract();
-            targetExtendedPosition = AWNING_MAX_PERCENT;
-            travelTime = timeToFullyRetract;
-            printf("AwningView::AwningController::update fully retract, travelTime = %d\n", travelTime);
-        }
-    } else */
     if ((targetState->updated()) && (model != nullptr) && (ChassisMobility::isParked())) {
         float targetValue = targetState->getNewVal<float>();
         updated = true;
@@ -128,16 +108,7 @@ boolean AwningView::AwningController::update(void) {
 }
 
 void AwningView::AwningController::loop(void) {
-    // if (model != nullptr) {
     uint8_t updatedPosition = currentState->getVal<uint8_t>();
-    /**
-    if((currentState->getVal() != targetState->getVal()) && (targetState->timeVal() > travelTime)){          // if 5 seconds have elapsed since the target-position was last modified...
-      currentState->setVal(targetState->getVal());                                        // ...set the current position to equal the target position
-    } else {
-
-    }
-    */
-
     if (!isReadyToStop() && (ChassisMobility::isParked())) {
         if (isReadyToExtend()) { // && (!isAwningInMotion())) {
             // start the extend
@@ -151,7 +122,7 @@ void AwningView::AwningController::loop(void) {
                     // printf("AwningView::AwningController::loop starting extend - not stopping so extend\n");
                     extendAwning(targetExtendedPosition);
                     startMoving();
-                    delay(30);
+                    delay(DELAY_TIME);
                 }
             } else {
                 // current position is (travel time - start time)/traveltime *100 + current x * 1+%
@@ -167,12 +138,9 @@ void AwningView::AwningController::loop(void) {
                 currentExtendedPosition = (static_cast<float>(updatedPosition));
                 // printf("AwningView::AwningController::loop extend, current position= %f, targetExtendedPosition= %f\n", currentExtendedPosition, targetExtendedPosition);
                 extendAwning(targetExtendedPosition);
-                delay(30);
+                delay(DELAY_TIME);
             }
-            // if (!isReadyToStop()) {
-                // model->extend(targetExtendedPosition);
-            //     extendAwning(targetExtendedPosition);
-            // }
+
             view->updateTheView();
         } else if ((isReadyToRetract())) { // && (!isAwningInMotion())) {
             // start the retract
@@ -185,7 +153,7 @@ void AwningView::AwningController::loop(void) {
                     // printf("AwningView::AwningController::loop starting retract - not stopping so retrat\n");
                     retractAwning(targetExtendedPosition);
                     startMoving();
-                    delay(30);
+                    delay(DELAY_TIME);
                 }
             } else {
                  // current position is (travel time - start time)/traveltime *100 + current x * 1+%
@@ -201,37 +169,22 @@ void AwningView::AwningController::loop(void) {
                 currentExtendedPosition = extendedPosition;
                 // printf("AwningView::AwningController::loop retract, current position= %f, targetExtendedPosition= %f\n", currentExtendedPosition, targetExtendedPosition);
                 retractAwning(targetExtendedPosition);
-                delay(30);
+                delay(DELAY_TIME);
             }
-            // if (!isReadyToStop()) {
-            //    printf("AwningView::AwningController::loop starting retract - not stopping so retract\n");
-                // model->retract(targetExtendedPosition); 
-            //    retractAwning(targetExtendedPosition);
-            // }
             view->updateTheView();
-
         } else if ((isReadyToStop())) { // && (isAwningInMotion())) {
             // stop the awning
             view->dontUpdateTheView(); 
-            // model->stop();
             // printf("AwningView::AwningController::loop stopping awning\n");
             stopMoving();
             clearCommands();
-            // currentExtendedPosition = static_cast<float>(AWNING_FULLY_RETRACTED_PCT) - targetExtendedPosition; // fully retracted = 100 in HomeKit but 0 in RCC, so we want to retract to amount from homekit. So if the amount is 100, we retract to 0, if the amount is 75, we retract to 25
-            // updatedPosition = static_cast<uint16_t>(static_cast<int16_t>(currentExtendedPosition));
-            //currentState->setVal(updatedPosition);
             // printf("AwningView::AwningController::loop stopping currentExtendedPosition = %f\n", currentExtendedPosition);
             view->updateTheView();
-            // out->setVal(isAwningExtended());
         } else {
             //if (currentExtendedPosition != targetExtendedPosition)
             // printf("AwningView::AwningController::loop else: currentExtendedPosition = %f\n", currentExtendedPosition);
-            // currentExtendedPosition = targetExtendedPosition;
-
-            // updatedPosition = static_cast<uint16_t>(static_cast<int16_t>(currentExtendedPosition));
-            // currentState->setVal(updatedPosition);
         }
-        // currentState->setVal(targetExtendedPosition);
+
     }
 } 
 
@@ -372,21 +325,6 @@ bool AwningView::updateView(void) {
                     extendRetractController->extending(false);
                 }
             }
-            //PacketQueue::clearLastPacketReceiveTime();
-            // controller->currentState
-            // if (mdl->isExtending() || mdl->isStopped()) {
-            //    uint8_t amtExtended = mdl->extendedAmount();
-                // controller->currentState->setVal(amtExtended); 
-            //    if (mdl->isStopped())
-            //        ; // controller->targetState->setVal(amtExtended);
-            // } else if (mdl->isRetracting()) {
-                //uint8_t amtRetracted = mdl->retractedAmount();
-                // controller->currentState->setVal(amtRetracted);
-            // } 
-
-            // PacketQueue::clearLastPacketReceiveTime();
-            // if (index == 1)
-                // printf("AwningView::updateView - locked = %d, spancharCurrentLockState->getVal() = %d\n", locked, controller.isLocked());
             updated = true;
         }        
     }

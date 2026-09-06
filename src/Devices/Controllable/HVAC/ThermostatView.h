@@ -114,7 +114,7 @@ class ThermostatView : public SpanView {
                     currentState = new Characteristic::CurrentHeatingCoolingState(heatingCoolingStateOff);
                     targetState = new Characteristic::TargetHeatingCoolingState(heatingCoolingStateOff);
                     temperatureDisplayUnits = new Characteristic::TemperatureDisplayUnits(homeKitTemperatureDisplayFahrenheit);
-                    targetTemp->setRange(tempCfromTempF(50), tempCfromTempF(95), degCfromDegF(1.0))->setVal(tempCfromTempF(68));
+                    targetTemp->setRange(tempCfromTempF(50), tempCfromTempF(95), TEMP_STEP_C)->setVal(tempCfromTempF(DEFAULT_TEMP)); // degCfromDegF(1.0))->setVal(tempCfromTempF(68));
 
                     // prep fan
 

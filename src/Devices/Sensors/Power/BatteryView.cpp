@@ -75,8 +75,8 @@ bool BatteryView::updateView(void) {
         //    batteryMeter->setBatteryLevel(0.0); // set to 0 if out of range
         //} 
             double voltage = mdl->directCurrentVoltage();
-            int32_t current = mdl->directCurrentAmperage();
-            double val = static_cast<double>(current);
+            double current = mdl->directCurrentAmperage();
+            // double val = static_cast<double>(current);
         // printf("BatteryView::updateView current = %d\n", current);
         // printf("BatteryView::updateView DCCurrent = %f\n", val);
             if ((voltage != OUT_OF_RANGE_DATA) && ((voltage >= ZERO_PERCENT_DEGREE_F) && (voltage <= TWO_FORTY_VOLT_DEGREE_F))) {
@@ -85,7 +85,7 @@ bool BatteryView::updateView(void) {
             }
             if ((current <= AAC_UPPER_LIMIT) && (current >= AAC_LOWER_LIMIT)) { // ) && ((current >= ZERO_PERCENT_DEGREE_F) && (current <= SIXTY_AMP_DEGREE_F))) 
             // printf("Battery::updateView DCCurrent = %f\n", val);
-                batteryMeter->setDCCurrent(val);
+                batteryMeter->setDCCurrent(current);
             }
             batteryMeter->setDCInstance((DC_SOURCE_INSTANCE_DEFINITION)instance);
         // batteryMeter->setDCCurrent(mdl->directCurrentAmperage());

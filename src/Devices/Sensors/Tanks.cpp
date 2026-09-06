@@ -24,6 +24,8 @@ const uint8_t Tanks::FRESH_WATER_SECOND_INSTANCE  = 16;
 const uint8_t Tanks::BLACK_WATER_SECOND_INSTANCE  = 17;
 const uint8_t Tanks::GRAY_WATER_SECOND_INSTANCE   = 18;
 const uint8_t Tanks::LPG_SECOND_INSTANCE          = 19;
+const std::map<uint8_t, std::string> Tanks::tankNames = { {FRESH_WATER_INSTANCE, "Fresh Tank"}, {BLACK_WATER_INSTANCE, "Black Tank"}, {GRAY_WATER_INSTANCE, "Gray Tank"}, {LPG_INSTANCE, "LPG Tank"} };    ;
+
 
 
 

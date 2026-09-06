@@ -277,15 +277,15 @@ void  DeviceFactory::create2022Essex4551Devices() {
 #ifdef HOME_KIT_2
     Tanks* tank = new Tanks(250, Tanks::FRESH_WATER_INSTANCE); 
     DGN2DeviceMap[TANK_STATUS][Tanks::FRESH_WATER_INSTANCE] = tank;
-    TanksView::createTanksView((GenericDevice* )tank, "Fresh Water");  
+    TanksView::createTanksView((GenericDevice* )tank, Tanks::tankNames.at(Tanks::FRESH_WATER_INSTANCE).c_str());  
 
     tank = new Tanks(250, Tanks::GRAY_WATER_INSTANCE); 
     DGN2DeviceMap[TANK_STATUS][Tanks::GRAY_WATER_INSTANCE] = tank;
-    TanksView::createTanksView((GenericDevice* )tank, "Gray Water");  
+    TanksView::createTanksView((GenericDevice* )tank, Tanks::tankNames.at(Tanks::GRAY_WATER_INSTANCE).c_str());  
 
     tank = new Tanks(250, Tanks::BLACK_WATER_INSTANCE); 
     DGN2DeviceMap[TANK_STATUS][Tanks::BLACK_WATER_INSTANCE] = tank;
-    TanksView::createTanksView((GenericDevice* )tank, "Black Water");  
+    TanksView::createTanksView((GenericDevice* )tank, Tanks::tankNames.at(Tanks::BLACK_WATER_INSTANCE).c_str());  
 #endif 
 
     // Roof Fans -- SilverLeaf does not expose the roof fans 

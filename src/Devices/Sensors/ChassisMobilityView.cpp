@@ -13,7 +13,7 @@ bool ChassisMobilityView::updateView(void) {
     if ((mdl != nullptr) && (chassisMobilitySensor != nullptr))  {
         // uint8_t* rawData = mdl->getCurrentData();
         MOTION_STATE motion = (mdl->isParked()) ? NOT_IN_MOTION : IN_MOTION;
-        printf("ChassisMobility::updateView Motion State = %d\n", motion);
+        // printf("ChassisMobility::updateView Motion State = %d\n", motion);
         chassisMobilitySensor->detected(motion);
         updated = true; 
     }
