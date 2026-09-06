@@ -52,6 +52,7 @@ void GenericDevice::updateViews() {
     // get iterator and go thru each SpanView and update.
     //printf("GenericDevice::updateViews called\n");
     if (!isViewsEmpty()) {
+        /* 
         std::list<SpanView* >::iterator iter ;
         do { // using a do-while loop to ensure we always enter the loop at least once
             iter = getViews();
@@ -59,6 +60,12 @@ void GenericDevice::updateViews() {
                 (*iter)->updateView();
             ++iter;
         } while (!isLastView(iter)); // Ensure we have a valid iterator
+        */
+       for (SpanView* v : views) {
+            if (v != nullptr) {
+                v->updateView();
+            }
+        }
     }
     // for (iter=getViews(); !isLastView(iter); ++iter) {
     //     (*iter)->updateView();
@@ -78,7 +85,7 @@ void GenericDevice::deleteViews() { // must delete owned memory
      for (SpanView* v : views) {
         if (v != nullptr) {
             delete v; // Delete the SpanView
-            v = nullptr; // Set the pointer to nullptr after deletion
+            // v = nullptr; // Set the pointer to nullptr after deletion
         }
      }
      views.clear();

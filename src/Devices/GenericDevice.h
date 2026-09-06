@@ -167,13 +167,16 @@ class GenericDevice {
                 // ********************** WARNING ****************************************************************
                 // this wont work, it will alocate the size of the pointer - I believe it needs to be 8 bytes long
                 currentData = new uint8_t[DATA_SIZE]; // new uint8_t[sizeof(uint8_t) * 8];
-                memcpy(currentData, data, sizeof(data));
+                memcpy(currentData, data, DATA_SIZE); // sizeof(data));
             }  
         }
 
         // assign operator
         GenericDevice& operator=(const GenericDevice& orig) {
             if (this != &orig) {
+                if (currentData) {
+                    delete[] currentData; // delete old data
+                }
                 currentData = nullptr; // Clear existing data
                 if (orig.currentData) {
                     // ********************** WARNING ****************************************************************
