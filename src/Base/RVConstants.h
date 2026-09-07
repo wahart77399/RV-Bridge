@@ -50,6 +50,7 @@ constexpr uint8_t ONE_TWENTY_VOLT_DEGREE_F = 120;
 constexpr uint8_t TWO_FORTY_VOLT_DEGREE_F = 240;
 constexpr uint8_t MAX_RVC_PERCENT = 250;
 constexpr float_t RVC_PERCENT_PRECISION = 0.5;
+constexpr uint8_t DELAY_TIME = 30; 
 
 constexpr double  tempCOffset = -273.0;
 constexpr double  tempCScale = 0.03125;
