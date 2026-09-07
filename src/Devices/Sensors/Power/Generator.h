@@ -8,7 +8,7 @@
 #include "PowerDefinition.h"
 #include "PowerSensor.h"
 
-typedef enum { // OUTPUT INSTANCES see section 6.18.2
+enum class GeneratorInstance : uint8_t { // OUTPUT INSTANCES see section 6.18.2
     GENERATOR_INSTANCE_0_INVALID  = 0x00,
     GENERATOR_INSTANCE_1          = 0x01,  // 0000 0001
     GENERATOR_INSTANCE_2          = 0x02,  // 0000 0010
@@ -28,12 +28,16 @@ typedef enum { // OUTPUT INSTANCES see section 6.18.2
 
     GENERATOR_LINE_1              = 0x10,  // 0001 0000
     GENERATOR_LINE_2              = 0x20   // 0010 0000
-} GENERATOR_STATUS_BYTE_0_DEFINITION;
+};
+
+enum class GeneratorLine : uint8_t {
+    Unknown, Line1, Line2
+};
 
 
 // GENERATOR is only (for now) a sensor, not a controller where we can start/stop it
 // Initially, we are only going to monitor line output of generator, but we may add status of the generator in general at a later point
-class Generator : PowerSensor {
+class Generator : public PowerSensor {
     public: 
 
         static const uint8_t GENERATOR_BYTE_0             = 0; 
@@ -44,25 +48,36 @@ class Generator : PowerSensor {
         static const uint8_t GENERATOR_LINE_2_OUTPUT      = 2;
 
     private:
+        uint8_t line1Data[DATA_SIZE]; // data specific to line 1 of the generator
+        uint8_t line2Data[DATA_SIZE]; // data specific to line 2 of
+
+        
         friend class GeneratorView;
-        const uint8_t line(void) const {
-            uint8_t result = GENERATOR_LINE_INVALID;
+        GeneratorLine line(void) const {
+            GeneratorLine result = GeneratorLine::Unknown;
             uint8_t* rawData = getCurrentData();
             // printf("Generator::line: rawData[0]=0x%02X\n", rawData[GENERATOR_BYTE_0]);
             // printf("Generator::line: rawData[0] & GENERATOR_OUTPUT_INDEX_MASK=0x%02X\n", rawData[GENERATOR_BYTE_0] & GENERATOR_OUTPUT_INDEX_MASK);
             // printf("Generator::line: rawData[0] & GENERATOR_LINE_MASK=0x%02X\n", rawData[GENERATOR_BYTE_0] & GENERATOR_LINE_MASK);
             if (rawData != nullptr) {
-                uint8_t tmp = rawData[GENERATOR_BYTE_0] & GENERATOR_LINE_MASK;
-                //printf("Generator::line: tmp=0x%02X\n", tmp);
-                if (tmp == GENERATOR_LINE_1)
-                    result = GENERATOR_LINE_1_OUTPUT;
-                else if (tmp == GENERATOR_LINE_2)
-                    result = GENERATOR_LINE_2_OUTPUT;
+                uint8_t theLine = rawData[GENERATOR_BYTE_0] & GENERATOR_LINE_MASK;
+                printf("Generator::line: theLine=0x%02X\n", theLine);
+                switch (rawData[GENERATOR_BYTE_0] & GENERATOR_LINE_MASK) {
+                    case static_cast<uint8_t>(GeneratorInstance::GENERATOR_LINE_1):
+                        result = GeneratorLine::Line1;
+                        break;
+                    case static_cast<uint8_t>(GeneratorInstance::GENERATOR_LINE_2):
+                        result = GeneratorLine::Line2;
+                        break;
+                    default: // invalid output instance
+                        break;
+                }
             }
             return result;
         }
+
     protected:
-        
+        void setData(RVC_DGN dgn, uint8_t* data);
         // virtual CAN_frame_t* buildCommand(RVC_DGN dgn); // do nothing - no commands will be sent to the GENERATOR - we listen only
 
     public:

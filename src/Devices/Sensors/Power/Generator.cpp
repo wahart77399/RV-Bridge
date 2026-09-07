@@ -8,6 +8,13 @@
 #include "Generator.h"
 #include "PacketQueue.h"
 
+void Generator::setData(RVC_DGN dgn, uint8_t* data) {
+    if (data != nullptr) {
+        uint8_t lineBits = data[0] & GENERATOR_LINE_MASK;
+        uint8_t* dest = (lineBits == static_cast<uint8_t>(GeneratorInstance::GENERATOR_LINE_2)) ? line2Data : line1Data;
+        memcpy(dest, data, 8);
+    }
+}
 
 boolean Generator::executeCommand(RVC_DGN dgn, const uint8_t* data, uint8_t sAddress) {
     // printf("Generator::executeCommand called with dgn=%#x\n", dgn);

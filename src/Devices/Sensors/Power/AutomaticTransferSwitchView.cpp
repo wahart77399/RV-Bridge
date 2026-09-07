@@ -11,13 +11,13 @@ boolean                                AutomaticTransferSwitchView::mapsInitiali
 
 void AutomaticTransferSwitchView::initialize(void) {
     if (!mapsInitialized) {
-        ioTypeMap[ATS_INPUT_TYPE] = "Input";
-        ioTypeMap[ATS_OUTPUT_TYPE] = "Output";
-        legMap[ATS_LEG_1_TYPE] = "Leg 1";
-        legMap[ATS_LEG_2_TYPE] = "Leg 2";
-        sourceMap[ATS_SOURCE_PRIMARY_TYPE] = "Primary";
-        sourceMap[ATS_SOURCE_SECONDARY_TYPE] = "Secondary";
-        sourceMap[ATS_SOURCE_NO_DATA_TYPE] = "No Data";
+        ioTypeMap[ATS_IO_Type::Input] = "Input";
+        ioTypeMap[ATS_IO_Type::Output] = "Output";
+        legMap[ATSLeg::Leg1] = "Leg 1";
+        legMap[ATSLeg::Leg2] = "Leg 2";
+        sourceMap[ATSSource::Primary] = "Primary";
+        sourceMap[ATSSource::Secondary] = "Secondary";
+        sourceMap[ATSSource::NoData] = "No Data";
         mapsInitialized = true;
     }
 }
@@ -29,7 +29,7 @@ bool AutomaticTransferSwitchView::updateView(void) {
     bool updated = false;
     uint8_t instance = indexOfModel();   
     uint8_t index = -1;
-    ATS_LEG_TYPE leg = ATS_LEG_1_TYPE; // default to leg 1
+    ATS_LEG_TYPE leg = ATSLeg::Leg1; // default to leg 1
     AutomaticTransferSwitch* mdl = (AutomaticTransferSwitch* )getModel();
     if ((mdl != nullptr)) { // && (voltageView != nullptr) && (currentView != nullptr))  {
         leg = mdl->getLeg();
@@ -88,16 +88,16 @@ void AutomaticTransferSwitchView::createAutomaticTransferSwitchView(AutomaticTra
 
     const char* append1 = " Voltage";
     const char* append2 = " Current";
-    size_t buffer_size = strlen(spanDevName) + strlen(append1) + strlen(AutomaticTransferSwitchView::legMap[ATS_LEG_1_TYPE].c_str())+ 1; 
+    size_t buffer_size = strlen(spanDevName) + strlen(append1) + strlen(AutomaticTransferSwitchView::legMap[ATSLeg::Leg1].c_str())+ 1; 
     char* voltName = new char[buffer_size];
     strcpy(voltName, spanDevName);
     strcat(voltName, append1);
-    strcat(voltName, AutomaticTransferSwitchView::legMap[ATS_LEG_1_TYPE].c_str());
-    buffer_size = strlen(spanDevName) + strlen(append2) + strlen(AutomaticTransferSwitchView::legMap[ATS_LEG_1_TYPE].c_str()) + 1;
+    strcat(voltName, AutomaticTransferSwitchView::legMap[ATSLeg::Leg1].c_str());
+    buffer_size = strlen(spanDevName) + strlen(append2) + strlen(AutomaticTransferSwitchView::legMap[ATSLeg::Leg1].c_str()) + 1;
     char* currentName = new char[buffer_size];
     strcpy(currentName, spanDevName);
     strcat(currentName, append2);
-    strcat(currentName, AutomaticTransferSwitchView::legMap[ATS_LEG_1_TYPE].c_str());
+    strcat(currentName, AutomaticTransferSwitchView::legMap[ATSLeg::Leg1].c_str());
 
 
     new SpanAccessory(); 
@@ -105,7 +105,7 @@ void AutomaticTransferSwitchView::createAutomaticTransferSwitchView(AutomaticTra
     new Characteristic::Identify();
     new Characteristic::Name(voltName);
     AutomaticTransferSwitchView::AutomaticTransferSwitchVoltage* vvw = new AutomaticTransferSwitchView::AutomaticTransferSwitchVoltage(tmp, (AutomaticTransferSwitch* )model, voltName);
-    tmp->setVoltageView(vvw, ATS_LEG_1_TYPE);
+    tmp->setVoltageView(vvw, ATSLeg::Leg1);
     delete [] voltName;
 
     new SpanAccessory(); 
@@ -113,35 +113,35 @@ void AutomaticTransferSwitchView::createAutomaticTransferSwitchView(AutomaticTra
     new Characteristic::Identify();
     new Characteristic::Name(currentName);
     AutomaticTransferSwitchView::AutomaticTransferSwitchCurrent* cvw = new AutomaticTransferSwitchView::AutomaticTransferSwitchCurrent(tmp, (AutomaticTransferSwitch* )model, currentName);
-    tmp->setCurrentView(cvw, ATS_LEG_1_TYPE);
+    tmp->setCurrentView(cvw, ATSLeg::Leg1);
     delete [] currentName;
     // tmp->updateView(); // update the view with the current data
-    buffer_size = strlen(spanDevName) + strlen(append1) + strlen(AutomaticTransferSwitchView::legMap[ATS_LEG_2_TYPE].c_str())+ 1; 
+    buffer_size = strlen(spanDevName) + strlen(append1) + strlen(AutomaticTransferSwitchView::legMap[ATSLeg::Leg2].c_str())+ 1; 
     voltName = new char[buffer_size];
     strcpy(voltName, spanDevName);
     strcat(voltName, append1);
-    strcat(voltName, AutomaticTransferSwitchView::legMap[ATS_LEG_2_TYPE].c_str());
+    strcat(voltName, AutomaticTransferSwitchView::legMap[ATSLeg::Leg2].c_str());
 
     new SpanAccessory(); 
     new Service::AccessoryInformation(); 
     new Characteristic::Identify();
     new Characteristic::Name(voltName);
     vvw = new AutomaticTransferSwitchView::AutomaticTransferSwitchVoltage(tmp, (AutomaticTransferSwitch* )model, voltName);
-    tmp->setVoltageView(vvw, ATS_LEG_2_TYPE);
+    tmp->setVoltageView(vvw, ATSLeg::Leg2);
     delete [] voltName;
 
-    buffer_size = strlen(spanDevName) + strlen(append2) + strlen(AutomaticTransferSwitchView::legMap[ATS_LEG_2_TYPE].c_str()) + 1;
+    buffer_size = strlen(spanDevName) + strlen(append2) + strlen(AutomaticTransferSwitchView::legMap[ATSLeg::Leg2].c_str()) + 1;
     currentName = new char[buffer_size];
     strcpy(currentName, spanDevName);
     strcat(currentName, append2);
-    strcat(currentName, AutomaticTransferSwitchView::legMap[ATS_LEG_2_TYPE].c_str());
+    strcat(currentName, AutomaticTransferSwitchView::legMap[ATSLeg::Leg2].c_str());
 
     new SpanAccessory(); 
     new Service::AccessoryInformation(); 
     new Characteristic::Identify();
     new Characteristic::Name(currentName);
     cvw = new AutomaticTransferSwitchView::AutomaticTransferSwitchCurrent(tmp, (AutomaticTransferSwitch* )model, currentName);
-    tmp->setCurrentView(cvw, ATS_LEG_2_TYPE);
+    tmp->setCurrentView(cvw, ATSLeg::Leg2);
     delete [] currentName;
 
 

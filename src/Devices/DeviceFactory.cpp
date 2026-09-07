@@ -241,7 +241,7 @@ void  DeviceFactory::create2022Essex4551Devices() {
 
     // Generator
     Generator* generator = new Generator(250, 1); 
-    DGN2DeviceMap[GENERATOR_AC_STATUS_1][1] = (PowerSensor* )generator;
+    DGN2DeviceMap[GENERATOR_AC_STATUS_1][static_cast<uint8_t>(GeneratorInstance::GENERATOR_INSTANCE_1)] = (PowerSensor* )generator;
     GeneratorView::createGeneratorView((GenericDevice* )generator, "Generator");
 
     // ATS
@@ -388,9 +388,9 @@ GenericDevice* DeviceFactory::getDeviceByData(RVC_DGN dgn, uint8_t* data) {
         } else if ((dgn == GENERATOR_AC_STATUS_1) || (dgn == GENERATOR_AC_STATUS_2) || (dgn == GENERATOR_AC_STATUS_3) || (dgn == GENERATOR_AC_STATUS_4)) {
             // another special case of BYTE 0 for the instance
 #ifdef HOME_KIT_2
-            uint8_t outputIndex = GENERATOR_INSTANCE_0_INVALID;
+            uint8_t outputIndex = static_cast<uint8_t>(GeneratorInstance::GENERATOR_INSTANCE_0_INVALID);
             uint8_t tmp = data[Generator::GENERATOR_BYTE_0] & Generator::GENERATOR_OUTPUT_INDEX_MASK;
-            if ((tmp > GENERATOR_INSTANCE_0_INVALID) && (tmp < GENERATOR_INSTANCE_11_INVALID)) {
+            if ((tmp > static_cast<uint8_t>(GeneratorInstance::GENERATOR_INSTANCE_0_INVALID)) && (tmp < static_cast<uint8_t>(GeneratorInstance::GENERATOR_INSTANCE_11_INVALID))) {
                 outputIndex = tmp;
                 result = DeviceFactory::DGN2DeviceMap[dgn][outputIndex];
                 // if (dgn == GENERATOR_AC_STATUS_1) {

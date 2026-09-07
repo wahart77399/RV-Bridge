@@ -26,23 +26,24 @@ bool GeneratorView::updateView(void) {
         boolean vFault = (mdl->isOpenNeutralFault() || mdl->isOpenGroundFault() || mdl->isReversePolarityFault());
         boolean aFault = mdl->isGroundCurrentFault();
 
-        uint8_t line = mdl->line();
+        GeneratorLine line = mdl->line();
         if ((leg1VoltMeter != nullptr) && (leg2VoltMeter != nullptr) &&
             (leg1AmpMeter != nullptr) && (leg2AmpMeter != nullptr)) {
-            if (line == Generator::GENERATOR_LINE_1_OUTPUT) {   
+            if (line == GeneratorLine::Line1) {   
                 // printf("GeneratorView::updateView: leg1 Voltage=%f, leg1 Current=%f\n", volt, amp);
                 leg1VoltMeter->setVoltage(volt);
                 leg1AmpMeter->setLegCurrent(amp);
-            } else if (line == Generator::GENERATOR_LINE_2_OUTPUT) {
+            } else if (line == GeneratorLine::Line2) {
                 // printf("GeneratorView::updateView: leg2 Voltage=%f, leg2 Current=%f\n", volt, amp);
                 leg2VoltMeter->setVoltage(volt);
                 leg2AmpMeter->setLegCurrent(amp);
             } else {
-                leg1VoltMeter->setVoltage(volt);
-                leg2VoltMeter->setVoltage(volt);
-                leg1AmpMeter->setLegCurrent(amp);
-                leg2AmpMeter->setLegCurrent(amp);
-                printf("GeneratorView::updateView invalid line: leg1 Voltage=%f, leg1 Current=%f, leg2 Voltage=%f, leg2 Current=%f\n", volt, amp, volt, amp);
+                // printf("GeneratorView::updateView invalid line: leg1 Voltage=%f, leg1 Current=%f, leg2 Voltage=%f, leg2 Current=%f\n", volt, amp, volt, amp);
+                // leg1VoltMeter->setVoltage(volt);
+                // leg2VoltMeter->setVoltage(volt);
+                // leg1AmpMeter->setLegCurrent(amp);
+                // leg2AmpMeter->setLegCurrent(amp);
+                printf("GeneratorView::updateView invalid line: %d\n", static_cast<int>(line));
             }
         }
         PacketQueue::clearLastPacketReceiveTime();

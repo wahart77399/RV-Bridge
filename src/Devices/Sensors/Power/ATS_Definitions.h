@@ -2,41 +2,58 @@
 #ifdef HOME_KIT_2
 #ifndef ATS_DEFINITIONS_H
 #define ATS_DEFINITIONS_H
-typedef enum {
-    ATS_INSTANCE_0_INVALID = 0x00,
-    ATS_INSTANCE_1          = 0x01,  // 0000 0001
-    ATS_INSTANCE_2          = 0x02,  // 0000 0010
-    ATS_INSTANCE_3          = 0x03,  // 0000 0011
-    ATS_INSTANCE_4          = 0x04,  // 0000 0100
-    ATS_INSTANCE_5          = 0x05,  // 0000 0101
-    ATS_INSTANCE_6          = 0x06,  // 0000 0110
-    ATS_INSTANCE_7_INVALID  = 0x07,  // 0000 0111
 
-    ATS_INPUT               = 0x00,
-    ATS_OUTPUT              = 0x08,  // 0000 1000
+// --- Raw bit masks for Byte 0 of ATS_AC_STATUS_* ---
+static const uint8_t ATS_INSTANCE_MASK = 0x07;  // bits 0-2
+static const uint8_t ATS_IOTYPE_MASK   = 0x08;  // bit 3
+static const uint8_t ATS_SOURCE_MASK   = 0x70;  // bits 4-6
+static const uint8_t ATS_LEG_MASK      = 0x80;  // bit 7
 
-    ATS_SOURCE_PRIMARY      = 0x00,
-    ATS_SOURCE_SECONDARY    = 0x10,  // 0001 0000
-    ATS_SOURCE_NO_DATA      = 0x70,  // 0111 0000
+static const uint8_t ATS_IOTYPE_SHIFT  = 3;
+static const uint8_t ATS_SOURCE_SHIFT  = 4;
+static const uint8_t ATS_LEG_SHIFT     = 7;
 
-    ATS_LEG_1               = 0x00,
-    ATS_LEG_2               = 0x80   // 1000 0000
-} ATS_STATUS_BYTE_0_DEFINITION;
+// Normalized logical values (after mask + shift)
+enum class ATSInstance : uint8_t {
+    Invalid0 = 0,
+    Inst1 = 1,
+    Inst2 = 2,
+    Inst3 = 3,
+    Inst4 = 4,
+    Inst5 = 5,
+    Inst6 = 6,
+    Invalid7 = 7
+};
 
-typedef enum {
-    ATS_INPUT_TYPE = ATS_INPUT,
-    ATS_OUTPUT_TYPE = ATS_OUTPUT
-} ATS_IO_TYPE;
 
-typedef enum {
-    ATS_SOURCE_PRIMARY_TYPE = ATS_SOURCE_PRIMARY,
-    ATS_SOURCE_SECONDARY_TYPE = ATS_SOURCE_SECONDARY,
-    ATS_SOURCE_NO_DATA_TYPE = ATS_SOURCE_NO_DATA 
-} ATS_SOURCE_TYPE;
+enum class ATS_IO_Type : uint8_t {
+    Input  = 0,  // bit3 = 0
+    Output = 1   // bit3 = 1
+};
 
-typedef enum {
-    ATS_LEG_1_TYPE = 0,
-    ATS_LEG_2_TYPE = 1
-} ATS_LEG_TYPE;
+
+enum class ATSSource : uint8_t {
+    Primary   = 0,  // bits4-6 = 000
+    Secondary = 1,  // bits4-6 = 001  (0x10 >> 4)
+    // 2..6 reserved / vendor
+    NoData    = 7   // bits4-6 = 111  (0x70 >> 4)
+};
+
+
+enum class ATSLeg : uint8_t {
+    Leg1 = 0,  // bit7 = 0
+    Leg2 = 1   // bit7 = 1
+};
+
+
+
+// Keep old names as aliases if other files still use them
+using ATS_IO_TYPE     = ATS_IO_Type;
+using ATS_SOURCE_TYPE = ATSSource;
+using ATS_LEG_TYPE    = ATSLeg;
+
+static const uint8_t ATS_INSTANCE_0_INVALID = 0;
+static const uint8_t ATS_INSTANCE_7_INVALID = 7;
+
 #endif
 #endif

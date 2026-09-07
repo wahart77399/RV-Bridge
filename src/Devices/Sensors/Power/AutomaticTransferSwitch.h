@@ -50,38 +50,51 @@ class AutomaticTransferSwitch : public PowerSensor {
     private:
         friend class AutomaticTransferSwitchView;
 
-        uint8_t getInstance(void) const {
-            uint8_t* rawData = getCurrentData();
-            uint8_t result = ATS_INSTANCE_0_INVALID; // default to invalid
-            if (rawData != nullptr) {
-                result = rawData[ATS_BYTE_0] & ATS_STATUS_INDEX_MASK; // get the instance index
+        static uint8_t byte0(const uint8_t* raw) {
+            uint8_t result = 0;
+            if (raw != nullptr) {
+                result = raw[ATS_BYTE_0];
             }
             return result;
         }
 
+        uint8_t getInstance(void) const {
+            uint8_t* rawData = getCurrentData();
+            uint8_t result = ATS_INSTANCE_0_INVALID; // default to invalid
+            if (rawData != nullptr) {
+                result = static_cast<uint8_t> (byte0(rawData) & ATS_INSTANCE_MASK);// rawData[ATS_BYTE_0] & ATS_STATUS_INDEX_MASK; // get the instance index
+            }
+            return result;
+        }
+
+        bool isInstanceValid(void) const {
+            uint8_t instance = getInstance();
+            return (instance > ATS_INSTANCE_0_INVALID) && (instance < ATS_INSTANCE_7_INVALID);
+        }
+
         ATS_IO_TYPE getIOType(void) const {
             uint8_t* rawData = getCurrentData();
-            ATS_IO_TYPE result = ATS_INPUT_TYPE; // default to input
+            ATS_IO_TYPE result = ATS_IO_Type::Input; // default to input
             if (rawData != nullptr) {
-                result = (ATS_IO_TYPE) (rawData[ATS_BYTE_0] & ATS_STATUS_IOTYPE_MASK); // get the IO type
+                result = static_cast<ATS_IO_TYPE> ((byte0(rawData) & ATS_IOTYPE_MASK) >> ATS_IOTYPE_SHIFT); // get the IO type
             }
             return result;
         }
 
         ATS_SOURCE_TYPE getSource(void) const {
             uint8_t* rawData = getCurrentData();
-            ATS_SOURCE_TYPE result = ATS_SOURCE_PRIMARY_TYPE; // default to primary source 
+            ATS_SOURCE_TYPE result = ATSSource::NoData; // default to primary source 
             if (rawData != nullptr) {
-                result = (ATS_SOURCE_TYPE) ((rawData[ATS_BYTE_0] & ATS_STATUS_SOURCE_MASK) >> 4); // get the source type
+                result = static_cast<ATS_SOURCE_TYPE> ((byte0(rawData) & ATS_SOURCE_MASK) >> ATS_SOURCE_SHIFT); // get the source type
             }
             return result;
         }   
 
         ATS_LEG_TYPE getLeg(void) const {
             uint8_t* rawData = getCurrentData();
-            ATS_LEG_TYPE result = ATS_LEG_1_TYPE; // default to leg 1
+            ATS_LEG_TYPE result = ATSLeg::Leg1; // default to leg 1
             if (rawData != nullptr) {
-                result = (ATS_LEG_TYPE) ((rawData[ATS_BYTE_0] & ATS_STATUS_LEG_MASK) >> 7); // get the leg type
+                result = static_cast<ATS_LEG_TYPE> ((byte0(rawData) & ATS_LEG_MASK) >> ATS_LEG_SHIFT); // get the leg type
             }
             return result;
         }

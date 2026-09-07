@@ -347,7 +347,7 @@ class Battery : public GenericDevice {
         }
 
 
-        Battery(uint8_t* data) : GenericDevice(data) {
+        Battery(uint8_t* data) : GenericDevice(data), source2Data(nullptr), source3Data(nullptr), source4Data(nullptr) {
             // Constructor with parameters implementation
         }
 
