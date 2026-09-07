@@ -112,8 +112,8 @@ class PowerSensor : public GenericDevice {
             return result;
         }
 
-        uint16_t getACPointValue(AC_POINT_DATA_INDECES msbIndex, AC_POINT_DATA_INDECES lsbIndex) const {
-            uint8_t* rawData = getCurrentData();
+        uint16_t getACPointValue(uint8_t* rawData, AC_POINT_DATA_INDECES msbIndex, AC_POINT_DATA_INDECES lsbIndex) const {
+            // uint8_t* rawData = getCurrentData();
             uint16_t result = BAD_DATA;
             if ((rawData != nullptr) && ((msbIndex > AC_POINT_INSTANCE_INDEX) && (lsbIndex < AC_POINT_FAULTS_INDEX) && ((lsbIndex - msbIndex) == 1))) {
                 // printf("PowerSensor::getACPointValue - passed test\n");
@@ -132,7 +132,7 @@ class PowerSensor : public GenericDevice {
 
         // power values
         virtual uint16_t rmsVoltage(uint8_t line=0) { 
-            uint16_t value = getACPointValue(AC_POINT_RMS_VOLTAGE_MSB_INDEX, AC_POINT_RMS_VOLTAGE_LSB_INDEX);
+            uint16_t value = getACPointValue(getCurrentData(), AC_POINT_RMS_VOLTAGE_MSB_INDEX, AC_POINT_RMS_VOLTAGE_LSB_INDEX);
             uint16_t result = 0;
             if (value <= VAC_MAX) {
 
@@ -142,13 +142,13 @@ class PowerSensor : public GenericDevice {
         }
 
         virtual uint16_t rmsCurrent(uint8_t line=0) { 
-            uint16_t value = getACPointValue(AC_POINT_RMS_CURRENT_MSB_INDEX, AC_POINT_RMS_CURRENT_LSB_INDEX);
+            uint16_t value = getACPointValue(getCurrentData(), AC_POINT_RMS_CURRENT_MSB_INDEX, AC_POINT_RMS_CURRENT_LSB_INDEX);
             // printf("PowerSensor::rmsCurrent value %d\n", value);
             float tmp = static_cast<float>((value - AAC_ZERO) * AAC_PRECISION);
             return validateAmps(line, tmp);
         }
             
-        inline uint16_t frequency(uint8_t line=0) const  { return getACPointValue(AC_POINT_FREQUENCY_MSB_INDEX,   AC_POINT_FREQUENCY_LSB_INDEX); }
+        inline uint16_t frequency(uint8_t line=0) const  { return getACPointValue(getCurrentData(), AC_POINT_FREQUENCY_MSB_INDEX,   AC_POINT_FREQUENCY_LSB_INDEX); }
 
         // FAULTS
         boolean  isOpenGroundFault(uint8_t line=0) const {

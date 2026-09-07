@@ -81,18 +81,19 @@ class Generator : public PowerSensor {
         // virtual CAN_frame_t* buildCommand(RVC_DGN dgn); // do nothing - no commands will be sent to the GENERATOR - we listen only
         uint16_t rmsVoltage(uint8_t line) override {
             uint16_t result = 0;
-            const uint8_t* rawData = (line == static_cast<uint8_t>(GeneratorLine::Line2)) ? line2Data : line1Data;
+            uint8_t* rawData = (line == static_cast<uint8_t>(GeneratorLine::Line2)) ? line2Data : line1Data;
             if (rawData != nullptr) {
-                uint16_t value = getACPointValue(AC_POINT_RMS_VOLTAGE_MSB_INDEX, AC_POINT_RMS_VOLTAGE_LSB_INDEX);
-                result = validateVolts(line, value);
+                uint16_t value = getACPointValue(rawData, AC_POINT_RMS_VOLTAGE_MSB_INDEX, AC_POINT_RMS_VOLTAGE_LSB_INDEX);
+                if (value <= VAC_MAX)
+                    result = validateVolts(line, (value - VAC_OFFSET) * VAC_PRECISION);
             }
             return result;
         }
         uint16_t rmsCurrent(uint8_t line) override {
             uint16_t result = 0;
-            const uint8_t* rawData = (line == static_cast<uint8_t>(GeneratorLine::Line2)) ? line2Data : line1Data;
+            uint8_t* rawData = (line == static_cast<uint8_t>(GeneratorLine::Line2)) ? line2Data : line1Data;
             if (rawData != nullptr) {
-                uint16_t value = getACPointValue(AC_POINT_RMS_CURRENT_MSB_INDEX, AC_POINT_RMS_CURRENT_LSB_INDEX);
+                uint16_t value = getACPointValue(rawData, AC_POINT_RMS_CURRENT_MSB_INDEX, AC_POINT_RMS_CURRENT_LSB_INDEX);
                 result = validateAmps(line, static_cast<float>((value - AAC_ZERO) * AAC_PRECISION));
             }
             return result;
@@ -102,17 +103,27 @@ class Generator : public PowerSensor {
 
         Generator() : PowerSensor() {
             // Constructor implementation
+            memset(line1Data, INVALID_DATA, DATA_SIZE);
+            memset(line2Data, INVALID_DATA, DATA_SIZE);
         }
 
         Generator(const Generator& orig) : PowerSensor(orig) {
             // Copy constructor implementation
+            memcpy(line1Data, orig.line1Data, DATA_SIZE);
+            memcpy(line2Data, orig.line2Data, DATA_SIZE);
         }
 
         Generator(uint8_t address, uint8_t index) : PowerSensor(address, index) { 
+
+            memset(line1Data, INVALID_DATA, DATA_SIZE);
+            memset(line2Data, INVALID_DATA, DATA_SIZE);
         }
 
         Generator(uint8_t* data) : PowerSensor(data) {
             // Constructor with parameters implementation
+
+            memset(line1Data, INVALID_DATA, DATA_SIZE);
+            memset(line2Data, INVALID_DATA, DATA_SIZE);
         }
 
         virtual ~Generator() {
