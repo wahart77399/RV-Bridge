@@ -13,6 +13,10 @@ void Generator::setData(RVC_DGN dgn, uint8_t* data) {
         uint8_t lineBits = data[0] & GENERATOR_LINE_MASK;
         uint8_t* dest = (lineBits == static_cast<uint8_t>(GeneratorInstance::GENERATOR_LINE_2)) ? line2Data : line1Data;
         memcpy(dest, data, 8);
+        uint8_t* rawData = getCurrentData();
+        if (rawData != nullptr) {
+            memcpy(rawData, data, DATA_SIZE);
+        }
     }
 }
 

@@ -14,12 +14,14 @@ bool GeneratorView::updateView(void) {
     Generator* mdl = (Generator* )getModel();
     if (mdl != nullptr)  {
         uint8_t* rawData = mdl->getCurrentData();
-        double volt = mdl->rmsVoltage();
+        double volt1 = mdl->rmsVoltage(static_cast<uint8_t>(GeneratorLine::Line1));
+        double volt2 = mdl->rmsVoltage(static_cast<uint8_t>(GeneratorLine::Line2));   
         // if (volt > 300.0) {
         //     volt = 125.0; 
         //    printf("GeneratorView::updateView - voltage was greater than 300, set it to 125\n");
         // }
-        double amp = mdl->rmsCurrent();
+        double amp1 = mdl->rmsCurrent(static_cast<uint8_t>(GeneratorLine::Line1));
+        double amp2 = mdl->rmsCurrent(static_cast<uint8_t>(GeneratorLine::Line2));
 
         //if (amp > 200.0)
         //     amp = 122.0;
@@ -31,12 +33,12 @@ bool GeneratorView::updateView(void) {
             (leg1AmpMeter != nullptr) && (leg2AmpMeter != nullptr)) {
             if (line == GeneratorLine::Line1) {   
                 // printf("GeneratorView::updateView: leg1 Voltage=%f, leg1 Current=%f\n", volt, amp);
-                leg1VoltMeter->setVoltage(volt);
-                leg1AmpMeter->setLegCurrent(amp);
+                leg1VoltMeter->setVoltage(volt1);
+                leg1AmpMeter->setLegCurrent(amp1);
             } else if (line == GeneratorLine::Line2) {
                 // printf("GeneratorView::updateView: leg2 Voltage=%f, leg2 Current=%f\n", volt, amp);
-                leg2VoltMeter->setVoltage(volt);
-                leg2AmpMeter->setLegCurrent(amp);
+                leg2VoltMeter->setVoltage(volt2);
+                leg2AmpMeter->setLegCurrent(amp2);
             } else {
                 // printf("GeneratorView::updateView invalid line: leg1 Voltage=%f, leg1 Current=%f, leg2 Voltage=%f, leg2 Current=%f\n", volt, amp, volt, amp);
                 // leg1VoltMeter->setVoltage(volt);

@@ -61,7 +61,7 @@ class Generator : public PowerSensor {
             // printf("Generator::line: rawData[0] & GENERATOR_LINE_MASK=0x%02X\n", rawData[GENERATOR_BYTE_0] & GENERATOR_LINE_MASK);
             if (rawData != nullptr) {
                 uint8_t theLine = rawData[GENERATOR_BYTE_0] & GENERATOR_LINE_MASK;
-                printf("Generator::line: theLine=0x%02X\n", theLine);
+                // printf("Generator::line: theLine=0x%02X\n", theLine);
                 switch (rawData[GENERATOR_BYTE_0] & GENERATOR_LINE_MASK) {
                     case static_cast<uint8_t>(GeneratorInstance::GENERATOR_LINE_1):
                         result = GeneratorLine::Line1;
@@ -79,6 +79,24 @@ class Generator : public PowerSensor {
     protected:
         void setData(RVC_DGN dgn, uint8_t* data);
         // virtual CAN_frame_t* buildCommand(RVC_DGN dgn); // do nothing - no commands will be sent to the GENERATOR - we listen only
+        uint16_t rmsVoltage(uint8_t line) override {
+            uint16_t result = 0;
+            const uint8_t* rawData = (line == static_cast<uint8_t>(GeneratorLine::Line2)) ? line2Data : line1Data;
+            if (rawData != nullptr) {
+                uint16_t value = getACPointValue(AC_POINT_RMS_VOLTAGE_MSB_INDEX, AC_POINT_RMS_VOLTAGE_LSB_INDEX);
+                result = validateVolts(line, value);
+            }
+            return result;
+        }
+        uint16_t rmsCurrent(uint8_t line) override {
+            uint16_t result = 0;
+            const uint8_t* rawData = (line == static_cast<uint8_t>(GeneratorLine::Line2)) ? line2Data : line1Data;
+            if (rawData != nullptr) {
+                uint16_t value = getACPointValue(AC_POINT_RMS_CURRENT_MSB_INDEX, AC_POINT_RMS_CURRENT_LSB_INDEX);
+                result = validateAmps(line, static_cast<float>((value - AAC_ZERO) * AAC_PRECISION));
+            }
+            return result;
+        }
 
     public:
 

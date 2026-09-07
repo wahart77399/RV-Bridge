@@ -61,14 +61,57 @@ const uint32_t MAX_READING_INTEVAL_MS = 300000; // 5 mins
 
 class PowerSensor : public GenericDevice {
     private:
-        uint16_t        lastValidVolts;
+        uint16_t        lastValidVolts[3];
         // uint16_t invalidVoltCount;
         elapsedMillis   voltReadingElapsedTime;
-        uint16_t        lastValidAmps;
+        uint16_t        lastValidAmps[3];
         // uint16_t invalidAmpCount;
         elapsedMillis   ampReadingElapsedTime;
 
     protected:
+        inline uint16_t validateVolts(uint8_t line, uint16_t volts) {
+            uint16_t result = volts;
+            float_t tmpVolts = static_cast<float>(volts);
+            // printf("PowerSensor::validateVolts line %d, volts %d\n", line, volts);
+            if (tmpVolts > ((VAC_MAX - VAC_OFFSET) * VAC_PRECISION)) {
+                // printf("PowerSensor::validateVolts - volts %d out of range for line %d\n", volts, line);
+                result = lastValidVolts[line];
+            } else if (volts == 0) {
+                // printf("PowerSensor::validateVolts - zero volt reading for line %d\n", line);
+                if (voltReadingElapsedTime < MAX_READING_INTEVAL_MS) {
+                    result = lastValidVolts[line];
+                } else {
+                    result = lastValidVolts[line] = 0; // volts are zero consistently
+                    // printf("PowerSensor::validateVolts - zero volt reading for more than 5 mins - setting to 0\n");
+                }
+            } else {
+                // printf("PowerSensor::validateVolts - valid volt reading for line %d, volts %d\n", line, volts);
+                lastValidVolts[line] = volts;
+                voltReadingElapsedTime = 0;
+            }
+            return result;
+        }
+
+        inline uint16_t validateAmps(uint8_t line, float_t amps) {
+            uint16_t result = static_cast<uint16_t>(static_cast<int16_t>(amps));
+            // printf("PowerSensor::validateAmps result %d\n", result);
+            // IF NOT!!!!!!! in range!!
+            if (!(amps >= AAC_LOWER_LIMIT && amps <= AAC_UPPER_LIMIT) || (amps == 0.0F)) {
+                if (ampReadingElapsedTime < MAX_READING_INTEVAL_MS) {
+                    // invalidAmpCount++;
+                    result = lastValidAmps[line];
+                } else {
+                    result = lastValidAmps[line] = 0; // out of range
+                    // printf("PowerSensor::rmsCurrent - out of range amp reading for more than 5 mins - setting to 0\n");
+                }
+
+            } else {
+                result = lastValidAmps[line] = static_cast<uint16_t>(static_cast<int16_t>(amps));
+                ampReadingElapsedTime = 0;
+            }
+            return result;
+        }
+
         uint16_t getACPointValue(AC_POINT_DATA_INDECES msbIndex, AC_POINT_DATA_INDECES lsbIndex) const {
             uint8_t* rawData = getCurrentData();
             uint16_t result = BAD_DATA;
@@ -88,54 +131,27 @@ class PowerSensor : public GenericDevice {
         friend class GeneratorView;
 
         // power values
-        inline uint16_t rmsVoltage(void) { 
+        virtual uint16_t rmsVoltage(uint8_t line=0) { 
             uint16_t value = getACPointValue(AC_POINT_RMS_VOLTAGE_MSB_INDEX, AC_POINT_RMS_VOLTAGE_LSB_INDEX);
             uint16_t result = 0;
             if (value <= VAC_MAX) {
-                uint16_t tmpLastValidVolts = (value - VAC_OFFSET) * VAC_PRECISION;
-                if ((tmpLastValidVolts > 0) && (tmpLastValidVolts <= ((VAC_MAX - VAC_OFFSET) * VAC_PRECISION))) { // valid voltage range
-                    result = lastValidVolts = tmpLastValidVolts;
-                    // invalidVoltCount = 0;
-                    voltReadingElapsedTime = 0;
-                } else if (tmpLastValidVolts == 0) { // zero volts is valid but we don't want to keep setting it to 0 if it is noise
-                    if (voltReadingElapsedTime < MAX_READING_INTEVAL_MS) {
-                        // invalidVoltCount++;
-                        result = lastValidVolts;
-                    } else {
-                        result = lastValidVolts = 0; // volts are zero consistently
-                        printf("PowerSensor::rmsVoltage - zero volt reading for more than 5 mins - setting to 0\n");
-                    }
-                }
+
+                result = validateVolts(line, (value - VAC_OFFSET) * VAC_PRECISION);
             } 
             return result;
         }
-        inline uint16_t rmsCurrent(void)  { 
-            uint16_t value = getACPointValue(AC_POINT_RMS_CURRENT_MSB_INDEX, AC_POINT_RMS_CURRENT_LSB_INDEX);
-            uint16_t result = 0;
-            // printf("PowerSensor::rmsCurrent value %d\n", value);
-            float tmp = (value - AAC_ZERO) * AAC_PRECISION;
-            // printf("PowerSensor::rmsCurrent result %d\n", result);
-            // IF NOT!!!!!!! in range!!
-            if (!(tmp >= AAC_LOWER_LIMIT && tmp <= AAC_UPPER_LIMIT) || (tmp == 0.0F)) {
-                if (ampReadingElapsedTime < MAX_READING_INTEVAL_MS) {
-                    // invalidAmpCount++;
-                    result = lastValidAmps;
-                } else {
-                    result = lastValidAmps = 0; // out of range
-                    // printf("PowerSensor::rmsCurrent - out of range amp reading for more than 5 mins - setting to 0\n");
-                }
 
-            } else {
-                result = lastValidAmps = static_cast<uint16_t>(static_cast<int16_t>(tmp));
-                ampReadingElapsedTime = 0;
-            }
-            return result;
+        virtual uint16_t rmsCurrent(uint8_t line=0) { 
+            uint16_t value = getACPointValue(AC_POINT_RMS_CURRENT_MSB_INDEX, AC_POINT_RMS_CURRENT_LSB_INDEX);
+            // printf("PowerSensor::rmsCurrent value %d\n", value);
+            float tmp = static_cast<float>((value - AAC_ZERO) * AAC_PRECISION);
+            return validateAmps(line, tmp);
         }
             
-        inline uint16_t frequency(void) const  { return getACPointValue(AC_POINT_FREQUENCY_MSB_INDEX,   AC_POINT_FREQUENCY_LSB_INDEX); }
+        inline uint16_t frequency(uint8_t line=0) const  { return getACPointValue(AC_POINT_FREQUENCY_MSB_INDEX,   AC_POINT_FREQUENCY_LSB_INDEX); }
 
         // FAULTS
-        boolean  isOpenGroundFault(void) const {
+        boolean  isOpenGroundFault(uint8_t line=0) const {
             boolean result = false;
             uint8_t* rawData = getCurrentData();
             if (rawData != nullptr) {
@@ -145,7 +161,7 @@ class PowerSensor : public GenericDevice {
             return result;
         }
 
-        boolean  isOpenNeutralFault(void) const {
+        boolean  isOpenNeutralFault(uint8_t line=0) const {
             boolean result = false;
             uint8_t* rawData = getCurrentData();
             if (rawData != nullptr) {
@@ -156,7 +172,7 @@ class PowerSensor : public GenericDevice {
         }
 
 
-        boolean  isReversePolarityFault(void) const {
+        boolean  isReversePolarityFault(uint8_t line=0) const {
             boolean result = false;
             uint8_t* rawData = getCurrentData();
             if (rawData != nullptr) {
@@ -167,7 +183,7 @@ class PowerSensor : public GenericDevice {
         }
 
 
-        boolean  isGroundCurrentFault(void) const {
+        boolean  isGroundCurrentFault(uint8_t line=0) const {
             boolean result = false;
             uint8_t* rawData = getCurrentData();
             if (rawData != nullptr) {
@@ -190,18 +206,18 @@ class PowerSensor : public GenericDevice {
         virtual CAN_frame_t* buildCommand(RVC_DGN dgn); // do nothing - no commands will be sent to the ATS - we listen only
 
     public:
-        PowerSensor() : GenericDevice(), lastValidVolts(0), /* invalidVoltCount(0), */ voltReadingElapsedTime(0), lastValidAmps(0), /* invalidAmpCount(0) */ ampReadingElapsedTime(0) {
+        PowerSensor() : GenericDevice(), lastValidVolts{0,0,0}, /* invalidVoltCount(0), */ voltReadingElapsedTime(0), lastValidAmps{0,0,0}, /* invalidAmpCount(0) */ ampReadingElapsedTime(0) {
             // Constructor implementation
         }
 
-        PowerSensor(const PowerSensor& orig) : GenericDevice(orig), lastValidVolts(0), /* invalidVoltCount(0), */ voltReadingElapsedTime(0), lastValidAmps(0), /* invalidAmpCount(0) */ ampReadingElapsedTime(0) {
+        PowerSensor(const PowerSensor& orig) : GenericDevice(orig), lastValidVolts{0,0,0}, /* invalidVoltCount(0), */ voltReadingElapsedTime(0), lastValidAmps{0,0,0}, /* invalidAmpCount(0) */ ampReadingElapsedTime(0) {
             // Copy constructor implementation
         }
 
-        PowerSensor(uint8_t address, uint8_t indx) : GenericDevice(address,indx), lastValidVolts(0), /* invalidVoltCount(0), */ voltReadingElapsedTime(0), lastValidAmps(0), /* invalidAmpCount(0) */ ampReadingElapsedTime(0) { 
+        PowerSensor(uint8_t address, uint8_t indx) : GenericDevice(address,indx), lastValidVolts{0,0,0}, /* invalidVoltCount(0), */ voltReadingElapsedTime(0), lastValidAmps{0,0,0}, /* invalidAmpCount(0) */ ampReadingElapsedTime(0) { 
         }
 
-        PowerSensor(uint8_t* data) : GenericDevice(data), lastValidVolts(0), /* invalidVoltCount(0), */ voltReadingElapsedTime(0), lastValidAmps(0), /* invalidAmpCount(0) */ ampReadingElapsedTime(0) {
+        PowerSensor(uint8_t* data) : GenericDevice(data), lastValidVolts{0,0,0}, /* invalidVoltCount(0), */ voltReadingElapsedTime(0), lastValidAmps{0,0,0}, /* invalidAmpCount(0) */ ampReadingElapsedTime(0) {
             // Constructor with parameters implementation
         }
 

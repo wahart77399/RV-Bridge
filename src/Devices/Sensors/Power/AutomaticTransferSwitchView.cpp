@@ -37,32 +37,22 @@ bool AutomaticTransferSwitchView::updateView(void) {
         if (voltageViewMap[leg] != nullptr && currentViewMap[leg] != nullptr) {  
             // printf("AutomaticTransferSwitchView::updateView updating view have mapped voltage and current leg\n");    
             uint8_t* rawData = mdl->getCurrentData();
-            uint16_t volt = mdl->rmsVoltage();
-            uint16_t amp = mdl->rmsCurrent();
+            uint16_t volt = mdl->rmsVoltage(static_cast<uint8_t>(leg));
+            uint16_t amp = mdl->rmsCurrent(static_cast<uint8_t>(leg));
             boolean vFault = (mdl->isOpenNeutralFault() || mdl->isOpenGroundFault() || mdl->isReversePolarityFault());
             boolean aFault = mdl->isGroundCurrentFault();
-        // double adjVolt = tempCfromTempF(volt);
-        // printf("AutomaticTransferSwitchView::updateView adjusted voltage = %f \n", adjVolt);
-        // if (adjVolt < 300.0)
+            //printf("AutomaticTransferSwitchView::updateView leg %d, rmsVoltage = %d, rmsCurrent = %d, voltageFault = %d, currentFault = %d \n",
+            //        leg, volt, amp, vFault, aFault);
             voltageViewMap[leg]->rmsVoltage(volt);
-        // else
-            // voltageView->rmsVoltage(-17.78); // if voltage is too high, set it to 0
             voltageViewMap[leg]->voltageFault(vFault);
             voltageViewMap[leg]->setIOType(mdl->getIOType());
             voltageViewMap[leg]->setLeg(leg);
             voltageViewMap[leg]->setSource(mdl->getSource());
-        // double adjAmp = tempCfromTempF(amp);
-        // printf("AutomaticTransferSwitchView::updateView adjusted current = %f \n", adjAmp);
-        // if (adjAmp < 100.0)
             currentViewMap[leg]->rmsCurrent(amp);
-        //else
-        //    currentView->rmsCurrent(-17.78); // if current is too high,
             currentViewMap[leg]->currentFault(aFault);
             currentViewMap[leg]->setIOType(mdl->getIOType());
             currentViewMap[leg]->setLeg(mdl->getLeg());
             currentViewMap[leg]->setSource(mdl->getSource());
-        // printf("AutomaticTransferSwitchView::updateView rmsVoltage = %d, voltageFault = %d, rmsCurrent = %d, currentFault = %d \n", 
-        //     volt, vFault, amp, aFault);
             PacketQueue::clearLastPacketReceiveTime();
             updated = true; 
         }
