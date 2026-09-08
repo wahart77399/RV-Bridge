@@ -246,10 +246,10 @@ class Inverter : public PowerSensor {
                         break;
                     case INVERTER_AC_STATUS_1:
                         rawData[0] = data[0]; // copy the instance index
-                        memcpy(iData[line][io].data(), data, DATA_SIZE); // copy the  AC status data
-                        for (uint8_t i = 0; i < 8; i++) {
-                            iData[line][io][i] = data[i]; // copy the  AC status data
-                        }
+                        memcpy(inverterData[line][io].data(), data, DATA_SIZE); // copy the  AC status data
+                         // for (uint8_t i = 0; i < 8; i++) {
+                         //    iData[line][io][i] = data[i]; // copy the  AC status data
+                         // }
                         break;
                     default:
                         // do nothing
