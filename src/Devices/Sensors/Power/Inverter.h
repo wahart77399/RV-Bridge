@@ -176,7 +176,21 @@ class Inverter : public PowerSensor {
 
             // power values
         virtual uint16_t rmsVoltage(uint8_t line, uint8_t io) { 
+            const INVERTER_LINE_TYPE ln = static_cast<INVERTER_LINE_TYPE>(line);
+            const INVERTER_IO_TYPE ioType = static_cast<INVERTER_IO_TYPE>(io);
             uint16_t result = 0;
+            auto lineIt = inverterData.find(ln);
+            if (lineIt != inverterData.end()) {
+                auto ioIt = lineIt->second.find(ioType);
+                if (ioIt != lineIt->second.end()) {
+                    uint16_t value = getACPointValue(ioIt->second.data(), AC_POINT_RMS_VOLTAGE_MSB_INDEX, AC_POINT_RMS_VOLTAGE_LSB_INDEX);
+                    if (value <= VAC_MAX) {
+                        result = validateVolts(line, (value - VAC_OFFSET) * VAC_PRECISION);
+                    }
+                }
+            }
+            return result;
+            /* 
             std::map<INVERTER_LINE_TYPE, std::map<INVERTER_IO_TYPE, std::array<uint8_t, DATA_SIZE>>> iData = getInverterData();
             if (!iData.empty()) {
                 uint16_t value = getACPointValue(iData[static_cast<INVERTER_LINE_TYPE>(line)][static_cast<INVERTER_IO_TYPE>(io)].data(), AC_POINT_RMS_VOLTAGE_MSB_INDEX, AC_POINT_RMS_VOLTAGE_LSB_INDEX);
@@ -187,10 +201,24 @@ class Inverter : public PowerSensor {
                 } 
             }
             return result;
+            */
         }
 
         virtual uint16_t rmsCurrent(uint8_t line, uint8_t io) { 
             uint16_t result = 0;
+            const auto ln = static_cast<INVERTER_LINE_TYPE>(line);
+            const auto ioType = static_cast<INVERTER_IO_TYPE>(io);  
+            auto lineIt = inverterData.find(ln);
+            if (lineIt != inverterData.end()) {
+                auto ioIt = lineIt->second.find(ioType);
+                if (ioIt != lineIt->second.end()) {
+                    uint16_t value = getACPointValue(ioIt->second.data(), AC_POINT_RMS_CURRENT_MSB_INDEX, AC_POINT_RMS_CURRENT_LSB_INDEX);
+                    float tmp = static_cast<float>((value - AAC_ZERO) * AAC_PRECISION);
+                    result = validateAmps(line, tmp);
+                }
+            }
+            return result;
+            /*
             std::map<INVERTER_LINE_TYPE, std::map<INVERTER_IO_TYPE, std::array<uint8_t, DATA_SIZE>>> iData = getInverterData();
             if (!iData.empty()) {
                 uint16_t value = getACPointValue(iData[static_cast<INVERTER_LINE_TYPE>(line)][static_cast<INVERTER_IO_TYPE>(io)].data(), AC_POINT_RMS_CURRENT_MSB_INDEX, AC_POINT_RMS_CURRENT_LSB_INDEX);
@@ -199,6 +227,7 @@ class Inverter : public PowerSensor {
                 result = validateAmps(line, tmp);
             }
             return result;
+            */
         }
         
         // virtual CAN_frame_t* buildCommand(RVC_DGN dgn); // do nothing - no commands will be sent to the ATS - we listen only
@@ -217,6 +246,7 @@ class Inverter : public PowerSensor {
                         break;
                     case INVERTER_AC_STATUS_1:
                         rawData[0] = data[0]; // copy the instance index
+                        memcpy(iData[line][io].data(), data, DATA_SIZE); // copy the  AC status data
                         for (uint8_t i = 0; i < 8; i++) {
                             iData[line][io][i] = data[i]; // copy the  AC status data
                         }
