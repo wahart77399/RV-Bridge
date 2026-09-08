@@ -37,8 +37,9 @@
 ////////////////////////////////////////////////////////////////
 #include "Arduino.h"
 #include "PowerSensor.h"
+#include <map>
 
-typedef enum {
+enum class INVERTER_STATUS_DEFINITION : uint8_t {
     INVERTER_DISABLED       = 0x00, 
     INVERTER_INVERT         = 0x01,
     INVERTER_PASS_THRU      = 0x02,
@@ -46,7 +47,18 @@ typedef enum {
     INVERTER_LOAD_SENSE     = 0x04,
     INVERTER_WAITING_INVERT = 0x05,
     INVERTER_GEN_SUPPORT    = 0x06
-} INVERTER_STATUS_DEFINITION;
+};
+
+/**
+enum class INVERTER_IO_TYPE : uint8_t {
+    INVERTER_INPUT  = 0x00, // AC in
+    INVERTER_OUTPUT = 0x01  // AC out
+};
+
+enum class INVERTER_LINE_TYPE : uint8_t {
+    INVERTER_LINE_1_TYPE = 0x00,
+    INVERTER_LINE_2_TYPE = 0x01
+}; */
 
 // current data information
 const uint8_t INVERTER_INVALID = 0xff;
@@ -78,79 +90,84 @@ class Inverter : public PowerSensor {
     private:
         friend class InverterView;
     
-        uint8_t* inverterData; // data specific to the inverter
+        std::map<INVERTER_LINE_TYPE, std::map<INVERTER_IO_TYPE, uint8_t[DATA_SIZE]>> inverterData; // data specific to the inverter
+        // std::map<INVERTER_LINE_TYPE, uint8_t*> inverterData; // data specific to the inverter
         // INVERTER_LINE_TYPE  line; // 1 or 2
         // INVERTER_IO_TYPE    io;   // 0 = AC in, 1 = AC out
 
-        const INVERTER_LINE_TYPE getLine(void) const { 
-            INVERTER_LINE_TYPE result = INVERTER_LINE_1_TYPE;
-            uint8_t* data = getCurrentData();
+        const INVERTER_LINE_TYPE getLine(const uint8_t* data) const { 
+            INVERTER_LINE_TYPE result = INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE;
+            // uint8_t* data = getCurrentData();
             if (data != nullptr) {
-                result = (INVERTER_LINE_TYPE)(data[INVERTER_LINE_INDEX] & INVERTER_LINE_MASK) == INVERTER_LINE_1_VALUE 
-                                                ? INVERTER_LINE_1_TYPE : INVERTER_LINE_2_TYPE;
+                result = static_cast<INVERTER_LINE_TYPE>((data[INVERTER_LINE_INDEX] & INVERTER_LINE_MASK == INVERTER_LINE_1_VALUE
+                                                ? INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE : INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE));
             }
             return result;
         }
         // void setLine(INVERTER_LINE_TYPE ln) { line = ln; }
 
-        const INVERTER_IO_TYPE getIO(void) const {
-            INVERTER_IO_TYPE result = INVERTER_INPUT;
-            uint8_t* data = getCurrentData();
+        const INVERTER_IO_TYPE getIO(const uint8_t* data) const {
+            INVERTER_IO_TYPE result = INVERTER_IO_TYPE::INVERTER_INPUT;
+            // uint8_t* data = getCurrentData();
             if (data != nullptr) {
-                result = (INVERTER_IO_TYPE)(data[INVERTER_IO_INDEX] & INVERTER_IO_MASK) == INVERTER_INPUT_VALUE 
-                                                ? INVERTER_INPUT : INVERTER_OUTPUT;
+                result = static_cast<INVERTER_IO_TYPE>((data[INVERTER_IO_INDEX] & INVERTER_IO_MASK == INVERTER_INPUT_VALUE 
+                                                ? INVERTER_IO_TYPE::INVERTER_INPUT : INVERTER_IO_TYPE::INVERTER_OUTPUT));
             }
             return result;
         }
         // void setIO(INVERTER_IO_TYPE inputOutput) { io = inputOutput; }
-        uint8_t* getInverterData(void) const { return inverterData; }
+        std::map<INVERTER_LINE_TYPE, std::map<INVERTER_IO_TYPE, uint8_t[DATA_SIZE]>> getInverterData(void) const { return inverterData; }
 
-        const INVERTER_STATUS_DEFINITION getInverterStatus(void) const {
-            INVERTER_STATUS_DEFINITION result = INVERTER_DISABLED;
-            uint8_t* data = getInverterData();
-            if (data != nullptr) {
-                result = (INVERTER_STATUS_DEFINITION)(data[INVERTER_STATUS_INDEX]); 
+        const INVERTER_STATUS_DEFINITION getInverterStatus(INVERTER_LINE_TYPE line, INVERTER_IO_TYPE io) const {
+            INVERTER_STATUS_DEFINITION result = INVERTER_STATUS_DEFINITION::INVERTER_DISABLED;
+            std::map<INVERTER_LINE_TYPE, std::map<INVERTER_IO_TYPE, uint8_t[DATA_SIZE]>> data = getInverterData();
+            if (!data.empty()) {
+                result = static_cast<INVERTER_STATUS_DEFINITION>(data[line][io][INVERTER_STATUS_INDEX]);
             }
             return result;
         }   
 
         const boolean isBatteryTempEnabled(void) const {
             boolean result = false;
-            uint8_t* data = getInverterData();
-            if (data != nullptr) {
-                result = (data[INVERTER_ENABLE_STATE_INDEX] & INVERTER_BATTERY_TEMP_MASK) == INVERTER_BATTERY_TEMP_ENABLED;
+            std::map<INVERTER_LINE_TYPE, std::map<INVERTER_IO_TYPE, uint8_t[DATA_SIZE]>> data = getInverterData();
+            if (!data.empty()) {
+                result = (data[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT][INVERTER_ENABLE_STATE_INDEX] & INVERTER_BATTERY_TEMP_MASK) == INVERTER_BATTERY_TEMP_ENABLED;
             }
             return result;
         }
+        
         const boolean isLoadSenseEnabled(void) const {
             boolean result = false;
-            uint8_t* data = getInverterData();
-            if (data != nullptr) {
-                result = (data[INVERTER_ENABLE_STATE_INDEX] & INVERTER_LOAD_SENSE_MASK) == INVERTER_LOAD_SENSE_ENABLED;
+            std::map<INVERTER_LINE_TYPE, std::map<INVERTER_IO_TYPE, uint8_t[DATA_SIZE]>> data = getInverterData();
+            if (!data.empty()) {
+                result = (data[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT][INVERTER_ENABLE_STATE_INDEX] & INVERTER_LOAD_SENSE_MASK) == INVERTER_LOAD_SENSE_ENABLED;
             }
             return result;
         }   
+
         const boolean isInverterEnabled(void) const {
             boolean result = false;
-            uint8_t* data = getInverterData();
-            if (data != nullptr) {
-                result = (data[INVERTER_ENABLE_STATE_INDEX] & INVERTER_INVERTER_ENABLED_MASK) == INVERTER_INVERTER_ENABLED;
-            }
-            return result;
-            }
-        const boolean isPassThruEnabled(void) const {
-            boolean result = false;
-            uint8_t* data = getInverterData();
-            if (data != nullptr) {
-                result = (data[INVERTER_ENABLE_STATE_INDEX] & INVERTER_PASS_THRU_MASK) == INVERTER_PASS_THRU_ENABLED;
+            std::map<INVERTER_LINE_TYPE, std::map<INVERTER_IO_TYPE, uint8_t[DATA_SIZE]>> data = getInverterData();
+            if (!data.empty()) {
+                result = (data[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT][INVERTER_ENABLE_STATE_INDEX] & INVERTER_INVERTER_ENABLED_MASK) == INVERTER_INVERTER_ENABLED;
             }
             return result;
         }
+
+        const boolean isPassThruEnabled(void) const {
+            boolean result = false;
+            std::map<INVERTER_LINE_TYPE, std::map<INVERTER_IO_TYPE, uint8_t[DATA_SIZE]>> data = getInverterData();
+            if (!data.empty()) {
+                result = (data[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT][INVERTER_ENABLE_STATE_INDEX] & INVERTER_PASS_THRU_MASK) == INVERTER_PASS_THRU_ENABLED;
+            }
+            return result;
+        }
+
         const boolean isGeneratorSupportEnabled(void) const {
             boolean result = false;
-            uint8_t* data = getInverterData();
-            if (data != nullptr) {
-                result = (data[INVERTER_GEN_SUPPORT_INDEX]) == INVERTER_GEN_SUPPORT_ENABLED;
+            std::map<INVERTER_LINE_TYPE, std::map<INVERTER_IO_TYPE, uint8_t[DATA_SIZE]>> data = getInverterData();
+            if (!data.empty()) {
+                result = (data[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT][INVERTER_GEN_SUPPORT_INDEX]) == INVERTER_GEN_SUPPORT_ENABLED;
             }
             return result;
         }
@@ -161,17 +178,20 @@ class Inverter : public PowerSensor {
         virtual void setData(RVC_DGN dgn, uint8_t* data) {
             if (data != nullptr) {
                 uint8_t* rawData = getCurrentData();
-                uint8_t* iData = getInverterData();
-                if ((rawData != nullptr) && (iData != nullptr))// set the current data to the new data
+                INVERTER_LINE_TYPE line = getLine(data);
+                INVERTER_IO_TYPE io = getIO(data);
+                std::map<INVERTER_LINE_TYPE, std::map<INVERTER_IO_TYPE, uint8_t[DATA_SIZE]>> iData = getInverterData();
+                if ((rawData != nullptr) && (!iData.empty()))// set the current data to the new data
                 switch (dgn) {
                     case INVERTER_STATUS:
                         for (uint8_t i = 0; i < 8; i++) {
-                            iData[i] = data[i]; // copy the inverter status data
+                            rawData[i] = data[i]; // copy the inverter status data
                         }
                         break;
                     case INVERTER_AC_STATUS_1:
+                        rawData[0] = data[0]; // copy the instance index
                         for (uint8_t i = 0; i < 8; i++) {
-                            rawData[i] = data[i]; // copy the  AC status data
+                            iData[line][io][i] = data[i]; // copy the  AC status data
                         }
                         break;
                     default:
@@ -182,43 +202,94 @@ class Inverter : public PowerSensor {
         }
 
     public:
-        Inverter() : PowerSensor() {
-            inverterData = new uint8_t[sizeof(uint8_t) * 8]; 
-            inverterData[0] = index(); // set the first byte to the instance index
+        Inverter() : PowerSensor(), inverterData() {
+            // inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT] = new uint8_t[DATA_SIZE]; // allocate 8 bytes for the data
+            // inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT] = new uint8_t[DATA_SIZE]; // allocate 8 bytes for the data
+            // inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT] = new uint8_t[DATA_SIZE]; // allocate 8 bytes for the data
+            // inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT] = new uint8_t[DATA_SIZE]; // allocate 8 bytes for the data
+            
+            memset(inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT], INVALID_DATA, DATA_SIZE);  // [0] = index(); // set the first byte to the instance index
+            memset(inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT], INVALID_DATA, DATA_SIZE); // set the first byte to the instance index
+            memset(inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT], INVALID_DATA, DATA_SIZE); // set the first byte to the instance index
+            memset(inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT], INVALID_DATA, DATA_SIZE);
+            /* 
             for (uint8_t i = 1; i < 8; i++) {
-                inverterData[i] = INVALID_DATA; // initialize to invalid data
-            }
+                inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT][i] = INVALID_DATA; // initialize to invalid data
+                inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT][i] = INVALID_DATA; // initialize to invalid data
+                inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT][i] = INVALID_DATA; // initialize to invalid data
+                inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT][i] = INVALID_DATA; // initialize to invalid data
+            } */
             // Constructor implementation
         }
 
-        Inverter(const Inverter& orig) : PowerSensor(orig) {
+        Inverter(const Inverter& orig) : PowerSensor(orig), inverterData(orig.inverterData) {
             // Copy constructor implementation
-            inverterData = new uint8_t[sizeof(uint8_t) * 8]; // allocate 8 bytes for the data
+            // inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT] = new uint8_t[DATA_SIZE]; // allocate 8 bytes for the data
+            // inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT] = new uint8_t[DATA_SIZE]; // allocate 8 bytes for the data
+            // inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT] = new uint8_t[DATA_SIZE]; // allocate 8 bytes for the data
+            // inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT] = new uint8_t[DATA_SIZE]; // allocate 8 bytes for the data
+            // memcpy(inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT], orig.inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT], DATA_SIZE);
+            // memcpy(inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT], orig.inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT], DATA_SIZE);
+            // memcpy(inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT], orig.inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT], DATA_SIZE);
+            // memcpy(inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT], orig.inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT], DATA_SIZE);
+            /*
             for (uint8_t i = 0; i < 8; i++) {
-                inverterData[i] = orig.inverterData[i]; // initialize to invalid data
+                inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT][i] = orig.inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT][i]; // initialize to invalid data
+                inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT][i] = orig.inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT][i]; // initialize to invalid data
+                inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT][i] = orig.inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT][i]; // initialize to invalid data
+                inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT][i] = orig.inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT][i]; // initialize to invalid data
             }
+                */  
         }
 
-        Inverter(uint8_t address, uint8_t indx) : PowerSensor(address, indx) {
+        Inverter(uint8_t address, uint8_t indx) : PowerSensor(address, indx), inverterData() {
             // Constructor with parameters implementation
-            inverterData = new uint8_t[sizeof(uint8_t) * 8]; 
-            inverterData[0] = index(); // set the first byte to the instance index
+            memset(inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT], INVALID_DATA, DATA_SIZE);  // [0] = index(); // set the first byte to the instance index
+            memset(inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT], INVALID_DATA, DATA_SIZE); // set the first byte to the instance index
+            memset(inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT], INVALID_DATA, DATA_SIZE); // set the first byte to the instance index
+            memset(inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT], INVALID_DATA, DATA_SIZE);
+            /*
+            inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT] = new uint8_t[DATA_SIZE];
+            inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT] = new uint8_t[DATA_SIZE];
+            inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT] = new uint8_t[DATA_SIZE];
+            inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT] = new uint8_t[DATA_SIZE];
+            inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT][0] = index(); // set the first byte to the instance index
+            inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT][0] = index(); // set the first byte to the instance index
+            inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT][0] = index(); // set the first byte to the instance index
+            inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT][0] = index(); // set the first byte to the instance index
             for (uint8_t i = 1; i < 8; i++) {
-                inverterData[i] = INVALID_DATA; // initialize to invalid data
+                inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT][i] = INVALID_DATA; // initialize to invalid data   
+                inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT][i] = INVALID_DATA; // initialize to invalid data
+                inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT][i] = INVALID_DATA; // initialize to invalid data
+                inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT][i] = INVALID_DATA; // initialize to invalid data  
             }
+                */
         }
 
-        Inverter(uint8_t* data) : PowerSensor(data) {
+        Inverter(uint8_t* data) : PowerSensor(data), inverterData() {
             // Constructor with parameters implementation
+            memset(inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT], INVALID_DATA, DATA_SIZE);  // [0] = index(); // set the first byte to the instance index
+            memset(inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT], INVALID_DATA, DATA_SIZE); // set the first byte to the instance index
+            memset(inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT], INVALID_DATA, DATA_SIZE); // set the first byte to the instance index
+            memset(inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT], INVALID_DATA, DATA_SIZE);
+            /**
             inverterData = new uint8_t[sizeof(uint8_t) * 8]; // allocate 8 bytes for the data
             inverterData[0] = index(); // set the first byte to the instance index
             for (uint8_t i = 1; i < 8; i++) {
                 inverterData[i] = INVALID_DATA; // initialize to invalid data
             }
+                */
         }
 
         virtual ~Inverter() {
             // Destructor implementation
+            /*
+            delete[] inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT];
+            delete[] inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT];
+            delete[] inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_INPUT];
+            delete[] inverterData[INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE][INVERTER_IO_TYPE::INVERTER_OUTPUT];
+            */
+            // delete[] inverterData;
         } 
 
         virtual boolean executeCommand(RVC_DGN dgn, const uint8_t* buffer, uint8_t val=SOURCE_ADDRESS); // this is only to deal with Inverter dgns

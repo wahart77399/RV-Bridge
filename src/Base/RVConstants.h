@@ -59,16 +59,15 @@ constexpr double  tempCRoundingOffset = -0.25;
 const float_t AAC_LOWER_LIMIT = -81.0;
 const float_t AAC_UPPER_LIMIT = 81.0;
 
-typedef enum {
+enum class INVERTER_IO_TYPE : uint8_t {
     INVERTER_INPUT =  0x00,
     INVERTER_OUTPUT = 0x01
-} INVERTER_IO_TYPE;
+} ;
 
-typedef enum {
+enum class INVERTER_LINE_TYPE : uint8_t {
     INVERTER_LINE_1_TYPE = 0x00, // line 1
     INVERTER_LINE_2_TYPE = 0x01  // line 2
-} INVERTER_LINE_TYPE;
-
+} ;
 
 // Tank Capaciity should be in a CSV file that is read on input so recompiles are not needed for new coaches
 typedef enum {

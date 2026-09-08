@@ -233,11 +233,11 @@ void  DeviceFactory::create2022Essex4551Devices() {
     DGN2DeviceMap[INVERTER_AC_STATUS_1][1] = inverter;
     DGN2DeviceMap[INVERTER_STATUS][1] = inverter;
     InverterView::createInverterView(inverter, "Inverter 1");
-    // Inverter 2
-    inverter = new Inverter(250, 2);
-    DGN2DeviceMap[INVERTER_AC_STATUS_1][2] = inverter;
-    DGN2DeviceMap[INVERTER_STATUS][2] = inverter;
-    InverterView::createInverterView(inverter, "Inverter 2");
+    // Inverter 2 - no second inverter on 2022 Essex 4551 - but code is here for future use
+    // inverter = new Inverter(250, 2);
+    // DGN2DeviceMap[INVERTER_AC_STATUS_1][2] = inverter;
+    // DGN2DeviceMap[INVERTER_STATUS][2] = inverter;
+    // InverterView::createInverterView(inverter, "Inverter 2");
 
     // Generator
     Generator* generator = new Generator(250, 1); 
