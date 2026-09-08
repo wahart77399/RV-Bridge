@@ -20,8 +20,8 @@ bool InverterView::updateView(void) {
         if ((voltageViewMap[ln][io] != nullptr) && (currentViewMap[ln][io] != nullptr)) {
             // if (instance > 1)      
             //     printf("InverterView::updateView updating view for index %d have mapped voltage and current line %d io %d\n",instance, ln, io);
-            uint16_t volt = mdl->rmsVoltage();
-            int16_t amp = mdl->rmsCurrent();
+            uint16_t volt = mdl->rmsVoltage(static_cast<uint8_t>(ln), static_cast<uint8_t>(io));
+            int16_t amp = mdl->rmsCurrent(static_cast<uint8_t>(ln), static_cast<uint8_t>(io));
             boolean vFault = (mdl->isOpenNeutralFault() || mdl->isOpenGroundFault() || mdl->isReversePolarityFault());
             boolean aFault = mdl->isGroundCurrentFault();
             // printf("InverterView::updateView voltage = %f, current = %f \n", volt, amp);
@@ -60,11 +60,11 @@ void InverterView::createInverterView(GenericDevice* model, const char* spanDevN
 
     // line 1 input
     
-    const char* append1 = " Voltage";
-    const char* line1Append = " Line 1";
-    const char* line2Append = " Line 2";
-    const char* ioInputAppend = " Input";
-    const char* ioOutputAppend = " Output";
+    const char* append1 = " Volt";
+    const char* line1Append = " L1";
+    const char* line2Append = " L2";
+    const char* ioInputAppend = " In";
+    const char* ioOutputAppend = " Out";
 
     const char* append2 = " Current";
     size_t buffer_size = strlen(spanDevName) + strlen(append1) + strlen(line1Append) + strlen(ioInputAppend) + 1; 

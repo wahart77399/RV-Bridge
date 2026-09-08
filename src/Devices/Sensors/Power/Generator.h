@@ -46,6 +46,7 @@ class Generator : public PowerSensor {
         static const uint8_t GENERATOR_LINE_INVALID       = 0xff;
         static const uint8_t GENERATOR_LINE_1_OUTPUT      = 1;
         static const uint8_t GENERATOR_LINE_2_OUTPUT      = 2;
+        static const uint8_t GENERATOR_NO_IO_INFO         = 0x00;  // 0000 0000
 
     private:
         uint8_t line1Data[DATA_SIZE]; // data specific to line 1 of the generator
@@ -79,7 +80,8 @@ class Generator : public PowerSensor {
     protected:
         void setData(RVC_DGN dgn, uint8_t* data);
         // virtual CAN_frame_t* buildCommand(RVC_DGN dgn); // do nothing - no commands will be sent to the GENERATOR - we listen only
-        uint16_t rmsVoltage(uint8_t line) override {
+
+        uint16_t rmsVoltage(uint8_t line, uint8_t io = GENERATOR_NO_IO_INFO) override {
             uint16_t result = 0;
             uint8_t* rawData = (line == static_cast<uint8_t>(GeneratorLine::Line2)) ? line2Data : line1Data;
             if (rawData != nullptr) {
@@ -89,7 +91,7 @@ class Generator : public PowerSensor {
             }
             return result;
         }
-        uint16_t rmsCurrent(uint8_t line) override {
+        uint16_t rmsCurrent(uint8_t line, uint8_t io = GENERATOR_NO_IO_INFO) override {
             uint16_t result = 0;
             uint8_t* rawData = (line == static_cast<uint8_t>(GeneratorLine::Line2)) ? line2Data : line1Data;
             if (rawData != nullptr) {

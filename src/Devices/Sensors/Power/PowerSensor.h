@@ -131,7 +131,7 @@ class PowerSensor : public GenericDevice {
         friend class GeneratorView;
 
         // power values
-        virtual uint16_t rmsVoltage(uint8_t line=0) { 
+        virtual uint16_t rmsVoltage(uint8_t line=0, uint8_t io=0) { 
             uint16_t value = getACPointValue(getCurrentData(), AC_POINT_RMS_VOLTAGE_MSB_INDEX, AC_POINT_RMS_VOLTAGE_LSB_INDEX);
             uint16_t result = 0;
             if (value <= VAC_MAX) {
@@ -141,7 +141,7 @@ class PowerSensor : public GenericDevice {
             return result;
         }
 
-        virtual uint16_t rmsCurrent(uint8_t line=0) { 
+        virtual uint16_t rmsCurrent(uint8_t line=0, uint8_t io=0) { 
             uint16_t value = getACPointValue(getCurrentData(), AC_POINT_RMS_CURRENT_MSB_INDEX, AC_POINT_RMS_CURRENT_LSB_INDEX);
             // printf("PowerSensor::rmsCurrent value %d\n", value);
             float tmp = static_cast<float>((value - AAC_ZERO) * AAC_PRECISION);
