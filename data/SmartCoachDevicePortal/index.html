@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <meta name="theme-color" content="#102624" />
+    <title>SmartCoachDevicePortal V0.1.0</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main class="portal-shell">
+      <header class="topbar">
+        <a class="brand" href="#devices" aria-label="SmartCoach device portal home">
+          <img class="brand-image" src="smartcoach-mark.svg" alt="" width="36" height="36" />
+          <span><strong>SmartCoach</strong><small>device portal</small></span>
+        </a>
+        <div class="topbar-status"><span class="status-dot"></span> Coach bridge online</div>
+      </header>
+
+      <section class="intro" id="devices">
+        <div>
+          <p class="eyebrow">Vehicle network / discovery</p>
+          <h1>Make every device<br /><em>easy to find.</em></h1>
+          <p class="intro-copy">Give the devices connected to your coach names that make sense at a glance. Their technical identity stays safely intact underneath.</p>
+        </div>
+        <div class="discovery-card">
+          <span class="pulse-ring" aria-hidden="true"><span class="pulse-core"></span></span>
+          <div><strong id="discovery-count">6 devices found</strong><span id="sync-status">Waiting for bridge data</span></div>
+          <button class="icon-button" id="scan-button" type="button" aria-label="Scan for devices" title="Scan for devices">↻</button>
+        </div>
+      </section>
+
+      <section class="workspace" aria-label="Discovered devices">
+        <section class="coach-summary" aria-label="Coach information">
+          <div class="coach-summary-title">
+            <span class="section-kicker">Coach profile</span>
+            <h2 id="coach-name">Loading coach details</h2>
+            <button class="coach-details-button" id="coach-details-button" type="button">View coach details <span aria-hidden="true">↗</span></button>
+          </div>
+          <dl class="coach-details">
+            <div><dt>Year</dt><dd id="coach-year">--</dd></div>
+            <div><dt>Floorplan</dt><dd id="coach-floorplan">--</dd></div>
+            <div><dt>Coach ID</dt><dd id="coach-id">--</dd></div>
+          </dl>
+        </section>
+        <div class="toolbar">
+          <div class="toolbar-heading"><span class="section-kicker">Your coach</span><h2>Discovered devices <span id="visible-count">06</span></h2></div>
+          <label class="search-field"><span aria-hidden="true">⌕</span><input id="device-search" type="search" placeholder="Search devices" autocomplete="off" /></label>
+        </div>
+        <div class="device-grid" id="device-list"></div>
+        <div class="empty-state" id="empty-state" hidden><span>⌕</span><strong>No matching devices</strong><p>Try another name, room, or device type.</p></div>
+      </section>
+
+      <footer class="footer">
+        <span>SmartCoachDevicePortal V0.1.0</span>
+        <div class="footer-actions">
+          <span class="footer-sync"><span class="footer-dot"></span> Synced with coach bridge</span>
+          <button class="footer-legal-link" id="privacy-open" type="button">Privacy notice <span>(draft)</span></button>
+        </div>
+      </footer>
+    </main>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <dialog class="coach-dialog" id="coach-dialog" aria-labelledby="coach-dialog-title">
+      <header class="coach-dialog-header">
+        <div>
+          <span class="section-kicker">Coach profile</span>
+          <h2 id="coach-dialog-title">Coach details</h2>
+          <p id="coach-dialog-subtitle"></p>
+        </div>
+        <button class="coach-dialog-close" id="coach-dialog-close" type="button" aria-label="Close coach details" title="Close">×</button>
+      </header>
+      <div class="coach-dialog-content" id="coach-detail-content">
+        <p class="coach-dialog-empty">Waiting for coach data</p>
+      </div>
+    </dialog>
+    <dialog class="rename-dialog" id="rename-dialog" aria-labelledby="rename-dialog-title">
+      <form class="rename-form" id="rename-form">
+        <header class="rename-form-header">
+          <div><span class="section-kicker">Device settings</span><h2 id="rename-dialog-title">Rename device</h2></div>
+          <button class="coach-dialog-close" id="rename-close" type="button" aria-label="Close rename dialog" title="Close">×</button>
+        </header>
+        <label for="rename-name">Device name</label>
+        <input id="rename-name" name="name" type="text" maxlength="64" autocomplete="off" required />
+        <p class="rename-error" id="rename-error" role="alert"></p>
+        <div class="rename-actions"><button id="rename-cancel" type="button">Cancel</button><button class="rename-save" id="rename-save" type="submit">Save name</button></div>
+      </form>
+    </dialog>
+    <dialog class="privacy-dialog" id="privacy-dialog" aria-labelledby="privacy-dialog-title">
+      <header class="coach-dialog-header">
+        <div>
+          <span class="section-kicker">SmartCoach device portal</span>
+          <h2 id="privacy-dialog-title">Privacy Notice (Draft)</h2>
+          <p>Prototype notice · review before public release</p>
+        </div>
+        <button class="coach-dialog-close" id="privacy-close" type="button" aria-label="Close privacy notice" title="Close">×</button>
+      </header>
+      <div class="privacy-content">
+        <p class="privacy-draft-warning">This draft describes the current prototype. It is not a final privacy policy or legal advice.</p>
+        <section><h3>Information used</h3><p>The portal reads coach and device configuration, including coach identifiers and specifications, device types, network addresses, indexes, and device names. It reads <code>coach.json</code> and <code>devices.json</code> from the connected bridge and refreshes them periodically.</p></section>
+        <section><h3>How information is used</h3><p>The portal displays the configuration in your browser. When you rename a device, the new name and that device's type, source address, and RVC index are sent to the bridge and saved in <code>devices.json</code>.</p></section>
+        <section><h3>Storage and retention</h3><p>Configuration is stored on the bridge filesystem. The page holds fetched data in browser memory while it is open. This prototype does not set cookies, create user accounts, or include analytics code. Bridge access logs and browser-managed storage are outside this page's control.</p></section>
+        <section><h3>Third-party services</h3><p>The page currently requests fonts from Google Fonts. Your browser connects to Google's font services to retrieve those assets; Google may receive connection information such as your IP address. Consider self-hosting the fonts or removing the external request before release.</p></section>
+        <section><h3>Operator and contact</h3><p>The responsible operator, privacy contact, applicable regions, and any retention or deletion contact are not yet specified. Add these details and have the final notice reviewed for the places where the portal will be offered.</p></section>
+      </div>
+    </dialog>
+    <script>
+      const sampleDevices = [
+        { id: "0x2A91", name: "Living room lights", type: "DC_DimmableSwitch", category: "Switches", room: "Main cabin", status: "Online", accent: "yellow", icon: "✦", dimmable: true, dgns: ["DC_DIMMER_COMMAND", "DC_LIGHT_STATUS"] },
+        { id: "0x5C04", name: "Bedroom climate", type: "Thermostat", category: "HVAC", room: "Bedroom", status: "Online", accent: "blue", icon: "◌", dgns: ["DC_TEMPERATURE_STATUS", "DC_HVAC_COMMAND", "DC_HVAC_MODE"] },
+        { id: "0x1138", name: "Water pump", type: "WaterPump", category: "Switches", room: "Utility bay", status: "Online", accent: "coral", icon: "⌁", dgns: ["DC_PUMP_COMMAND", "DC_PUMP_STATUS"] },
+        { id: "0x8D20", name: "Exterior awning", type: "Shades", category: "Switches", room: "Exterior", status: "Online", accent: "green", icon: "⌂", dgns: ["DC_AWNING_COMMAND", "DC_AWNING_POSITION"] },
+        { id: "0x739B", name: "Kitchen outlets", type: "DC_Switch", category: "Switches", room: "Kitchen", status: "Standby", accent: "violet", icon: "⌁", dgns: ["DC_RELAY_COMMAND", "DC_RELAY_STATUS"] },
+        { id: "0xC812", name: "Tank monitor", type: "Tank", category: "Monitoring", room: "Utility bay", status: "Online", accent: "teal", icon: "◒", dgns: ["DC_TANK_LEVEL_STATUS", "DC_TANK_ALARM_STATUS"] }
+      ];
+
+      const list = document.querySelector("#device-list");
+      const search = document.querySelector("#device-search");
+      const visibleCount = document.querySelector("#visible-count");
+      const emptyState = document.querySelector("#empty-state");
+      const toast = document.querySelector("#toast");
+      const syncStatus = document.querySelector("#sync-status");
+      const coachDialog = document.querySelector("#coach-dialog");
+      const coachDetailContent = document.querySelector("#coach-detail-content");
+      const renameDialog = document.querySelector("#rename-dialog");
+      const renameForm = document.querySelector("#rename-form");
+      const renameInput = document.querySelector("#rename-name");
+      const renameError = document.querySelector("#rename-error");
+      const renameSave = document.querySelector("#rename-save");
+      const privacyDialog = document.querySelector("#privacy-dialog");
+      const categoryOrder = ["Switches", "HVAC", "Monitoring"];
+      let devices = [...sampleDevices];
+      let hasRuntimeDevices = false;
+      let coachData = null;
+      let pendingRenameId = null;
+
+      function formatDetailLabel(value) {
+        return value.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/[_-]/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
+      }
+
+      function appendDetailFields(parent, entries) {
+        if (!entries.length) return;
+        const fields = document.createElement("dl");
+        fields.className = "coach-detail-fields";
+        for (const [label, value] of entries) {
+          const field = document.createElement("div");
+          const term = document.createElement("dt");
+          const description = document.createElement("dd");
+          term.textContent = formatDetailLabel(label);
+          description.textContent = value === null ? "Not set" : String(value);
+          field.append(term, description);
+          fields.append(field);
+        }
+        parent.append(fields);
+      }
+
+      function appendDetailSection(parent, label, value) {
+        const section = document.createElement("section");
+        section.className = "coach-detail-section";
+        const heading = document.createElement("h3");
+        heading.textContent = formatDetailLabel(label);
+        section.append(heading);
+
+        if (Array.isArray(value)) {
+          value.forEach((item, index) => {
+            if (item && typeof item === "object") {
+              const record = document.createElement("div");
+              record.className = "coach-detail-record";
+              const recordTitle = document.createElement("h4");
+              recordTitle.textContent = item.name || `${formatDetailLabel(label)} ${index + 1}`;
+              record.append(recordTitle);
+              const entries = Object.entries(item);
+              appendDetailFields(record, entries.filter(([, entry]) => entry === null || typeof entry !== "object").filter(([key]) => key !== "name"));
+              for (const [key, entry] of entries) {
+                if (entry !== null && typeof entry === "object") appendDetailSection(record, key, entry);
+              }
+              section.append(record);
+            } else {
+              const itemText = document.createElement("p");
+              itemText.className = "coach-dialog-empty";
+              itemText.textContent = item === null ? "Not set" : String(item);
+              section.append(itemText);
+            }
+          });
+        } else {
+          const entries = Object.entries(value);
+          appendDetailFields(section, entries.filter(([, entry]) => entry === null || typeof entry !== "object"));
+          for (const [key, entry] of entries) {
+            if (entry !== null && typeof entry === "object") appendDetailSection(section, key, entry);
+          }
+        }
+        parent.append(section);
+      }
+
+      function renderCoachDetails(coach) {
+        coachDetailContent.replaceChildren();
+        const entries = Object.entries(coach);
+        appendDetailFields(coachDetailContent, entries.filter(([, value]) => value === null || typeof value !== "object"));
+        for (const [key, value] of entries) {
+          if (value !== null && typeof value === "object") appendDetailSection(coachDetailContent, key, value);
+        }
+        if (!coachDetailContent.childElementCount) {
+          const emptyMessage = document.createElement("p");
+          emptyMessage.className = "coach-dialog-empty";
+          emptyMessage.textContent = "No coach details are available.";
+          coachDetailContent.append(emptyMessage);
+        }
+      }
+
+      async function fetchRuntimeJson(paths) {
+        for (const path of paths) {
+          try {
+            const response = await fetch(path, { cache: "no-store" });
+            if (response.ok) return response.json();
+          } catch (error) {
+            // Direct file previews do not allow fetch; the sample data remains available.
+          }
+        }
+        return null;
+      }
+
+      async function loadRuntimeConfig() {
+        const [config, coach] = await Promise.all([
+          fetchRuntimeJson(["/devices.json", "../devices.json"]),
+          fetchRuntimeJson(["/coach.json", "../coach.json"])
+        ]);
+
+        if (coach && typeof coach === "object" && !Array.isArray(coach)) {
+          coachData = coach;
+          const coachName = [coach.make, coach.model].filter(Boolean).join(" ");
+          document.querySelector("#coach-name").textContent = coachName || "Coach details";
+          document.querySelector("#coach-year").textContent = coach.year ?? "Not set";
+          document.querySelector("#coach-floorplan").textContent = coach.floorplan || "Not set";
+          document.querySelector("#coach-id").textContent = coach.coachId || "Not set";
+          document.querySelector("#coach-dialog-subtitle").textContent = [coach.year, coachName, coach.floorplan && `Floorplan ${coach.floorplan}`].filter(Boolean).join(" · ");
+          renderCoachDetails(coach);
+        }
+
+        if (!Array.isArray(config)) {
+          if (!hasRuntimeDevices) syncStatus.textContent = "Bridge data unavailable";
+          return;
+        }
+
+        const configuredDevices = config.filter((item) => item.enabled !== false);
+        devices = configuredDevices.map((item) => {
+          const sample = sampleDevices.find((candidate) => candidate.type === item.type) || {};
+          const category = item.type === "Thermostat" || item.type === "FloorHeat" ? "HVAC" : ["DC_DimmableSwitch", "DC_Switch", "WaterPump", "Shades", "DoorLock"].includes(item.type) ? "Switches" : "Monitoring";
+          return {
+            ...sample,
+            id: `${item.type}-${item.sourceAddress}-${item.rvcIndex}`,
+            sourceAddress: item.sourceAddress,
+            rvcIndex: item.rvcIndex,
+            name: item.name || sample.name || item.type,
+            type: item.type,
+            category,
+            room: sample.room || `RVC index ${item.rvcIndex}`,
+            status: "Online",
+            sourceLabel: `SA 0x${Number(item.sourceAddress).toString(16).toUpperCase()} · RVC ${item.rvcIndex}`,
+            dgns: sample.dgns || []
+          };
+        });
+        hasRuntimeDevices = true;
+        renderDevices();
+        syncStatus.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+      }
+
+      function renderDevices() {
+        const query = search.value.trim().toLowerCase();
+        const filtered = devices.filter((device) => [device.name, device.type, device.room, device.id].join(" ").toLowerCase().includes(query));
+        document.querySelector("#discovery-count").textContent = `${devices.length} devices found`;
+        const renderCard = (device) => `
+          <article class="device-card ${device.accent}" data-id="${device.id}">
+            <div class="device-card-top"><span class="device-icon">${device.icon}</span><span class="device-status ${device.status === "Standby" ? "standby" : ""}"><i></i>${device.status}</span></div>
+            <div class="device-info"><p>${device.type} <span>·</span> ${device.room}${device.type === "DC_DimmableSwitch" ? `<b class="capability is-dimmable">Dimmable</b>` : ""}</p><h3>${device.name}</h3><span class="device-id">${device.sourceLabel || `Discovered as ${device.id}`}</span></div>
+            <div class="device-actions"><button class="dgn-button" type="button" data-dgn="${device.id}" aria-expanded="false">View DGNs <span>${device.dgns.length}</span></button><button class="rename-button" type="button" data-rename="${device.id}">Rename <span>→</span></button></div>
+            <div class="dgn-list" data-dgn-list="${device.id}" hidden><p>Referenced DGNs</p>${device.dgns.map((dgn) => `<code>${dgn}</code>`).join("")}</div>
+          </article>`;
+        list.innerHTML = categoryOrder.map((category) => {
+          const categoryDevices = filtered.filter((device) => device.category === category);
+          if (!categoryDevices.length) return "";
+          const parent = category === "Switches" || category === "HVAC" ? "Controllable /" : "Discovered /";
+          return `<section class="category-section"><div class="category-heading"><span>${parent}</span><h3>${category}</h3><b>${String(categoryDevices.length).padStart(2, "0")}</b></div><div class="device-grid">${categoryDevices.map(renderCard).join("")}</div></section>`;
+        }).join("");
+        visibleCount.textContent = String(filtered.length).padStart(2, "0");
+        emptyState.hidden = filtered.length !== 0;
+        list.hidden = filtered.length === 0;
+      }
+
+      function showToast(message) {
+        toast.textContent = message;
+        toast.classList.add("show");
+        window.setTimeout(() => toast.classList.remove("show"), 2600);
+      }
+
+      list.addEventListener("click", (event) => {
+        const dgnButton = event.target.closest("[data-dgn]");
+        if (dgnButton) {
+          const dgnList = list.querySelector(`[data-dgn-list="${dgnButton.dataset.dgn}"]`);
+          const isOpen = !dgnList.hidden;
+          dgnList.hidden = isOpen;
+          dgnButton.setAttribute("aria-expanded", String(!isOpen));
+          dgnButton.classList.toggle("open", !isOpen);
+          return;
+        }
+        const button = event.target.closest("[data-rename]");
+        if (!button) return;
+        const device = devices.find((item) => item.id === button.dataset.rename);
+        if (!Number.isInteger(device?.sourceAddress) || !Number.isInteger(device?.rvcIndex)) {
+          showToast("Load this device from the bridge before renaming it");
+          return;
+        }
+        pendingRenameId = device.id;
+        renameInput.value = device.name;
+        renameError.textContent = "";
+        renameDialog.showModal();
+        renameInput.select();
+      });
+
+      renameForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const device = devices.find((item) => item.id === pendingRenameId);
+        const name = renameInput.value.trim();
+        if (!device || !name) {
+          renameError.textContent = "Enter a device name.";
+          return;
+        }
+        renameSave.disabled = true;
+        renameError.textContent = "";
+        try {
+          const response = await fetch("/devices/rename", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: device.type, sourceAddress: device.sourceAddress, rvcIndex: device.rvcIndex, name })
+          });
+          if (!response.ok) throw new Error("The bridge rejected the rename");
+          device.name = name;
+          renameDialog.close();
+          renderDevices();
+          showToast(`${device.id} is now “${device.name}”`);
+        } catch (error) {
+          renameError.textContent = "Could not save the new name to the bridge.";
+        } finally {
+          renameSave.disabled = false;
+        }
+      });
+      document.querySelector("#rename-close").addEventListener("click", () => renameDialog.close());
+      document.querySelector("#rename-cancel").addEventListener("click", () => renameDialog.close());
+      renameDialog.addEventListener("click", (event) => {
+        if (event.target === renameDialog) renameDialog.close();
+      });
+      document.querySelector("#privacy-open").addEventListener("click", () => privacyDialog.showModal());
+      document.querySelector("#privacy-close").addEventListener("click", () => privacyDialog.close());
+      privacyDialog.addEventListener("click", (event) => {
+        if (event.target === privacyDialog) privacyDialog.close();
+      });
+
+      search.addEventListener("input", renderDevices);
+      document.querySelector("#scan-button").addEventListener("click", (event) => {
+        event.currentTarget.classList.add("spinning");
+        window.setTimeout(() => event.currentTarget.classList.remove("spinning"), 650);
+        showToast("Scanning the coach network…");
+        loadRuntimeConfig();
+      });
+      document.querySelector("#coach-details-button").addEventListener("click", () => coachDialog.showModal());
+      document.querySelector("#coach-dialog-close").addEventListener("click", () => coachDialog.close());
+      coachDialog.addEventListener("click", (event) => {
+        if (event.target === coachDialog) coachDialog.close();
+      });
+      renderDevices();
+      async function pollRuntimeConfig() {
+        await loadRuntimeConfig();
+        window.setTimeout(pollRuntimeConfig, 5000);
+      }
+      pollRuntimeConfig();
+    </script>
+  </body>
+</html>
