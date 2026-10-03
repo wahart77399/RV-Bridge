@@ -113,6 +113,9 @@ class WaterPump : public GenericDevice {
             // Constructor with parameters implementation
         }
 
+        WaterPump(WaterPump&&) = delete;
+        WaterPump& operator=(WaterPump&&) = delete;
+
         virtual ~WaterPump() {
             // Destructor implementation
         } 

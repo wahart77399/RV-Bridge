@@ -47,15 +47,11 @@ void TanksView::createTanksView(GenericDevice* model, const char* spanDevName) {
     new Characteristic::Identify();
     new Characteristic::Name(spanDevName);
 
-    const char* prepend = "Monitoring levels of ";
-    size_t buffer_size = strlen(spanDevName) + strlen(prepend) + 1; 
-    char* desc = new char[buffer_size];
-    strcpy(desc, prepend);
-    strcat(desc, spanDevName);
+    const String desc = String("Monitoring levels of ") + spanDevName;
     
     TanksView::Tank* tank = new TanksView::Tank(spanDevName);
     tank->setName(spanDevName);
-    tank->setDescription(desc);
+    tank->setDescription(desc.c_str());
     vw->setTank(tank);
     // vw->updateView();
 

@@ -79,8 +79,8 @@ void setup() {
 	String ssid;
 	String passPhrase;
 	WifiCredentials::load(ssid, passPhrase);
-    SmartCoachWebServer& server = SmartCoachWebServer::instance(ssid.c_str(), passPhrase.c_str());
-    server.begin();
+    	SmartCoachWebServer& server = SmartCoachWebServer::instance(ssid.c_str(), passPhrase.c_str());
+    	server.begin();
 	#endif
 
 	RV_PRINTF("setup: DeviceFactory getting instance\n");

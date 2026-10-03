@@ -132,6 +132,7 @@ private:
 
     static void     wifiStatusChanged(HS_STATUS status);
     static void     wifiReady(void);
+    static void     connectionEstablished(int count);
     static uint64_t millis64(void);
 
     void loadCredentials();

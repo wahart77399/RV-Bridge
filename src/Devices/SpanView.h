@@ -45,7 +45,7 @@ class SpanView {
         GenericDevice* model;
         boolean needToUpdateView = true;
 
-        SpanView& operator=(SpanView& v) = delete;
+        SpanView& operator=(const SpanView&) = delete;
 
         static boolean prepped;
 
@@ -69,9 +69,11 @@ class SpanView {
 
         SpanView(); // : model(nullptr) { SpanView::prepHomeSpan();}
         SpanView(GenericDevice* refModel); // : model(refModel)  { SpanView::prepHomeSpan(); model->addView(this); }
-        SpanView(SpanView& copy) { model = copy.model; }
+        SpanView(const SpanView&) = delete;
+        SpanView(SpanView&&) = delete;
+        SpanView& operator=(SpanView&&) = delete;
 
-        ~SpanView() {}
+        virtual ~SpanView() = default;
 
 
         virtual bool updateView(void) = 0;

@@ -309,7 +309,7 @@ void CoachWifi::startHomeSpan() {
     }
 
     homeSpan.setSketchVersion(versionString);
-    homeSpan.setWifiCallback(CoachWifi::wifiReady);
+    homeSpan.setConnectionCallback(CoachWifi::connectionEstablished);
     homeSpan.setStatusCallback(CoachWifi::wifiStatusChanged);
 
 /* *
@@ -351,6 +351,10 @@ void CoachWifi::wifiStatusChanged(HS_STATUS status) {
 void CoachWifi::wifiReady() {
     wifiConnected = true;
     hadWifiConnection = true;
+}
+
+void CoachWifi::connectionEstablished(int /*count*/) {
+    wifiReady();
 }
 
 void CoachWifi::pollSpan(void) {

@@ -1,6 +1,6 @@
 [
   {
-    "enabled": false,
+    "enabled": true,
     "type": "DC_DimmableSwitch",
     "rvcIndex": 82,
     "sourceAddress": 141,
@@ -8,7 +8,7 @@
     "order": 100
   },
   {
-    "enabled": false,
+    "enabled": true,
     "type": "DC_DimmableSwitch",
     "rvcIndex": 84,
     "sourceAddress": 141,
@@ -16,7 +16,7 @@
     "order": 100
   },
   {
-    "enabled": false,
+    "enabled": true,
     "type": "DC_DimmableSwitch",
     "rvcIndex": 85,
     "sourceAddress": 141,
@@ -24,7 +24,7 @@
     "order": 100
   },
   {
-    "enabled": false,
+    "enabled": true,
     "type": "DC_Switch",
     "rvcIndex": 98,
     "sourceAddress": 141,
@@ -32,7 +32,7 @@
     "order": 100
   },
   {
-    "enabled": false,
+    "enabled": true,
     "type": "DC_Switch",
     "rvcIndex": 99,
     "sourceAddress": 141,
@@ -40,7 +40,7 @@
     "order": 100
   },
   {
-    "enabled": false,
+    "enabled": true,
     "type": "Thermostat",
     "rvcIndex": 1,
     "sourceAddress": 103,
@@ -48,7 +48,7 @@
     "order": 100
   },
   {
-    "enabled": false,
+    "enabled": true,
     "type": "Thermostat",
     "rvcIndex": 2,
     "sourceAddress": 103,
@@ -56,7 +56,7 @@
     "order": 100
   },
   {
-    "enabled": false,
+    "enabled": true,
     "type": "Thermostat",
     "rvcIndex": 4,
     "sourceAddress": 103,
@@ -64,7 +64,7 @@
     "order": 100
   },
   {
-    "enabled": false,
+    "enabled": true,
     "type": "WaterPump",
     "rvcIndex": 0,
     "sourceAddress": 146,
@@ -72,16 +72,24 @@
     "order": 100
   },
   {
-    "enabled": false,
+    "enabled": true,
     "type": "DoorLock",
     "rvcIndex": 1,
     "sourceAddress": 146,
     "name": "Front Door",
     "order": 100
   },
+{
+    "enabled": true,
+    "type": "DoorLock",
+    "rvcIndex": 2,
+    "sourceAddress": 146,
+    "name": "Bay Doors",
+    "order": 100
+  },
 
   {
-    "enabled": false,
+    "enabled": true,
     "type": "FloorHeat",
     "rvcIndex": 1,
     "sourceAddress": 97,
@@ -89,7 +97,7 @@
     "order": 100
   },
   {
-    "enabled": false,
+    "enabled": true,
     "type": "FloorHeat",
     "rvcIndex": 2,
     "sourceAddress": 97,
@@ -97,7 +105,7 @@
     "order": 100
   },
   {
-    "enabled": false,
+    "enabled": true,
     "type": "FloorHeat",
     "rvcIndex": 3,
     "sourceAddress": 97,
@@ -105,7 +113,7 @@
     "order": 100
   },
   {
-    "enabled": false,
+    "enabled": true,
     "type": "Awning",
     "rvcIndex": 2,
     "sourceAddress": 136,
@@ -118,7 +126,7 @@
     }
   },
   {
-    "enabled": false,
+    "enabled": true,
     "type": "Awning",
     "rvcIndex": 3,
     "sourceAddress": 136,
@@ -131,7 +139,7 @@
     }
   },
   {
-    "enabled": false,
+    "enabled": true,
     "type": "Awning",
     "rvcIndex": 1,
     "sourceAddress": 136,
@@ -144,7 +152,7 @@
     }
   },
   {
-    "enabled": false,
+    "enabled": true,
     "type": "Shades",
     "rvcIndex": 88,
     "sourceAddress": 146,
@@ -157,7 +165,7 @@
     }
   },
   {
-    "enabled": false,
+    "enabled": true,
     "type": "Shades",
     "rvcIndex": 89,
     "sourceAddress": 146,
@@ -170,7 +178,7 @@
     }
   },
   {
-    "enabled": false,
+    "enabled": true,
     "type": "Shades",
     "rvcIndex": 90,
     "sourceAddress": 146,
@@ -183,7 +191,7 @@
     }
   },
   {
-    "enabled": false,
+    "enabled": true,
     "type": "Shades",
     "rvcIndex": 91,
     "sourceAddress": 146,
@@ -196,7 +204,7 @@
     }
   },
   {
-    "enabled": false,
+    "enabled": true,
     "type": "Shades",
     "rvcIndex": 92,
     "sourceAddress": 146,
@@ -209,7 +217,7 @@
     }
   },
   {
-    "enabled": false,
+    "enabled": true,
     "type": "Shades",
     "rvcIndex": 93,
     "sourceAddress": 146,
@@ -257,7 +265,7 @@
     }
   },
   {
-    "enabled": false,
+    "enabled": true,
     "type": "Tank",
     "rvcIndex": 0,
     "sourceAddress": 250,
@@ -268,7 +276,7 @@
     }
   },
   {
-    "enabled": false,
+    "enabled": true,
     "type": "Tank",
     "rvcIndex": 2,
     "sourceAddress": 250,
@@ -279,7 +287,7 @@
     }
   },
   {
-    "enabled": false,
+    "enabled": true,
     "type": "Tank",
     "rvcIndex": 1,
     "sourceAddress": 250,

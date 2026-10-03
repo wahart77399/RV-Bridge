@@ -299,22 +299,17 @@ bool ThermostatView::updateView(void) {
 
     ThermostatView::createCategory();
 
-    const char* append = " Fan";
-    size_t buffer_size = strlen(spanDevName) + strlen(append) + 1; 
-    char* fanName = new char[buffer_size];
-    strcpy(fanName, spanDevName);
-    strcat(fanName, append);
+    const String fanName = String(spanDevName) + " Fan";
     new SpanAccessory(); 
     new Service::AccessoryInformation(); 
     new Characteristic::Identify();
-    new Characteristic::Name(fanName);
+    new Characteristic::Name(fanName.c_str());
     ThermostatView::FanController* fn = new ThermostatView::FanController(vw, (HVAC_Thermostat*)model);
 
     new SpanAccessory(); 
     new Service::AccessoryInformation(); 
     new Characteristic::Identify();
     new Characteristic::Name(spanDevName);
-    new Characteristic::TemperatureDisplayUnits(homeKitTemperatureDisplayFahrenheit);
 
     ThermostatView::ThermostatController* controller = new ThermostatView::ThermostatController(vw, model, fn, spanDevName);
     vw->setController(controller);

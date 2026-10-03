@@ -198,11 +198,14 @@ class GenericDevice {
             return *this;
         }
 
+        GenericDevice(GenericDevice&&) = delete;
+        GenericDevice& operator=(GenericDevice&&) = delete;
+
         virtual void printDevice(void);
         uint8_t getSourceAddress(void) const { return sourceAddress; }
     public:
 
-        ~GenericDevice() {
+        virtual ~GenericDevice() {
             // Destructor
             if (currentData) 
                 delete[] currentData;

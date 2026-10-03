@@ -170,6 +170,8 @@ class FloorHeat : public GenericDevice {
                 commandData[i] = INVALID_DATA; // initialize to invalid data
             }
         }
+        FloorHeat(FloorHeat&&) = delete;
+        FloorHeat& operator=(FloorHeat&&) = delete;
         virtual ~FloorHeat() {
             // Destructor implementation
             if (commandData != nullptr) {

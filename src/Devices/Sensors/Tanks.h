@@ -95,6 +95,9 @@ class Tanks : public GenericDevice {
             // Constructor with parameters implementation
         }
 
+        Tanks(Tanks&&) = delete;
+        Tanks& operator=(Tanks&&) = delete;
+
         virtual ~Tanks() {
             // Destructor implementation
         } 

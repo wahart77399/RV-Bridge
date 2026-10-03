@@ -352,6 +352,9 @@ class Battery : public GenericDevice {
         }
 
 
+        Battery(Battery&&) = delete;
+        Battery& operator=(Battery&&) = delete;
+
         virtual ~Battery() {
             // Destructor implementation
             delete[] source2Data;
