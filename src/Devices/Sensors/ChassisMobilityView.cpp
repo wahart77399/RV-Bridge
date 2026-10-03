@@ -30,14 +30,14 @@ void ChassisMobilityView::createChassisMobilityView(GenericDevice* model, const 
     RV_PRINTF("ChassisMobilityView::createChassisMobilityView called\n");
     SpanView::prepHomeSpan();
     // ChassisMobilityView::createBridge();
-    new SpanAccessory(); 
+    SpanView::createAccessory();
     new Service::AccessoryInformation(); 
     new Characteristic::Identify();
     new Characteristic::Name(spanDevName);
     ChassisMobilityView* tmp = new ChassisMobilityView(model, spanDevName);
 
 
-    new SpanAccessory(); 
+    SpanView::createAccessory();
     new Service::AccessoryInformation(); 
     new Characteristic::Identify();
     new Characteristic::Name(spanDevName);

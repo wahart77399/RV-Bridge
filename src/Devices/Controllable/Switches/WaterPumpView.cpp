@@ -93,7 +93,7 @@ void WaterPumpView::createWaterPumpView(GenericDevice* model, const char* spanDe
     RV_PRINTF("WaterPumpView::createWaterPumpView called\n");
     SpanView::prepHomeSpan();
 
-    new SpanAccessory(); 
+    SpanView::createAccessory();
     new Service::AccessoryInformation(); 
     new Characteristic::Identify();
     new Characteristic::Name(spanDevName);

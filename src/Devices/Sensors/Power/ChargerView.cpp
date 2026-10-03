@@ -15,34 +15,31 @@ ChargerView::ChargerView(Charger* model, const char* name)
 
 void ChargerView::buildChargeAccessories(const char* name) {
     // Measured DC charge voltage (from CHARGER_STATUS_2)
-    new SpanAccessory();
+    SpanView::createAccessory();
         new Service::AccessoryInformation();
             new Characteristic::Identify();
             new Characteristic::Name((String(name) + " Charge V").c_str());
         new Service::TemperatureSensor();
-            measuredVoltChar_ = new Characteristic::CurrentTemperature(0.0);
-            measuredVoltChar_->setRange(-20, 100);
-            new Characteristic::TemperatureDisplayUnits(1);
+                measuredVoltChar_ = new Characteristic::CurrentTemperature(tempCfromTempF(0.0F));
+                measuredVoltChar_->setRange(tempCfromTempF(-20.0F), tempCfromTempF(100.0F));
 
     // Measured DC charge current
-    new SpanAccessory();
+    SpanView::createAccessory();
         new Service::AccessoryInformation();
             new Characteristic::Identify();
             new Characteristic::Name((String(name) + " Charge A").c_str());
         new Service::TemperatureSensor();
-            measuredCurrChar_ = new Characteristic::CurrentTemperature(0.0);
-            measuredCurrChar_->setRange(-50, 200);
-            new Characteristic::TemperatureDisplayUnits(1);
+                measuredCurrChar_ = new Characteristic::CurrentTemperature(tempCfromTempF(0.0F));
+                measuredCurrChar_->setRange(tempCfromTempF(-50.0F), tempCfromTempF(200.0F));
 
     // Operating state 0..7 (see ChargerOperatingState)
-    new SpanAccessory();
+    SpanView::createAccessory();
         new Service::AccessoryInformation();
             new Characteristic::Identify();
             new Characteristic::Name((String(name) + " State").c_str());
         new Service::TemperatureSensor();
-            stateChar_ = new Characteristic::CurrentTemperature(0.0);
-            stateChar_->setRange(0, 10);
-            new Characteristic::TemperatureDisplayUnits(1);
+                stateChar_ = new Characteristic::CurrentTemperature(tempCfromTempF(0.0F));
+                stateChar_->setRange(tempCfromTempF(0.0F), tempCfromTempF(10.0F));
 }
 
 bool ChargerView::updateView() {
@@ -56,14 +53,13 @@ bool ChargerView::updateView() {
         float a = model_->measuredChargeCurrent();
         float st = static_cast<float>(static_cast<uint8_t>(model_->operatingState()));
 
-        if (measuredVoltChar_ != nullptr) {
+        if ((measuredVoltChar_ != nullptr) && (v >= -20.0F) && (v <= 100.0F)) {
             measuredVoltChar_->setVal(tempCfromTempF(v));
         }
-        if (measuredCurrChar_ != nullptr) {
+        if ((measuredCurrChar_ != nullptr) && (a >= -50.0F) && (a <= 200.0F)) {
             measuredCurrChar_->setVal(tempCfromTempF(a));
         }
-        if (stateChar_ != nullptr) {
-            // state is dimensionless 0..7; still pushed through same path for display
+        if ((stateChar_ != nullptr) && (st >= 0.0F) && (st <= 10.0F)) {
             stateChar_->setVal(tempCfromTempF(st));
         }
 

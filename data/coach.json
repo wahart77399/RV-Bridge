@@ -4,6 +4,7 @@
   "model": "Essex",
   "floorplan": "4551",
   "coachId": "801504",
+  "chassisAid": 61,
   "tanks": [
     {"instance": 0, "capacityLiters": 398, "name" : "fresh" },
     {"instance": 1, "capacityLiters": 227, "name" : "black"},

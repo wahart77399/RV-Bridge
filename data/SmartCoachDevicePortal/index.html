@@ -86,8 +86,14 @@
         </header>
         <label for="rename-name">Device name</label>
         <input id="rename-name" name="name" type="text" maxlength="64" autocomplete="off" required />
+        <label for="rename-room">Suggested room</label>
+        <input id="rename-room" name="room" type="text" maxlength="64" autocomplete="off" list="room-options" />
+        <datalist id="room-options">
+          <option value="Living Room"></option><option value="Kitchen"></option><option value="Bedroom"></option>
+          <option value="Bathroom"></option><option value="Utility Bay"></option><option value="Exterior"></option>
+        </datalist>
         <p class="rename-error" id="rename-error" role="alert"></p>
-        <div class="rename-actions"><button id="rename-cancel" type="button">Cancel</button><button class="rename-save" id="rename-save" type="submit">Save name</button></div>
+        <div class="rename-actions"><button id="rename-cancel" type="button">Cancel</button><button class="rename-save" id="rename-save" type="submit">Save device</button></div>
       </form>
     </dialog>
     <dialog class="privacy-dialog" id="privacy-dialog" aria-labelledby="privacy-dialog-title">
@@ -102,7 +108,7 @@
       <div class="privacy-content">
         <p class="privacy-draft-warning">This draft describes the current prototype. It is not a final privacy policy or legal advice.</p>
         <section><h3>Information used</h3><p>The portal reads coach and device configuration, including coach identifiers and specifications, device types, network addresses, indexes, and device names. It reads <code>coach.json</code> and <code>devices.json</code> from the connected bridge and refreshes them periodically.</p></section>
-        <section><h3>How information is used</h3><p>The portal displays the configuration in your browser. When you rename a device, its new name and its type, source address, and RVC index are saved in <code>devices.json</code>. Coach details, tank capacities, cover timings, and battery specifications are saved in <code>coach.json</code>.</p></section>
+        <section><h3>How information is used</h3><p>The portal displays the configuration in your browser. When you edit a device, its name and suggested room are saved with its type, source address, RVC index, and accessory ID in <code>devices.json</code>. Room placement in Apple Home is managed separately. Coach details, tank capacities, cover timings, and battery specifications are saved in <code>coach.json</code>.</p></section>
         <section><h3>Storage and retention</h3><p>Configuration is stored on the bridge filesystem. The page holds fetched data in browser memory while it is open. This prototype does not set cookies, create user accounts, or include analytics code. Bridge access logs and browser-managed storage are outside this page's control.</p></section>
         <section><h3>Third-party services</h3><p>The page currently requests fonts from Google Fonts. Your browser connects to Google's font services to retrieve those assets; Google may receive connection information such as your IP address. Consider self-hosting the fonts or removing the external request before release.</p></section>
         <section><h3>Operator and contact</h3><p>The responsible operator, privacy contact, applicable regions, and any retention or deletion contact are not yet specified. Add these details and have the final notice reviewed for the places where the portal will be offered.</p></section>
@@ -130,6 +136,7 @@
       const renameDialog = document.querySelector("#rename-dialog");
       const renameForm = document.querySelector("#rename-form");
       const renameInput = document.querySelector("#rename-name");
+      const roomInput = document.querySelector("#rename-room");
       const renameError = document.querySelector("#rename-error");
       const renameSave = document.querySelector("#rename-save");
       const privacyDialog = document.querySelector("#privacy-dialog");
@@ -422,7 +429,7 @@
             name: item.name || sample.name || item.type,
             type: item.type,
             category,
-            room: sample.room || `RVC index ${item.rvcIndex}`,
+            room: item.room || "Unassigned",
             status: "Online",
             sourceLabel: `SA 0x${Number(item.sourceAddress).toString(16).toUpperCase()} · RVC ${item.rvcIndex}`,
             dgns: sample.dgns || []
@@ -480,6 +487,7 @@
         }
         pendingRenameId = device.id;
         renameInput.value = device.name;
+        roomInput.value = device.room || "";
         renameError.textContent = "";
         renameDialog.showModal();
         renameInput.select();
@@ -489,6 +497,7 @@
         event.preventDefault();
         const device = devices.find((item) => item.id === pendingRenameId);
         const name = renameInput.value.trim();
+        const room = roomInput.value.trim();
         if (!device || !name) {
           renameError.textContent = "Enter a device name.";
           return;
@@ -499,10 +508,11 @@
           const response = await fetch("/devices/rename", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ type: device.type, sourceAddress: device.sourceAddress, rvcIndex: device.rvcIndex, name })
+            body: JSON.stringify({ type: device.type, sourceAddress: device.sourceAddress, rvcIndex: device.rvcIndex, name, room })
           });
           if (!response.ok) throw new Error("The bridge rejected the rename");
           device.name = name;
+          device.room = room || `RVC index ${device.rvcIndex}`;
           renameDialog.close();
           renderDevices();
           showToast(`${device.id} is now “${device.name}”`);

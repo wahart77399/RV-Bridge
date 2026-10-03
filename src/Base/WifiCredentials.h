@@ -16,6 +16,7 @@ public:
     static bool load(String& ssid, String& password);
     static bool save(const String& ssid, const String& password);
     static bool clear();
+    static String preparePairingCode();
 
 private:
     static constexpr const char* kNamespace = "wifi";

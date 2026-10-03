@@ -1,119 +1,435 @@
 [
   {
-    "enabled": true,
-    "type": "DC_DimmableSwitch",
-    "rvcIndex": 82,
-    "sourceAddress": 141,
-    "name": "Living Room  82",
-    "order": 100
-  },
-  {
-    "enabled": true,
-    "type": "DC_DimmableSwitch",
-    "rvcIndex": 84,
-    "sourceAddress": 141,
-    "name": "Bedroom Slider 84",
-    "order": 100
-  },
-  {
-    "enabled": true,
-    "type": "DC_DimmableSwitch",
-    "rvcIndex": 85,
-    "sourceAddress": 141,
-    "name": "Master Bathroom 85",
-    "order": 100
-  },
-  {
-    "enabled": true,
-    "type": "DC_Switch",
-    "rvcIndex": 98,
-    "sourceAddress": 141,
-    "name": "Driver Side Security Light 98",
-    "order": 100
-  },
-  {
-    "enabled": true,
-    "type": "DC_Switch",
-    "rvcIndex": 99,
-    "sourceAddress": 141,
-    "name": "Passenger Side Security Light 99",
-    "order": 100
-  },
-  {
-    "enabled": true,
-    "type": "Thermostat",
+    "type": "Inverter",
     "rvcIndex": 1,
-    "sourceAddress": 103,
-    "name": "Living Room Thermostat",
-    "order": 100
+    "sourceAddress": 250,
+    "name": "Inv",
+    "order": 100,
+    "enabled": true,
+    "learned": true,
+    "aid": 2,
+    "room": ""
   },
   {
-    "enabled": true,
     "type": "Thermostat",
     "rvcIndex": 2,
     "sourceAddress": 103,
     "name": "Kitchen Thermostat",
-    "order": 100
+    "order": 100,
+    "enabled": true,
+    "learned": true,
+    "aid": 6,
+    "room": ""
+  },
+  {
+    "enabled": false,
+    "type": "Thermostat",
+    "rvcIndex": 164,
+    "name": "Thermostat 164",
+    "order": 100,
+    "sourceAddress": 207,
+    "learned": true,
+    "aid": 63,
+    "room": ""
+  },
+  {
+    "enabled": false,
+    "type": "Thermostat",
+    "rvcIndex": 166,
+    "name": "Thermostat 166",
+    "order": 100,
+    "sourceAddress": 207,
+    "learned": true,
+    "aid": 66,
+    "room": ""
+  },
+  {
+    "enabled": false,
+    "type": "Thermostat",
+    "rvcIndex": 167,
+    "name": "Thermostat 167",
+    "order": 100,
+    "sourceAddress": 207,
+    "learned": true,
+    "aid": 69,
+    "room": ""
+  },
+  {
+    "type": "Battery",
+    "rvcIndex": 1,
+    "sourceAddress": 250,
+    "name": "House Battery Bank",
+    "order": 100,
+    "extra": {
+      "batteryKind": "house"
+    },
+    "enabled": true,
+    "learned": true,
+    "aid": 9,
+    "room": ""
+  },
+  {
+    "enabled": false,
+    "type": "Battery",
+    "rvcIndex": 249,
+    "name": "Battery 249",
+    "order": 100,
+    "sourceAddress": 250,
+    "learned": true,
+    "aid": 72,
+    "room": ""
+  },
+  {
+    "type": "WaterPump",
+    "rvcIndex": 0,
+    "sourceAddress": 250,
+    "name": "Water Pump",
+    "order": 100,
+    "enabled": true,
+    "learned": true,
+    "aid": 10,
+    "room": ""
+  },
+  {
+    "enabled": true,
+    "type": "Charger",
+    "rvcIndex": 1,
+    "name": "Charger",
+    "order": 100,
+    "sourceAddress": 250,
+    "learned": true,
+    "aid": 11,
+    "room": ""
+  },
+  {
+    "type": "Tank",
+    "rvcIndex": 0,
+    "sourceAddress": 250,
+    "name": "Fresh Tank",
+    "order": 100,
+    "extra": {
+      "tankKind": "fresh"
+    },
+    "enabled": true,
+    "learned": true,
+    "aid": 18,
+    "room": ""
+  },
+  {
+    "type": "Tank",
+    "rvcIndex": 1,
+    "sourceAddress": 250,
+    "name": "Black Tank",
+    "order": 100,
+    "extra": {
+      "tankKind": "black"
+    },
+    "enabled": true,
+    "learned": true,
+    "aid": 19,
+    "room": ""
+  },
+  {
+    "type": "Tank",
+    "rvcIndex": 2,
+    "sourceAddress": 250,
+    "name": "Gray Tank",
+    "order": 100,
+    "extra": {
+      "tankKind": "gray"
+    },
+    "enabled": true,
+    "learned": true,
+    "aid": 20,
+    "room": ""
+  },
+  {
+    "type": "ATS",
+    "rvcIndex": 1,
+    "sourceAddress": 79,
+    "name": "ATS",
+    "order": 100,
+    "enabled": true,
+    "learned": true,
+    "aid": 21,
+    "room": ""
   },
   {
     "enabled": true,
     "type": "Thermostat",
-    "rvcIndex": 4,
+    "rvcIndex": 3,
+    "name": "Bathroom Thermostat",
+    "order": 100,
     "sourceAddress": 103,
-    "name": "Bedroom Thermostat",
-    "order": 100
+    "learned": true,
+    "aid": 29,
+    "room": ""
   },
   {
-    "enabled": true,
-    "type": "WaterPump",
-    "rvcIndex": 0,
-    "sourceAddress": 146,
-    "name": "Water Pump",
-    "order": 100
-  },
-  {
-    "enabled": true,
-    "type": "DoorLock",
-    "rvcIndex": 1,
-    "sourceAddress": 146,
-    "name": "Front Door",
-    "order": 100
-  },
-{
-    "enabled": true,
-    "type": "DoorLock",
-    "rvcIndex": 2,
-    "sourceAddress": 146,
-    "name": "Bay Doors",
-    "order": 100
-  },
-
-  {
-    "enabled": true,
     "type": "FloorHeat",
     "rvcIndex": 1,
     "sourceAddress": 97,
     "name": "Living Room Floor Heat",
-    "order": 100
+    "order": 100,
+    "enabled": true,
+    "learned": true,
+    "aid": 32,
+    "room": ""
   },
   {
-    "enabled": true,
     "type": "FloorHeat",
     "rvcIndex": 2,
     "sourceAddress": 97,
     "name": "Kitchen Floor Heat",
-    "order": 100
+    "order": 100,
+    "enabled": true,
+    "learned": true,
+    "aid": 33,
+    "room": ""
   },
   {
-    "enabled": true,
     "type": "FloorHeat",
     "rvcIndex": 3,
     "sourceAddress": 97,
     "name": "Bed n Bath Floor Heat",
-    "order": 100
+    "order": 100,
+    "enabled": true,
+    "learned": true,
+    "aid": 34,
+    "room": ""
   },
   {
+    "type": "Thermostat",
+    "rvcIndex": 4,
+    "sourceAddress": 103,
+    "name": "Bedroom Thermostat",
+    "order": 100,
     "enabled": true,
+    "learned": true,
+    "aid": 35,
+    "room": ""
+  },
+  {
+    "type": "DoorLock",
+    "rvcIndex": 2,
+    "sourceAddress": 191,
+    "name": "Bay Doors",
+    "order": 100,
+    "enabled": true,
+    "learned": true,
+    "aid": 38,
+    "room": ""
+  },
+  {
+    "enabled": false,
+    "type": "DoorLock",
+    "rvcIndex": 5,
+    "name": "Lock 5",
+    "order": 100,
+    "sourceAddress": 191,
+    "learned": true,
+    "aid": 73,
+    "room": ""
+  },
+  {
+    "type": "Generator",
+    "rvcIndex": 1,
+    "sourceAddress": 250,
+    "name": "Generator",
+    "order": 100,
+    "enabled": true,
+    "learned": true,
+    "aid": 39,
+    "room": ""
+  },
+  {
+    "type": "Thermostat",
+    "rvcIndex": 1,
+    "sourceAddress": 103,
+    "name": "Living Room Thermostat",
+    "order": 100,
+    "enabled": true,
+    "learned": true,
+    "aid": 43,
+    "room": ""
+  },
+  {
+    "type": "DoorLock",
+    "rvcIndex": 1,
+    "sourceAddress": 191,
+    "name": "Front Door",
+    "order": 100,
+    "enabled": true,
+    "learned": true,
+    "aid": 46,
+    "room": ""
+  },
+  {
+    "enabled": false,
+    "type": "DoorLock",
+    "rvcIndex": 4,
+    "name": "Lock 4",
+    "order": 100,
+    "sourceAddress": 191,
+    "learned": true,
+    "aid": 74,
+    "room": ""
+  },
+  {
+    "enabled": false,
+    "type": "DoorLock",
+    "rvcIndex": 3,
+    "name": "Lock 3",
+    "order": 100,
+    "sourceAddress": 191,
+    "learned": true,
+    "aid": 75,
+    "room": ""
+  },
+  {
+    "enabled": false,
+    "type": "DC_Switch",
+    "rvcIndex": 81,
+    "name": "Light 81",
+    "order": 100,
+    "sourceAddress": 141,
+    "learned": true,
+    "aid": 76,
+    "room": ""
+  },
+  {
+    "type": "DC_DimmableSwitch",
+    "rvcIndex": 82,
+    "sourceAddress": 141,
+    "name": "Living Room  82",
+    "order": 100,
+    "enabled": true,
+    "learned": true,
+    "aid": 47,
+    "room": ""
+  },
+  {
+    "enabled": false,
+    "type": "DC_Switch",
+    "rvcIndex": 83,
+    "name": "Light 83",
+    "order": 100,
+    "sourceAddress": 141,
+    "learned": true,
+    "aid": 77,
+    "room": ""
+  },
+  {
+    "type": "DC_DimmableSwitch",
+    "rvcIndex": 84,
+    "sourceAddress": 141,
+    "name": "Bedroom Slider 84",
+    "order": 100,
+    "enabled": true,
+    "learned": true,
+    "aid": 48,
+    "room": ""
+  },
+  {
+    "type": "DC_DimmableSwitch",
+    "rvcIndex": 85,
+    "sourceAddress": 141,
+    "name": "Master Bathroom 85",
+    "order": 100,
+    "enabled": true,
+    "learned": true,
+    "aid": 49,
+    "room": ""
+  },
+  {
+    "enabled": false,
+    "type": "DC_Switch",
+    "rvcIndex": 86,
+    "name": "Light 86",
+    "order": 100,
+    "sourceAddress": 141,
+    "learned": true,
+    "aid": 78,
+    "room": ""
+  },
+  {
+    "enabled": false,
+    "type": "DC_Switch",
+    "rvcIndex": 87,
+    "name": "Light 87",
+    "order": 100,
+    "sourceAddress": 141,
+    "learned": true,
+    "aid": 79,
+    "room": ""
+  },
+  {
+    "enabled": false,
+    "type": "DC_Switch",
+    "rvcIndex": 94,
+    "name": "Light 94",
+    "order": 100,
+    "sourceAddress": 141,
+    "learned": true,
+    "aid": 80,
+    "room": ""
+  },
+  {
+    "enabled": false,
+    "type": "DC_Switch",
+    "rvcIndex": 95,
+    "name": "Light 95",
+    "order": 100,
+    "sourceAddress": 141,
+    "learned": true,
+    "aid": 81,
+    "room": ""
+  },
+  {
+    "enabled": false,
+    "type": "DC_Switch",
+    "rvcIndex": 96,
+    "name": "Light 96",
+    "order": 100,
+    "sourceAddress": 141,
+    "learned": true,
+    "aid": 82,
+    "room": ""
+  },
+  {
+    "enabled": false,
+    "type": "DC_Switch",
+    "rvcIndex": 97,
+    "name": "Light 97",
+    "order": 100,
+    "sourceAddress": 141,
+    "learned": true,
+    "aid": 83,
+    "room": ""
+  },
+  {
+    "type": "DC_Switch",
+    "rvcIndex": 98,
+    "sourceAddress": 141,
+    "name": "Driver Side Security Light 98",
+    "order": 100,
+    "enabled": true,
+    "learned": true,
+    "aid": 50,
+    "room": ""
+  },
+  {
+    "type": "DC_Switch",
+    "rvcIndex": 99,
+    "sourceAddress": 141,
+    "name": "Passenger Side Security Light 99",
+    "order": 100,
+    "enabled": true,
+    "learned": true,
+    "aid": 51,
+    "room": ""
+  },
+  {
     "type": "Awning",
     "rvcIndex": 2,
     "sourceAddress": 136,
@@ -123,36 +439,45 @@
       "awningKey": "front",
       "extendSec": "45",
       "retractSec": "50"
-    }
+    },
+    "enabled": true,
+    "learned": false,
+    "aid": 52,
+    "room": ""
   },
   {
-    "enabled": true,
     "type": "Awning",
     "rvcIndex": 3,
     "sourceAddress": 136,
     "name": "Rear Awning",
-    "order" : 100,
+    "order": 100,
     "extra": {
       "awningKey": "rear",
       "extendSec": "40",
       "retractSec": "45"
-    }
+    },
+    "enabled": true,
+    "learned": false,
+    "aid": 53,
+    "room": ""
   },
   {
-    "enabled": true,
     "type": "Awning",
     "rvcIndex": 1,
     "sourceAddress": 136,
     "name": "Door Awning",
-    "order" : 100,
+    "order": 100,
     "extra": {
       "awningKey": "door",
       "extendSec": "25",
       "retractSec": "30"
-    }
+    },
+    "enabled": true,
+    "learned": false,
+    "aid": 54,
+    "room": ""
   },
   {
-    "enabled": true,
     "type": "Shades",
     "rvcIndex": 88,
     "sourceAddress": 146,
@@ -162,10 +487,13 @@
       "awningKey": "living_room_day",
       "extendSec": "13",
       "retractSec": "15"
-    }
+    },
+    "enabled": true,
+    "learned": false,
+    "aid": 55,
+    "room": ""
   },
   {
-    "enabled": true,
     "type": "Shades",
     "rvcIndex": 89,
     "sourceAddress": 146,
@@ -175,10 +503,13 @@
       "awningKey": "living_room_night",
       "extendSec": "13",
       "retractSec": "15"
-    }
+    },
+    "enabled": true,
+    "learned": false,
+    "aid": 56,
+    "room": ""
   },
   {
-    "enabled": true,
     "type": "Shades",
     "rvcIndex": 90,
     "sourceAddress": 146,
@@ -188,10 +519,13 @@
       "awningKey": "bedroom_day",
       "extendSec": "8",
       "retractSec": "10"
-    }
+    },
+    "enabled": true,
+    "learned": false,
+    "aid": 57,
+    "room": ""
   },
   {
-    "enabled": true,
     "type": "Shades",
     "rvcIndex": 91,
     "sourceAddress": 146,
@@ -201,10 +535,13 @@
       "awningKey": "bedroom_night",
       "extendSec": "8",
       "retractSec": "10"
-    }
+    },
+    "enabled": true,
+    "learned": false,
+    "aid": 58,
+    "room": ""
   },
   {
-    "enabled": true,
     "type": "Shades",
     "rvcIndex": 92,
     "sourceAddress": 146,
@@ -214,10 +551,13 @@
       "awningKey": "bathroom_day",
       "extendSec": "8",
       "retractSec": "10"
-    }
+    },
+    "enabled": true,
+    "learned": false,
+    "aid": 59,
+    "room": ""
   },
   {
-    "enabled": true,
     "type": "Shades",
     "rvcIndex": 93,
     "sourceAddress": 146,
@@ -227,74 +567,10 @@
       "awningKey": "bathroom_night",
       "extendSec": "8",
       "retractSec": "10"
-    }
-  },
-  {
+    },
     "enabled": true,
-    "type": "Inverter",
-    "rvcIndex": 1,
-    "sourceAddress": 250,
-    "name": "Inv",
-    "order": 100
-  },
-  {
-    "enabled": true,
-    "type": "Generator",
-    "rvcIndex": 1,
-    "sourceAddress": 250,
-    "name": "Generator",
-    "order": 100
-  },
-  {
-    "enabled": true,
-    "type": "ATS",
-    "rvcIndex": 1,
-    "sourceAddress": 250,
-    "name": "ATS",
-    "order": 100
-  },
-  {
-    "enabled": true,
-    "type": "Battery",
-    "rvcIndex": 1,
-    "sourceAddress": 250,
-    "name": "House Battery Bank",
-    "order": 100,
-    "extra": {
-      "batteryKind": "house"
-    }
-  },
-  {
-    "enabled": true,
-    "type": "Tank",
-    "rvcIndex": 0,
-    "sourceAddress": 250,
-    "name": "Fresh Tank",
-    "order": 100,
-    "extra": {
-      "tankKind": "fresh"
-    }
-  },
-  {
-    "enabled": true,
-    "type": "Tank",
-    "rvcIndex": 2,
-    "sourceAddress": 250,
-    "name": "Gray Tank",
-    "order": 100,
-    "extra": {
-      "tankKind": "gray"
-    }
-  },
-  {
-    "enabled": true,
-    "type": "Tank",
-    "rvcIndex": 1,
-    "sourceAddress": 250,
-    "name": "Black Tank",
-    "order": 100,
-    "extra": {
-      "tankKind": "black"
-    }
+    "learned": false,
+    "aid": 60,
+    "room": ""
   }
 ]

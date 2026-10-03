@@ -114,7 +114,7 @@ void DoorLockView::createDoorLockView(GenericDevice* model, const char* spanDevN
     RV_PRINTF("DoorLockView::createDoorLockView called\n");
     SpanView::prepHomeSpan();
     DoorLockView::createBridge();
-    new SpanAccessory(); 
+    SpanView::createAccessory();
     new Service::AccessoryInformation(); 
     new Characteristic::Identify();
     new Characteristic::Name(spanDevName);

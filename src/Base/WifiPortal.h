@@ -42,6 +42,7 @@ private:
     void registerRoutes();
     void handleRoot();
     void handleSave();
+    bool saveCoachDetails();
     void handleNotFound();
     String pageHtml() const;
 };

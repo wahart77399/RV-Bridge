@@ -20,23 +20,18 @@ class TanksView : SpanView {
         struct Tank : Service::TemperatureSensor {
             Characteristic::CurrentTemperature*      percent;
             // Characteristic::StatusLowBattery*        statusLowTank;
-            Characteristic::ConfiguredName*    configuredName; // add ConfiguredName characteristic 
-            Characteristic::Name                     name;
+            Characteristic::ConfiguredName*    configuredName;
             uint16_t                                 sizeValue = 0; // size of tank in gallons  
             
-            Tank(const char* nm) : Service::TemperatureSensor(), percent(nullptr), name(nm) {
+            Tank(const char* nm) : Service::TemperatureSensor(), percent(nullptr), configuredName(nullptr) {
                 percent = new Characteristic::CurrentTemperature();
                 // statusLowTank = new Characteristic::StatusLowBattery();
                 Serial.print("Tank:Service::BatteryService Configuring Tanks");                 // initialization message
                 Serial.print("\n");
                 percent->setDescription("Tank Percent");
-                name.setDescription("Tank Name");
                 
                 percent->setRange(tempCfromTempF(ZERO_PERCENT_DEGREE_F), tempCfromTempF(ONE_HUNDRED_PERCENT_DEGREE_F)); // percent 
-                // name.setString("Tank"); // default name
-                new Characteristic::ConfiguredName(nm); // add ConfiguredName characteristic
-
-                new Characteristic::TemperatureDisplayUnits(homeKitTemperatureDisplayFahrenheit );
+                configuredName = new Characteristic::ConfiguredName(nm);
 
             }
 
@@ -48,8 +43,7 @@ class TanksView : SpanView {
                 }
  } 
             void setTankSize(const uint16_t tankSize) { sizeValue = tankSize; }
-            void setName(const char* nm) { name.setString(nm); }
-            void setDescription(const char* desc) { name.setDescription(desc); percent->setDescription(desc); }
+                void setDescription(const char* desc) { percent->setDescription(desc); }
         };
         Tank* tank;
         void setTank(Tank* tnk) { tank = tnk; }

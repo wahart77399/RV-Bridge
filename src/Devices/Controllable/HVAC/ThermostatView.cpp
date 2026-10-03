@@ -300,13 +300,13 @@ bool ThermostatView::updateView(void) {
     ThermostatView::createCategory();
 
     const String fanName = String(spanDevName) + " Fan";
-    new SpanAccessory(); 
+    SpanView::createAccessory();
     new Service::AccessoryInformation(); 
     new Characteristic::Identify();
     new Characteristic::Name(fanName.c_str());
     ThermostatView::FanController* fn = new ThermostatView::FanController(vw, (HVAC_Thermostat*)model);
 
-    new SpanAccessory(); 
+    SpanView::createAccessory();
     new Service::AccessoryInformation(); 
     new Characteristic::Identify();
     new Characteristic::Name(spanDevName);

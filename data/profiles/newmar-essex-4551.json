@@ -1,0 +1,329 @@
+[
+  {
+    "type": "DC_DimmableSwitch",
+    "rvcIndex": 82,
+    "sourceAddress": 141,
+    "name": "Living Room  82",
+    "order": 100,
+    "aid": 47,
+    "room": ""
+  },
+  {
+    "type": "DC_DimmableSwitch",
+    "rvcIndex": 84,
+    "sourceAddress": 141,
+    "name": "Bedroom Slider 84",
+    "order": 100,
+    "aid": 48,
+    "room": ""
+  },
+  {
+    "type": "DC_DimmableSwitch",
+    "rvcIndex": 85,
+    "sourceAddress": 141,
+    "name": "Master Bathroom 85",
+    "order": 100,
+    "aid": 49,
+    "room": ""
+  },
+  {
+    "type": "DC_Switch",
+    "rvcIndex": 98,
+    "sourceAddress": 141,
+    "name": "Driver Side Security Light 98",
+    "order": 100,
+    "aid": 50,
+    "room": ""
+  },
+  {
+    "type": "DC_Switch",
+    "rvcIndex": 99,
+    "sourceAddress": 141,
+    "name": "Passenger Side Security Light 99",
+    "order": 100,
+    "aid": 51,
+    "room": ""
+  },
+  {
+    "type": "Thermostat",
+    "rvcIndex": 1,
+    "sourceAddress": 103,
+    "name": "Living Room Thermostat",
+    "order": 100,
+    "aid": 43,
+    "room": ""
+  },
+  {
+    "type": "Thermostat",
+    "rvcIndex": 2,
+    "sourceAddress": 103,
+    "name": "Kitchen Thermostat",
+    "order": 100,
+    "aid": 6,
+    "room": ""
+  },
+  {
+    "type": "Thermostat",
+    "rvcIndex": 4,
+    "sourceAddress": 103,
+    "name": "Bedroom Thermostat",
+    "order": 100,
+    "aid": 35,
+    "room": ""
+  },
+  {
+    "type": "WaterPump",
+    "rvcIndex": 0,
+    "sourceAddress": 146,
+    "name": "Water Pump",
+    "order": 100,
+    "aid": 10,
+    "room": ""
+  },
+  {
+    "type": "DoorLock",
+    "rvcIndex": 1,
+    "sourceAddress": 146,
+    "name": "Front Door",
+    "order": 100,
+    "aid": 46,
+    "room": ""
+  },
+  {
+    "type": "DoorLock",
+    "rvcIndex": 2,
+    "sourceAddress": 146,
+    "name": "Bay Doors",
+    "order": 100,
+    "aid": 38,
+    "room": ""
+  },
+  {
+    "type": "FloorHeat",
+    "rvcIndex": 1,
+    "sourceAddress": 97,
+    "name": "Living Room Floor Heat",
+    "order": 100,
+    "aid": 32,
+    "room": ""
+  },
+  {
+    "type": "FloorHeat",
+    "rvcIndex": 2,
+    "sourceAddress": 97,
+    "name": "Kitchen Floor Heat",
+    "order": 100,
+    "aid": 33,
+    "room": ""
+  },
+  {
+    "type": "FloorHeat",
+    "rvcIndex": 3,
+    "sourceAddress": 97,
+    "name": "Bed n Bath Floor Heat",
+    "order": 100,
+    "aid": 34,
+    "room": ""
+  },
+  {
+    "type": "Awning",
+    "rvcIndex": 2,
+    "sourceAddress": 136,
+    "name": "Front Awning",
+    "order": 100,
+    "extra": {
+      "awningKey": "front",
+      "extendSec": "45",
+      "retractSec": "50"
+    },
+    "aid": 52,
+    "room": ""
+  },
+  {
+    "type": "Awning",
+    "rvcIndex": 3,
+    "sourceAddress": 136,
+    "name": "Rear Awning",
+    "order": 100,
+    "extra": {
+      "awningKey": "rear",
+      "extendSec": "40",
+      "retractSec": "45"
+    },
+    "aid": 53,
+    "room": ""
+  },
+  {
+    "type": "Awning",
+    "rvcIndex": 1,
+    "sourceAddress": 136,
+    "name": "Door Awning",
+    "order": 100,
+    "extra": {
+      "awningKey": "door",
+      "extendSec": "25",
+      "retractSec": "30"
+    },
+    "aid": 54,
+    "room": ""
+  },
+  {
+    "type": "Shades",
+    "rvcIndex": 88,
+    "sourceAddress": 146,
+    "name": "Living Room Day Shade",
+    "order": 100,
+    "extra": {
+      "awningKey": "living_room_day",
+      "extendSec": "13",
+      "retractSec": "15"
+    },
+    "aid": 55,
+    "room": ""
+  },
+  {
+    "type": "Shades",
+    "rvcIndex": 89,
+    "sourceAddress": 146,
+    "name": "Living Room Night Shade",
+    "order": 100,
+    "extra": {
+      "awningKey": "living_room_night",
+      "extendSec": "13",
+      "retractSec": "15"
+    },
+    "aid": 56,
+    "room": ""
+  },
+  {
+    "type": "Shades",
+    "rvcIndex": 90,
+    "sourceAddress": 146,
+    "name": "Bedroom Day Shade",
+    "order": 100,
+    "extra": {
+      "awningKey": "bedroom_day",
+      "extendSec": "8",
+      "retractSec": "10"
+    },
+    "aid": 57,
+    "room": ""
+  },
+  {
+    "type": "Shades",
+    "rvcIndex": 91,
+    "sourceAddress": 146,
+    "name": "Bedroom Night Shade",
+    "order": 100,
+    "extra": {
+      "awningKey": "bedroom_night",
+      "extendSec": "8",
+      "retractSec": "10"
+    },
+    "aid": 58,
+    "room": ""
+  },
+  {
+    "type": "Shades",
+    "rvcIndex": 92,
+    "sourceAddress": 146,
+    "name": "Bathroom Day Shade",
+    "order": 100,
+    "extra": {
+      "awningKey": "bathroom_day",
+      "extendSec": "8",
+      "retractSec": "10"
+    },
+    "aid": 59,
+    "room": ""
+  },
+  {
+    "type": "Shades",
+    "rvcIndex": 93,
+    "sourceAddress": 146,
+    "name": "Bathroom Night Shade",
+    "order": 100,
+    "extra": {
+      "awningKey": "bathroom_night",
+      "extendSec": "8",
+      "retractSec": "10"
+    },
+    "aid": 60,
+    "room": ""
+  },
+  {
+    "type": "Inverter",
+    "rvcIndex": 1,
+    "sourceAddress": 250,
+    "name": "Inv",
+    "order": 100,
+    "aid": 2,
+    "room": ""
+  },
+  {
+    "type": "Generator",
+    "rvcIndex": 1,
+    "sourceAddress": 250,
+    "name": "Generator",
+    "order": 100,
+    "aid": 39,
+    "room": ""
+  },
+  {
+    "type": "ATS",
+    "rvcIndex": 1,
+    "sourceAddress": 250,
+    "name": "ATS",
+    "order": 100,
+    "aid": 21,
+    "room": ""
+  },
+  {
+    "type": "Battery",
+    "rvcIndex": 1,
+    "sourceAddress": 250,
+    "name": "House Battery Bank",
+    "order": 100,
+    "extra": {
+      "batteryKind": "house"
+    },
+    "aid": 9,
+    "room": ""
+  },
+  {
+    "type": "Tank",
+    "rvcIndex": 0,
+    "sourceAddress": 250,
+    "name": "Fresh Tank",
+    "order": 100,
+    "extra": {
+      "tankKind": "fresh"
+    },
+    "aid": 18,
+    "room": ""
+  },
+  {
+    "type": "Tank",
+    "rvcIndex": 2,
+    "sourceAddress": 250,
+    "name": "Gray Tank",
+    "order": 100,
+    "extra": {
+      "tankKind": "gray"
+    },
+    "aid": 20,
+    "room": ""
+  },
+  {
+    "type": "Tank",
+    "rvcIndex": 1,
+    "sourceAddress": 250,
+    "name": "Black Tank",
+    "order": 100,
+    "extra": {
+      "tankKind": "black"
+    },
+    "aid": 19,
+    "room": ""
+  }
+]

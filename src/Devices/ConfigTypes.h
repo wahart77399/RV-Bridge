@@ -46,6 +46,7 @@ struct CoachSpec {
     String   model;
     String   floorplan;
     String   coachId;
+    uint32_t chassisAid = 0;
     // std::map<String, TankSpec>     tanks; // key: tank type (fresh, gray, black)
     std::vector<TankSpec>       tanks;
     //std::map<String, BatterySpec>  batteries; // key: battery type (house, chassis)
@@ -122,6 +123,8 @@ struct DeviceConfig {
     uint8_t     rvcIndex = 0;       // instance index for the device
     uint8_t     sourceAddress = 0;  // RVC source address for the device
     String      name;               // Optional name for the device
+    uint32_t    aid = 0;             // Stable starting AID; multi-accessory views use following IDs
+    String      room;                // Suggested HomeKit room; Apple Home owns actual room assignment
     uint16_t    order         = 100;
     // String      homeKitType;        // Optional for documentation or future use
     // String      group;              // HOME_KIT_1 or HOME_KIT_2 or other groupings

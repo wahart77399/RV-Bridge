@@ -150,7 +150,7 @@ void LightDeviceView::createLightDeviceView(GenericDevice* model, const char* sp
     RV_PRINTF("LightDevice::createLightDevice called\n");
     SpanView::prepHomeSpan();
 
-    new SpanAccessory(); 
+    SpanView::createAccessory();
     new Service::AccessoryInformation(); 
     new Characteristic::Identify();
     new Characteristic::Name(spanDevName);

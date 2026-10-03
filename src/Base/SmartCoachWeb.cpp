@@ -1,4 +1,3 @@
-#ifdef FUTURE
 #include "SmartCoachWeb.h"
 #include "WifiCredentials.h"
 #include <ArduinoJson.h>
@@ -12,20 +11,17 @@ static bool isValidCoachText(JsonVariant value, size_t maxLength)
     return std::strlen(value.as<const char*>()) <= maxLength;
 }
 
+namespace {
+    constexpr const char* PORTAL_DIR = "/SmartCoachDevicePortal";
+}
+
 // -----------------------------------------------------------------
 // Singleton accessor
 // -----------------------------------------------------------------
-SmartCoachWebServer& SmartCoachWebServer::instance(const char* ssid,
-                                                   const char* password,
-                                                   uint16_t    port)
+SmartCoachWebServer& SmartCoachWebServer::instance(uint16_t port)
 {
     if (s_instance == nullptr) {
-        // First call must supply the credentials
-        if (ssid == nullptr || password == nullptr) {
-            // In production you would log / assert; for now we simply refuse
-            while (true) { delay(1000); }   // hard fail – never create an invalid server
-        }
-        s_instance = new SmartCoachWebServer(ssid, password, port);
+        s_instance = new SmartCoachWebServer(port);
     }
     return *s_instance;
 }
@@ -33,12 +29,8 @@ SmartCoachWebServer& SmartCoachWebServer::instance(const char* ssid,
 // -----------------------------------------------------------------
 // Private constructor
 // -----------------------------------------------------------------
-SmartCoachWebServer::SmartCoachWebServer(const char* ssid,
-                                         const char* password,
-                                         uint16_t    port)
-    : m_ssid(ssid)
-    , m_password(password)
-    , m_port(port)
+SmartCoachWebServer::SmartCoachWebServer(uint16_t port)
+    : m_port(port)
     , m_server(port)
     , m_running(false)
 {
@@ -64,7 +56,7 @@ void SmartCoachWebServer::begin()
 {
     if (m_running) return;
 
-    connectWiFi();
+    // Wi-Fi is owned by HomeSpan; the server starts listening and serves once it connects
     mountFilesystem();
     installBaseRoutes();
     registerAdditionalRoutes();
@@ -90,6 +82,8 @@ bool SmartCoachWebServer::isRunning() const
 // -----------------------------------------------------------------
 void SmartCoachWebServer::registerAdditionalRoutes()
 {
+    serveStaticFile("/style.css", "/SmartCoachDevicePortal/style.css", "text/css");
+    serveStaticFile("/smartcoach-mark.svg", "/SmartCoachDevicePortal/smartcoach-mark.svg", "image/svg+xml");
     serveStaticFile("/devices.json", "/devices.json", "application/json");
     serveStaticFile("/coach.json", "/coach.json", "application/json");
     m_server.on("/devices/rename", HTTP_POST, [this]() { handleRenameDevice(); });
@@ -123,9 +117,10 @@ void SmartCoachWebServer::handleRenameDevice()
 
     const char* type = request["type"] | "";
     const char* name = request["name"] | "";
+    const char* room = request["room"] | "";
     const int sourceAddress = request["sourceAddress"] | -1;
     const int rvcIndex = request["rvcIndex"] | -1;
-    if (type[0] == '\0' || name[0] == '\0' || std::strlen(name) > 64 || sourceAddress < 0 || sourceAddress > 255 || rvcIndex < 0 || rvcIndex > 255) {
+    if (type[0] == '\0' || name[0] == '\0' || std::strlen(name) > 64 || std::strlen(room) > 64 || sourceAddress < 0 || sourceAddress > 255 || rvcIndex < 0 || rvcIndex > 255) {
         m_server.send(400, "application/json", "{\"error\":\"Invalid rename details\"}");
         return;
     }
@@ -157,6 +152,7 @@ void SmartCoachWebServer::handleRenameDevice()
         return;
     }
     target["name"] = name;
+    target["room"] = room;
 
     const char* temporaryPath = "/devices.tmp";
     const char* backupPath = "/devices.bak";
@@ -322,18 +318,10 @@ WebServer& SmartCoachWebServer::server()
 // -----------------------------------------------------------------
 // Private helpers
 // -----------------------------------------------------------------
-void SmartCoachWebServer::connectWiFi()
-{
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(m_ssid, m_password);
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(250);
-    }
-}
-
 void SmartCoachWebServer::mountFilesystem()
 {
-    LittleFS.begin(true);   // format on failure
+    // never format here: that would wipe devices.json and the learn state
+    LittleFS.begin(false);
 }
 
 void SmartCoachWebServer::installBaseRoutes()
@@ -366,15 +354,16 @@ void SmartCoachWebServer::handleNotFoundWrapper()
 // -----------------------------------------------------------------
 void SmartCoachWebServer::handleRoot()
 {
-    if (LittleFS.exists("/index.html")) {
-        File f = LittleFS.open("/index.html", "r");
+    String indexPath = String(PORTAL_DIR) + "/index.html";
+    if (LittleFS.exists(indexPath)) {
+        File f = LittleFS.open(indexPath, "r");
         m_server.streamFile(f, "text/html");
         f.close();
     } else {
         m_server.send(200, "text/html",
             "<!DOCTYPE html><html><body>"
             "<h1>SmartCoach</h1>"
-            "<p>Place index.html in the data/ folder.</p>"
+            "<p>Device portal files are missing from the filesystem image.</p>"
             "</body></html>");
     }
 }
@@ -399,4 +388,3 @@ void SmartCoachWebServer::handleNotFound()
 {
     m_server.send(404, "text/plain", "Not found");
 }
-#endif

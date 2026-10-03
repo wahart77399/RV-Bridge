@@ -39,6 +39,7 @@
 
 class GenericDevice;
 class SpanUserCommand;
+class SpanAccessory;
 
 class SpanView {
     private:
@@ -78,6 +79,9 @@ class SpanView {
 
         virtual bool updateView(void) = 0;
         static void prepHomeSpan(void);
+        static void setNextAccessoryAid(uint32_t aid);
+        static uint32_t nextAccessoryAid(void);
+        static SpanAccessory* createAccessory(void);
 };
 
 #endif // span view

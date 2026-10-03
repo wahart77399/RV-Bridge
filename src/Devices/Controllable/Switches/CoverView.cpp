@@ -488,7 +488,7 @@ void CoverView::createCoverView(GenericDevice* model, const char* spanDevName,
 
     CoverView* vw = new CoverView(model, spanDevName);
 
-    new SpanAccessory();
+    SpanView::createAccessory();
     new Service::AccessoryInformation();
     new Characteristic::Identify();
     new Characteristic::Name(spanDevName);

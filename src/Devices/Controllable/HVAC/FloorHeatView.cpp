@@ -72,7 +72,7 @@ void FloorHeatView::createFloorHeatView(GenericDevice* model, const char* spanDe
 
     FloorHeatView* vw = new FloorHeatView(model, spanDevName);
 
-    new SpanAccessory(); 
+    SpanView::createAccessory();
     new Service::AccessoryInformation(); 
     new Characteristic::Identify();
     new Characteristic::Name(spanDevName);

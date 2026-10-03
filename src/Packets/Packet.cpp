@@ -127,6 +127,7 @@ void Packet::displayPacket(CAN_frame_t* packet, PacketPrint printPacket) {
 }
 
 #include "ChassisMobility.h"
+#include "LearnMode.h"
 void Packet::processPacket(CAN_frame_t *packet) 
 {
 	if ((packet != nullptr) && (!isRemoteTransmissionRequest(packet))) {
@@ -134,6 +135,7 @@ void Packet::processPacket(CAN_frame_t *packet)
 		RVC_DGN dgn = DGN::getDGN(packet);
 		uint8_t* rawData = getData(packet);
 		if (rawData != nullptr) {
+			LearnMode::observe(dgn, getSourceAddress(packet), rawData);
 			DeviceFactory* factory = DeviceFactory::getInstance();
 			if (factory != nullptr) {
 				GenericDevice* device = factory->getDeviceByData(dgn, rawData);

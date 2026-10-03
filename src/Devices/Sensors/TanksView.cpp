@@ -42,7 +42,7 @@ TanksView::TanksView(GenericDevice* model, const char* spanDevName) : SpanView(m
 void TanksView::createTanksView(GenericDevice* model, const char* spanDevName) {
     TanksView* vw = new TanksView(model, spanDevName);
 
-    new SpanAccessory(); 
+    SpanView::createAccessory();
     new Service::AccessoryInformation(); 
     new Characteristic::Identify();
     new Characteristic::Name(spanDevName);
@@ -50,7 +50,6 @@ void TanksView::createTanksView(GenericDevice* model, const char* spanDevName) {
     const String desc = String("Monitoring levels of ") + spanDevName;
     
     TanksView::Tank* tank = new TanksView::Tank(spanDevName);
-    tank->setName(spanDevName);
     tank->setDescription(desc.c_str());
     vw->setTank(tank);
     // vw->updateView();

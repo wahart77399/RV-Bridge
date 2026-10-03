@@ -56,7 +56,6 @@ class BatteryView : SpanView {
                 temperature.setDescription("Battery Temperature");
                 // capacityRemaining.setDescription("Capacity Remaining");
                 rmsRipple.setDescription("RMS Ripple");
-                new Characteristic::TemperatureDisplayUnits(homeKitTemperatureDisplayFahrenheit );
                 batteryLevel.setRange(tempCfromTempF(ZERO_PERCENT_DEGREE_F), tempCfromTempF(ONE_HUNDRED_PERCENT_DEGREE_F * 1.25), 1); // allow for over 100% charge
                 temperature.setRange(tempCfromTempF(ZERO_PERCENT_DEGREE_F), tempCfromTempF(ONE_HUNDRED_PERCENT_DEGREE_F * 2.0), 0.1); // allow for 200F
                 // capacityRemaining.setRange(0, 1000, 1); // 0 Ah to 

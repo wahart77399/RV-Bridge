@@ -37,6 +37,7 @@
 #include "debug.h"
 
 boolean SpanView::prepped = false;
+static uint32_t nextAccessoryAidValue = 2;
 /**
 void SpanView::setCallBack(char c, const char* s, void (*f)(const char *)) {
     new SpanUserCommand(c, s, f);
@@ -88,6 +89,18 @@ void SpanView::prepHomeSpan(void) {
 		SpanView::prepped = true;
 		RV_PRINTF("SpanView::prepHomeSpan - completed Preparing HomeSpan for SpanView...\n");
 	}
+}
+
+void SpanView::setNextAccessoryAid(uint32_t aid) {
+	nextAccessoryAidValue = aid;
+}
+
+uint32_t SpanView::nextAccessoryAid(void) {
+	return nextAccessoryAidValue;
+}
+
+SpanAccessory* SpanView::createAccessory(void) {
+	return new SpanAccessory(nextAccessoryAidValue++);
 }
 
 SpanView::SpanView() : model(nullptr) { 

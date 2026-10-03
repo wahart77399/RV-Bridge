@@ -1,4 +1,3 @@
-#ifdef FUTURE
 #pragma once
 
 #include <WiFi.h>
@@ -17,12 +16,13 @@
  */
 class SmartCoachWebServer {
 public:
+    // HomeSpan's HAP server owns port 80
+    static constexpr uint16_t WEB_PORT = 8080;
+
     // -----------------------------------------------------------------
     // Singleton access – the only public way to obtain the object
     // -----------------------------------------------------------------
-    static SmartCoachWebServer& instance(const char* ssid     = nullptr,
-                                         const char* password = nullptr,
-                                         uint16_t    port     = 80);
+    static SmartCoachWebServer& instance(uint16_t port = WEB_PORT);
 
     // -----------------------------------------------------------------
     // Explicit language behaviours (Rule of Five)
@@ -53,15 +53,11 @@ private:
     // -----------------------------------------------------------------
     // Private construction – enforces the singleton
     // -----------------------------------------------------------------
-    explicit SmartCoachWebServer(const char* ssid,
-                                 const char* password,
-                                 uint16_t    port);
+    explicit SmartCoachWebServer(uint16_t port);
 
     // -----------------------------------------------------------------
     // Private attributes
     // -----------------------------------------------------------------
-    const char*   m_ssid;
-    const char*   m_password;
     uint16_t      m_port;
     WebServer     m_server;
     bool          m_running;
@@ -69,7 +65,6 @@ private:
     // -----------------------------------------------------------------
     // Private behaviours
     // -----------------------------------------------------------------
-    void connectWiFi();
     void mountFilesystem();
     void installBaseRoutes();
 
@@ -88,4 +83,3 @@ private:
     // The single instance
     static SmartCoachWebServer* s_instance;
 };
-#endif

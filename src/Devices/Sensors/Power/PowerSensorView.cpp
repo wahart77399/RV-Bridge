@@ -5,14 +5,13 @@
 namespace {
     // readings are shown as temperatures; limits are given in the displayed (°F) units
     SpanCharacteristic* addReadingAccessory(const String& label, float lowerF, float upperF) {
-        new SpanAccessory();
+        SpanView::createAccessory();
         new Service::AccessoryInformation();
         new Characteristic::Identify();
         new Characteristic::Name(label.c_str());
         new Service::TemperatureSensor();
         SpanCharacteristic* reading = new Characteristic::CurrentTemperature(tempCfromTempF(lowerF));
         reading->setRange(tempCfromTempF(lowerF), tempCfromTempF(upperF));
-        new Characteristic::TemperatureDisplayUnits(homeKitTemperatureDisplayFahrenheit);
         return reading;
     }
 }

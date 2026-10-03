@@ -173,7 +173,7 @@ BatteryView::BatteryView(GenericDevice* model, const char* spanDevName) : SpanVi
 
     // BatteryView::createCategory();
 
-    new SpanAccessory(); 
+    SpanView::createAccessory();
     new Service::AccessoryInformation(); 
     new Characteristic::Identify();
     new Characteristic::Name(spanDevName);

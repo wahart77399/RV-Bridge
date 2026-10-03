@@ -1,5 +1,73 @@
 #include "WifiPortal.h"
 #include "WifiCredentials.h"
+#include <ArduinoJson.h>
+#include <LittleFS.h>
+
+bool WifiPortal::saveCoachDetails() {
+    WebServer* request = server();
+    if (request == nullptr || !LittleFS.begin(false)) return false;
+    String yearText = request->arg("year");
+    String make = request->arg("make");
+    String model = request->arg("model");
+    String floorplan = request->arg("floorplan");
+    make.trim();
+    model.trim();
+    floorplan.trim();
+    int year = yearText.toInt();
+    if (yearText.length() != 4 || year < 1900 || year > 2200 ||
+        make.isEmpty() || model.isEmpty() || floorplan.isEmpty() ||
+        make.length() > 64 || model.length() > 64 || floorplan.length() > 64) return false;
+    String emails = request->arg("emails");
+    if (emails.length() > 1024) return false;
+    JsonDocument document;
+    File existing = LittleFS.open("/coach.json", "r");
+    if (existing) {
+        DeserializationError error = deserializeJson(document, existing);
+        existing.close();
+        if (error || !document.is<JsonObject>()) return false;
+    }
+    document["year"] = year;
+    document["make"] = make;
+    document["model"] = model;
+    document["floorplan"] = floorplan;
+    if (document["coachId"].isNull()) document["coachId"] = "";
+    if (document["tanks"].isNull()) document["tanks"].to<JsonArray>();
+    if (document["batteries"].isNull()) document["batteries"].to<JsonArray>();
+    if (document["coverTimes"].isNull()) document["coverTimes"].to<JsonObject>();
+    JsonArray recipients = document["ownerEmails"].to<JsonArray>();
+    size_t start = 0;
+    while (start < emails.length()) {
+        int comma = emails.indexOf(',', start);
+        String email = emails.substring(start, comma < 0 ? emails.length() : comma);
+        email.trim();
+        int at = email.indexOf('@');
+        if (email.length() > 254 || at <= 0 || email.lastIndexOf('@') != at ||
+            email.indexOf('.', at + 2) < 0 || email.endsWith(".") ||
+            email.indexOf(' ') >= 0 || email.indexOf('\r') >= 0 || email.indexOf('\n') >= 0 ||
+            recipients.size() >= 5) return false;
+        recipients.add(email);
+        if (comma < 0) break;
+        start = comma + 1;
+    }
+    if (recipients.size() == 0) return false;
+    document["shareWithSupport"] = request->hasArg("support");
+    document["diagnosticEmails"] = request->hasArg("diagnostics");
+    File output = LittleFS.open("/coach.setup.tmp", "w");
+    if (!output) return false;
+    size_t expected = measureJson(document);
+    size_t written = serializeJson(document, output);
+    output.flush();
+    output.close();
+    if (written != expected) return false;
+    bool hadExisting = LittleFS.exists("/coach.json");
+    if (hadExisting && !LittleFS.rename("/coach.json", "/coach.setup.bak")) return false;
+    if (!LittleFS.rename("/coach.setup.tmp", "/coach.json")) {
+        if (hadExisting) LittleFS.rename("/coach.setup.bak", "/coach.json");
+        return false;
+    }
+    LittleFS.remove("/coach.setup.bak");
+    return true;
+}
 
 WifiPortal::WifiPortal(const char* apSsid)
     : active_(false)
@@ -251,11 +319,10 @@ void WifiPortal::handleSave() {
         }
         if (s->hasArg("pass")) {
             pass = s->arg("pass");
-            pass.trim();
         } else {
             pass = "";
         }
-        if (haveSsid) {
+        if (haveSsid && ssid.length() <= 32 && pass.length() <= 64 && saveCoachDetails()) {
             saved = WifiCredentials::save(ssid, pass);
         }
         if (saved) {
@@ -274,23 +341,76 @@ void WifiPortal::handleSave() {
 }
 
 String WifiPortal::pageHtml() const {
+    JsonDocument coach;
+    if (LittleFS.begin(false)) {
+        File input = LittleFS.open("/coach.json", "r");
+        if (input) {
+            deserializeJson(coach, input);
+            input.close();
+        }
+    }
+    auto escape = [](String value) {
+        value.replace("&", "&amp;");
+        value.replace("<", "&lt;");
+        value.replace(">", "&gt;");
+        value.replace("'", "&#39;");
+        value.replace("\"", "&quot;");
+        return value;
+    };
+    String emailList;
+    for (JsonVariant recipient : coach["ownerEmails"].as<JsonArray>()) {
+        if (emailList.length() > 0) emailList += ", ";
+        emailList += recipient.as<String>();
+    }
+    String setupCode = WifiCredentials::preparePairingCode();
     String html;
     html = "<!doctype html><html lang='en'><head><meta charset='utf-8'>";
     html += "<meta name='viewport' content='width=device-width, initial-scale=1'>";
-    html += "<title>RV-Bridge Wi-Fi Setup</title>";
+    html += "<title>SmartCoach Setup</title>";
     html += "<style>body{margin:0;padding:24px;background:#f3f6f8;color:#17212b;";
     html += "font:16px -apple-system,BlinkMacSystemFont,sans-serif}";
     html += "main{max-width:420px;margin:8vh auto;padding:24px;background:#fff;";
     html += "border:1px solid #d8e0e5;border-radius:8px}h1{font-size:22px;margin:0 0 24px}";
     html += "label{display:block;margin:16px 0 6px}input{box-sizing:border-box;width:100%;";
     html += "padding:12px;border:1px solid #8797a3;border-radius:4px;font:inherit}";
+    html += "input[type=checkbox]{width:auto;margin-right:8px}h2{font-size:18px;margin-top:28px}";
     html += "button{margin-top:24px;padding:12px 18px;border:0;border-radius:4px;";
     html += "background:#126b52;color:white;font:inherit}</style></head><body><main>";
-    html += "<h1>RV-Bridge Wi-Fi Setup</h1><form method='POST' action='/save'>";
+    html += "<h1>SmartCoach Setup</h1><form method='POST' action='/save'>";
     html += "<label for='ssid'>Wi-Fi network name</label>";
     html += "<input id='ssid' name='ssid' maxlength='32' autocomplete='off' required>";
     html += "<label for='pass'>Wi-Fi password</label>";
     html += "<input id='pass' name='pass' type='password' maxlength='64' autocomplete='off'>";
+    html += "<h2>Coach</h2><label for='year'>Year</label>";
+    html += "<input id='year' name='year' type='number' min='1900' max='2200' required value='";
+    html += escape(coach["year"].as<String>()) + "'>";
+    const char* fields[] = {"make", "model", "floorplan"};
+    const char* labels[] = {"Make", "Model", "Floorplan"};
+    for (size_t index = 0; index < 3; ++index) {
+        html += String("<label for='") + fields[index] + "'>" + labels[index] + "</label>";
+        html += String("<input id='") + fields[index] + "' name='" + fields[index];
+        html += "' maxlength='64' required value='" + escape(coach[fields[index]] | "") + "'>";
+    }
+    html += "<h2>Reports</h2><label for='emails'>Owner email addresses</label>";
+    html += "<input id='emails' name='emails' type='email' multiple maxlength='1024' required value='";
+    html += escape(emailList) + "'>";
+    html += "<label><input type='checkbox' name='support'";
+    if (coach["shareWithSupport"] | false) html += " checked";
+    html += ">Share the discovery report with SmartCoach support</label>";
+    html += "<label><input type='checkbox' name='diagnostics'";
+    if (coach["diagnosticEmails"] | false) html += " checked";
+    html += ">Email status and diagnostic reports</label>";
+    html += "<p>Email preferences are saved locally. Email delivery is not connected in this firmware.</p>";
+    html += "<h2>Apple Home</h2>";
+    if (setupCode.length() == 8) {
+        html += "<p>Pairing code: <strong>" + setupCode.substring(0, 3) + "-";
+        html += setupCode.substring(3, 5) + "-" + setupCode.substring(5) + "</strong></p>";
+    } else {
+        html += "<p>Your existing HomeKit pairing code and pairing are unchanged.</p>";
+    }
+    html += "<p>Connect your iPhone to the coach Wi-Fi. In Home, select Add Accessory, More Options, then SmartCoach. Enter the pairing code and assign rooms.</p>";
+    html += "<p>For remote access and automations, keep a supported Apple TV or HomePod/HomePod mini powered and connected to the coach network, configured as a home hub in the same Apple Home.</p>";
+    html += "<p>A new unit without a device configuration learns for 72 hours of powered listening time. Devices absent from its coach profile remain pending approval.</p>";
     html += "<button type='submit'>Save and connect</button></form></main></body></html>";
     return html;
 }

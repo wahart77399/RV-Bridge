@@ -172,6 +172,8 @@ void CoachWifi::pollSerial() {
                 processSerialLine(line);
                 line = "";
             }
+        } else if ((c == '\b' || c == 0x7F) && line.length() > 0) {
+            line.remove(line.length() - 1);
         } else {
             line += c;
             if (line.length() > 200) {
@@ -183,6 +185,8 @@ void CoachWifi::pollSerial() {
 void CoachWifi::processSerialLine(const String& line) {
     String work = line;
     work.trim();
+    String command = work;
+    command.toUpperCase();
 
     if (work.equalsIgnoreCase("WIFI clear")) {
         WifiCredentials::clear();
@@ -232,6 +236,7 @@ void CoachWifi::processSerialLine(const String& line) {
 #endif
 */
 #include "CoachWifi.h"
+#include "LearnMode.h"
 #include "WifiCredentials.h"
 #include "HomeSpan.h"
 #include "RVConstants.h"
@@ -309,6 +314,14 @@ void CoachWifi::startHomeSpan() {
     }
 
     homeSpan.setSketchVersion(versionString);
+    homeSpan.setSerialInputDisable(true);
+    String setupCode = WifiCredentials::preparePairingCode();
+    Preferences pairing;
+    if (setupCode.length() == 8 && pairing.begin("SRP", true)) {
+        bool hasVerifier = pairing.isKey("VERIFYDATA");
+        pairing.end();
+        if (!hasVerifier) homeSpan.setPairingCode(setupCode.c_str(), false);
+    }
     homeSpan.setConnectionCallback(CoachWifi::connectionEstablished);
     homeSpan.setStatusCallback(CoachWifi::wifiStatusChanged);
 
@@ -410,6 +423,8 @@ void CoachWifi::pollSerial() {
 void CoachWifi::processSerialLine(const String& line) {
     String work = line;
     work.trim();
+    String command = work;
+    command.toUpperCase();
 
     if (work.equalsIgnoreCase("WIFI clear")) {
         WifiCredentials::clear();
@@ -454,8 +469,17 @@ void CoachWifi::processSerialLine(const String& line) {
             delay(100);
             ESP.restart();
         }
+    } else if ((command == "LEARN") || command.startsWith("LEARN ")) {
+        LearnMode::handleCommand(work.substring(5));
     } else if (!provisioning()) {
-        // our reader drains Serial, so HomeSpan's CLI never sees input otherwise
-        homeSpan.processSerialCommand(work.c_str());
+        bool safeHomeSpanCommand = (work.length() == 1) &&
+            ((work[0] == '?') || (work[0] == 'c') || (work[0] == 's') ||
+             (work[0] == 'i') || (work[0] == 'd') || (work[0] == 'm') ||
+             (work[0] == 'p') || (work[0] == 'H'));
+        if (safeHomeSpanCommand) {
+            homeSpan.processSerialCommand(work.c_str());
+        } else if (work.length() > 0) {
+            Serial.println("Unknown command; use LEARN, WIFI, or a single-letter diagnostic command.");
+        }
     }
 }

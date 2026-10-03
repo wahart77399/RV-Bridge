@@ -124,7 +124,7 @@ class ThermostatView : public SpanView {
                     char* fanName = new char[buffer_size];
                     strcpy(fanName, spanDeviceName);
                     strcat(fanName, append);
-                    new SpanAccessory(); 
+                    SpanView::createAccessory();
                     new Service::AccessoryInformation(); 
                     new Characteristic::Identify();
                     new Characteristic::Name(fanName);

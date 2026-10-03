@@ -39,11 +39,10 @@
 
 #include <CoachWifi.h>
 #include <CoachESP32.h>
-#ifdef FUTURE
 #include <SmartCoachWeb.h>
-#endif
 #include <WifiCredentials.h>
 #include <DeviceFactory.h>
+#include <LearnMode.h>
 #include <Packet.h>
 #include <PacketQueue.h>
 #include <debug.h>
@@ -74,14 +73,7 @@ void setup() {
         return;
     }
 
-	// First call creates the singleton; subsequent calls just return it
-	#ifdef FUTURE
-	String ssid;
-	String passPhrase;
-	WifiCredentials::load(ssid, passPhrase);
-    	SmartCoachWebServer& server = SmartCoachWebServer::instance(ssid.c_str(), passPhrase.c_str());
-    	server.begin();
-	#endif
+	SmartCoachWebServer::instance().begin();
 
 	RV_PRINTF("setup: DeviceFactory getting instance\n");
 	DeviceFactory* factory = DeviceFactory::getInstance();
@@ -89,6 +81,7 @@ void setup() {
 		RV_PRINTF("ERROR: DeviceFactory init failed\n");
 		return;
 	}
+	LearnMode::begin();
 
 	RV_PRINTF("%u: Init complete.\n", (uint32_t)millis());
 	// Packet dump on while gathering raw RV-C instance data
@@ -102,8 +95,7 @@ void loop() {
 	CoachWifi::pollSpan();
 	if (!CoachWifi::isProvisioning()) {
 		CoachESP32::pollESP32();
+		LearnMode::poll();
+		SmartCoachWebServer::instance().handleClient();
 	}
-	#ifdef FUTURE
-	SmartCoachWebServer::instance().handleClient();
-	#endif
 }
