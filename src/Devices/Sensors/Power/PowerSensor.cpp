@@ -1,6 +1,5 @@
 // src/Devices/Sensors/Power/PowerSensor.cpp
 #include "RVConstants.h"
-#ifdef HOME_KIT_2
 
 #include "PowerSensor.h"
 #include "PowerSensorView.h"
@@ -193,5 +192,3 @@ boolean PowerSensor::isGroundCurrentFault(uint8_t /*line*/) const
     }
     return result;
 }
-
-#endif // HOME_KIT_2

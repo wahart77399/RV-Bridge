@@ -1,5 +1,4 @@
 #include "RVConstants.h"
-#ifdef HOME_KIT_2
 
 #include "Generator.h"
 #include "GeneratorView.h"
@@ -53,4 +52,3 @@ boolean Generator::executeCommand(RVC_DGN dgn, const uint8_t* buffer, uint8_t /*
     }
     return handled;
 }
-#endif

@@ -1,5 +1,4 @@
 #include "RVConstants.h"
-#ifdef HOME_KIT_2
 #include "Arduino.h"
 #include "FloorHeat.h"
 #include "CanFrameTypes.h"
@@ -88,6 +87,3 @@ boolean FloorHeat::executeCommand(RVC_DGN dgn, const uint8_t* data, uint8_t sAdd
     }
     return commandExecuted;
 }
-#endif
-
-

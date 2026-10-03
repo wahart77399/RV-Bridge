@@ -1,5 +1,4 @@
 #include "RVConstants.h"
-#ifdef HOME_KIT_2
 #include "Arduino.h"
 #include "CoverDevice.h"
 #include "CanFrameTypes.h"
@@ -269,5 +268,3 @@ boolean CoverDevice::executeCommand(RVC_DGN dgn, const uint8_t* data, uint8_t sA
     }
     return done;
 }
-
-#endif // HOME_KIT_2

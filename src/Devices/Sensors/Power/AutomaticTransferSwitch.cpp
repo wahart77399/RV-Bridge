@@ -1,5 +1,4 @@
 #include "RVConstants.h"
-#ifdef HOME_KIT_2
 #include "Arduino.h"
 // #include "ESP32CAN.h"
 // #include "CAN_config.h"
@@ -51,4 +50,3 @@ boolean AutomaticTransferSwitch::executeCommand(RVC_DGN dgn, const uint8_t* data
     }
     return cmdExecuted; // Command execution failed
 }
-#endif // ifdef HOME_KIT_2

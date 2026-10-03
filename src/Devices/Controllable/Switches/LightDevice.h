@@ -30,7 +30,6 @@
 //                                                            //
 ////////////////////////////////////////////////////////////////
 #include "RVConstants.h"
-#ifdef HOME_KIT_1
 #include "Arduino.h"
 #include "GenericDevice.h"
 #include "Packet.h"
@@ -174,4 +173,3 @@ class LightDevice : public GenericDevice {
         virtual boolean executeCommand(RVC_DGN dgn, const uint8_t* buffer, uint8_t val=SOURCE_ADDRESS) override; // execute command based on DGN and data received from the controller
 };
 // #endif // DC_SWITCH_H
-#endif // ifdef HOME_KIT_1

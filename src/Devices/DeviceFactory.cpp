@@ -52,7 +52,6 @@ namespace {
 
 #include "ChassisMobility.h"
 
-#ifdef HOME_KIT_1
 #include "LightDevice.h"
 #include "LightDeviceView.h"
 
@@ -64,10 +63,8 @@ namespace {
 #include "WaterPumpView.h"
 #include "Thermostat.h"
 #include "ThermostatView.h"
-#endif
 
 
-#ifdef HOME_KIT_2
 #include "Generator.h"
 #include "GeneratorView.h"
 #include "Tanks.h"
@@ -83,13 +80,11 @@ namespace {
 #include "CoverDevice.h"
 #include "CoverView.h"
 #include "Charger.h"
-#endif
 
 #include "ChassisMobilityView.h"
 DeviceFactory* DeviceFactory::getInstance() {
     if (!DeviceFactory::instance) {
         DeviceFactory::instance = new DeviceFactory();
-#ifdef HOME_KIT_1
         ChassisMobility* chassis = ChassisMobility::getInstance();
         const uint8_t defaultChassisIndex = DEFAULT_CHASSIS_INDEX;
         instance->DGN2DeviceMap[CHASSIS_MOBILITY_COMMAND][defaultChassisIndex] = chassis;
@@ -97,7 +92,6 @@ DeviceFactory* DeviceFactory::getInstance() {
         instance->DGN2DeviceMap[CHASSIS_MOBILITY_STATUS_2][defaultChassisIndex] = chassis;
         SpanView::setNextAccessoryAid(chassisAccessoryAid);
         ChassisMobilityView::createChassisMobilityView((GenericDevice* )chassis, "Chassis Mobility Sensor");
-#endif
     }
     return DeviceFactory::instance;
 }
@@ -106,21 +100,16 @@ bool DeviceFactory::instanceFromData(RVC_DGN dgn, uint8_t* data, uint8_t& index)
     bool found = false;
     if (data != nullptr) {
         if ((dgn == WATER_PUMP_COMMAND) || (dgn == WATER_PUMP_STATUS)) {
-#ifdef HOME_KIT_1
             index = WATER_PUMP_INDEX;
             found = true;
-#endif
         } else if ((dgn == ATS_AC_STATUS_1) || (dgn == ATS_AC_STATUS_2) || (dgn == ATS_AC_STATUS_3) || (dgn == ATS_AC_STATUS_4)) {
-#ifdef HOME_KIT_2
             // RV-C packs the ATS instance into the low bits of byte 0
             uint8_t tmp = data[AutomaticTransferSwitch::ATS_BYTE_0] & AutomaticTransferSwitch::ATS_STATUS_INDEX_MASK;
             if ((tmp > ATS_INSTANCE_0_INVALID) && (tmp < ATS_INSTANCE_7_INVALID)) {
                 index = tmp;
                 found = true;
             }
-#endif
         } else if ((dgn == INVERTER_AC_STATUS_1) || (dgn == INVERTER_STATUS)) {
-#ifdef HOME_KIT_2
             uint8_t tmp = data[INVERTER_LINE_INDEX];
             if (dgn == INVERTER_AC_STATUS_1) {
                 tmp = tmp & INVERTER_INSTANCE_MASK;
@@ -129,16 +118,13 @@ bool DeviceFactory::instanceFromData(RVC_DGN dgn, uint8_t* data, uint8_t& index)
                 index = tmp;
                 found = true;
             }
-#endif
         } else if ((dgn == GENERATOR_AC_STATUS_1) || (dgn == GENERATOR_AC_STATUS_2) || (dgn == GENERATOR_AC_STATUS_3) || (dgn == GENERATOR_AC_STATUS_4)) {
-#ifdef HOME_KIT_2
             uint8_t tmp = data[Generator::GENERATOR_BYTE_0] & Generator::GENERATOR_OUTPUT_INDEX_MASK;
             if ((tmp > static_cast<uint8_t>(GeneratorInstance::GENERATOR_INSTANCE_0_INVALID)) &&
                 (tmp < static_cast<uint8_t>(GeneratorInstance::GENERATOR_INSTANCE_11_INVALID))) {
                 index = tmp;
                 found = true;
             }
-#endif
         } else {
             index = Packet::getIndex(data);
             found = true;
@@ -170,7 +156,6 @@ void DeviceFactory::registerCreators() {
     // ============================================================
     // HOME_KIT_1
     // ============================================================
-#ifdef HOME_KIT_1
 
     creators["DC_DimmableSwitch"] = [](const DeviceConfig& c, const CoachSpec&) -> GenericDevice* {
         auto* d = new LightDevice(c.sourceAddress, c.rvcIndex, LightKind::Dimmable);
@@ -214,12 +199,10 @@ void DeviceFactory::registerCreators() {
         return d;
     };
 
-#endif // HOME_KIT_1
 
     // ============================================================
     // HOME_KIT_2
     // ============================================================
-#ifdef HOME_KIT_2
 
     creators["FloorHeat"] = [](const DeviceConfig& c, const CoachSpec&) -> GenericDevice* {
         auto* d = new FloorHeat(c.sourceAddress, c.rvcIndex);
@@ -343,7 +326,6 @@ void DeviceFactory::registerCreators() {
         return d;
     };
 
-#endif // HOME_KIT_2
 
 }
 

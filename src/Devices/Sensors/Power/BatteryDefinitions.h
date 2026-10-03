@@ -1,6 +1,5 @@
 #include "RVConstants.h"
 //#include "debug.h"
-#ifdef HOME_KIT_2
 #ifndef BATTERY_DEFINITIONS_H
 #define BATTERY_DEFINITIONS_H
 #include "Arduino.h"
@@ -98,4 +97,3 @@ const float_t VDC_RIPPLE_NOMINAL_VALUE = 0.0f;
 */
 
 #endif
-#endif // ifdef HOME_KIT_2

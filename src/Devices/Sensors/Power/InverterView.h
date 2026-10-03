@@ -1,7 +1,6 @@
 // InverterView.h / .cpp (thin)
 #pragma once
 #include "RVConstants.h"
-#ifdef HOME_KIT_2
 #include "SpanView.h"
 #include "Inverter.h"
 #include "PowerSensorView.h"
@@ -21,4 +20,3 @@ public:
 private:
     Inverter* model_;
 };
-#endif

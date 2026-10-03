@@ -1,6 +1,5 @@
 // Inverter.cpp
 #include "RVConstants.h"
-#ifdef HOME_KIT_2
 
 #include "Inverter.h"
 #include "InverterView.h"
@@ -65,4 +64,3 @@ boolean Inverter::executeCommand(RVC_DGN dgn, const uint8_t* buffer, uint8_t /*v
     }
     return cmdExecuted; // Command execution failed   
 }
-#endif

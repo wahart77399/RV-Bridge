@@ -1,5 +1,4 @@
 #include "RVConstants.h"
-#ifdef HOME_KIT_2
 #include "Arduino.h"
 #include "CanFrameTypes.h"
 #include "Packet.h"
@@ -57,4 +56,3 @@ boolean Tanks::executeCommand(RVC_DGN dgn, const uint8_t* data, uint8_t sAddress
     }
     return cmdExecuted; // Command execution failed
 }
-#endif // ifdef HOME_KIT_2

@@ -1,5 +1,4 @@
 #include "RVConstants.h"
-#ifdef HOME_KIT_2
 #ifndef TANKS_H
 #define TANKS_H // once I'm ready to define this, move this below ifndef
 
@@ -108,4 +107,3 @@ class Tanks : public GenericDevice {
 
 
 #endif // TANKS_H
-#endif // ifdef HOME_KIT_2

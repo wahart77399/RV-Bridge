@@ -247,7 +247,6 @@ class CoverView : public SpanView  {
 */
 #include "RVConstants.h"
 #include "debug.h"
-#ifdef HOME_KIT_2
 #pragma once
 
 #include "SpanView.h"
@@ -397,5 +396,3 @@ public:
     CoverView(CoverView&&) = delete;
     CoverView& operator=(CoverView&&) = delete;
 };
-
-#endif // HOME_KIT_2

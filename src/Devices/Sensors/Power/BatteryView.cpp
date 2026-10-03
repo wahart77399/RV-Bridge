@@ -1,5 +1,4 @@
 #include "RVConstants.h"
-#ifdef HOME_KIT_2
 #include "Battery.h"
 #include "BatteryView.h"
 #include "PacketQueue.h"
@@ -195,5 +194,3 @@ BatteryView::BatteryView(GenericDevice* model, const char* spanDevName) : SpanVi
         printf("BatteryView::createBatteryView: tmp creation failed\n");   
     printf("BatteryView::createBatteryView completed\n");
  }
-
- #endif // ifdef HOME_KIT_2

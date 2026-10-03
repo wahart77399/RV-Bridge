@@ -1,6 +1,5 @@
 #include "RVConstants.h"
 #pragma once
-#ifdef HOME_KIT_1
 // #ifndef LIGHTDEVICEVIEW_H
 // #define DC_LIGHTSWITCHVIEW_H
 
@@ -130,4 +129,3 @@ class LightDeviceView : public SpanView {
 
 };
 // #endif // DC_SWITCHVIEW_H
-#endif // HOME_KIT_1

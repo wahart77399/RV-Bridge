@@ -1,6 +1,5 @@
 #include "InverterView.h"
 #include "PowerSensorView.h"
-#ifdef HOME_KIT_2
 
 InverterView::InverterView(Inverter* model, const char* name, const uint8_t numLegs, bool io,
                     bool showCurrent, bool showFault)
@@ -28,5 +27,3 @@ bool InverterView::updateView()
     return result;
 }
     */
-
-#endif

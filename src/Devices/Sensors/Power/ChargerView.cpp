@@ -1,6 +1,5 @@
 #include "RVConstants.h"
 // #ifdef CHARGER_H
-#ifdef HOME_KIT_2
 #include "ChargerView.h"
 
 ChargerView::ChargerView(Charger* model, const char* name)
@@ -73,5 +72,4 @@ bool ChargerView::updateView() {
     return result;
 }
 
-#endif
 // #endif

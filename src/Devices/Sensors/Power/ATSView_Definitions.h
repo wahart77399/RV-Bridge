@@ -1,5 +1,4 @@
 #include "RVConstants.h"
-#ifdef HOME_KIT_2
 #ifndef ATS_VIEW_DEFINITIONS_H
 #define ATS_VIEW_DEFINITIONS_H
 
@@ -44,4 +43,3 @@ CUSTOM_CHAR(LegAmperage, C17C17C1-77A1-48FF-8F27-9C2605A29F52, PR+EV, UINT8, 25,
 */
 
 #endif // ATS_VIEW_DEFINITIONS_H
-#endif

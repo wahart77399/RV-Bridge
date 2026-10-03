@@ -1,6 +1,5 @@
 #include "PowerSensorView.h"
 #include "RVConstants.h"
-#ifdef HOME_KIT_2
 
 namespace {
     // readings are shown as temperatures; limits are given in the displayed (°F) units
@@ -84,4 +83,3 @@ bool PowerSensorView::updateView()
     }
     return result;
 }
-#endif

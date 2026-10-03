@@ -1,5 +1,4 @@
 #include "RVConstants.h"
-#ifdef HOME_KIT_1
 #ifndef THERMOSTAT_VIEW_H
 #define THERMOSTAT_VIEW_H
 
@@ -169,4 +168,3 @@ class ThermostatView : public SpanView {
 };
 
 #endif
-#endif // ifdef HOME_KIT_1

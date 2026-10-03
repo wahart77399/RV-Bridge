@@ -34,7 +34,6 @@
 ////////////////////////////////////////////////////////////////
 
 #include "RVConstants.h"
-#ifdef HOME_KIT_1
 
 #include "SpanView.h"
 #include "HomeSpan.h"
@@ -103,6 +102,5 @@ class DoorLockView : public SpanView  {
         
         
 };
-#endif 
 
 #endif // HOME_KIT_1

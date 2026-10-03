@@ -1,5 +1,4 @@
 #include "RVConstants.h"
-#ifdef HOME_KIT_2
 #ifndef BATTERY_VIEW_H
 #define BATTERY_VIEW_H
 #include "CustomChars.h"
@@ -110,4 +109,3 @@ class BatteryView : SpanView {
 };
 
 #endif  // BATTERY_VIEW_H
-#endif // ifdef HOME_KIT_2

@@ -1,5 +1,4 @@
 #include "RVConstants.h"
-#ifdef HOME_KIT_2
 
 #include "Charger.h"
 // #ifdef CHARGER_H
@@ -206,5 +205,4 @@ boolean Charger::executeCommand(RVC_DGN dgn, const uint8_t* buffer, uint8_t /*va
     }
     return handled;
 }
-#endif //HOME_KIT_2
 // #endif

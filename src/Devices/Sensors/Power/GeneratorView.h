@@ -1,6 +1,5 @@
 #pragma once
 #include "RVConstants.h"
-#ifdef HOME_KIT_2
 #include "SpanView.h"
 #include "Generator.h"
 #include "PowerSensorView.h"
@@ -25,4 +24,3 @@ private:
     void model(Generator* mdl)    { model_ = mdl; }
 */
 };
-#endif

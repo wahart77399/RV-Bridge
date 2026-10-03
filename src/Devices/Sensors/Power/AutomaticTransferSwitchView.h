@@ -1,7 +1,6 @@
 #pragma once
 #include "PowerSensorView.h"
 #include "AutomaticTransferSwitch.h"
-#ifdef HOME_KIT_2
 
 class AutomaticTransferSwitchView : public PowerSensorView {
 public:
@@ -18,4 +17,3 @@ public:
 private:
     // AutomaticTransferSwitch* model_;
 };
-#endif

@@ -31,7 +31,6 @@
 //                                                            //
 ////////////////////////////////////////////////////////////////
 #include "RVConstants.h"
-#ifdef HOME_KIT_1
 
 #include "WaterPumpView.h"
 #include "WaterPump.h"
@@ -104,5 +103,3 @@ void WaterPumpView::createWaterPumpView(GenericDevice* model, const char* spanDe
         RV_PRINTF("WaterPumpView::createWaterPumpView: tmp creation failed\n");   
     RV_PRINTF("WaterPumpView::createWaterPumpView completed\n");
 }
-
-#endif

@@ -34,7 +34,6 @@
 //                                                            //
 ////////////////////////////////////////////////////////////////
 #include "RVConstants.h"
-#ifdef HOME_KIT_1
 /*******************
  * 
  * enum for on/off and dimmer switches to be used throughout the hierarchy of DC_Switch and potentially other switches
@@ -65,4 +64,3 @@ enum class LightDeviceCMD:uint8_t {
 constexpr uint8_t DIMMER_STATUS_3_SWITCH_OFF = 0x6;
 constexpr uint8_t DIMMER_QUARTER_BRIGHTNESS = 25U;
 // #endif
-#endif //HOME_KIT_1

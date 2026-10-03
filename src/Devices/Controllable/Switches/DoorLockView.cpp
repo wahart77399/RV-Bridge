@@ -31,7 +31,6 @@
 //                                                            //
 ////////////////////////////////////////////////////////////////
 #include "RVConstants.h"
-#ifdef HOME_KIT_1
 
 #include "DoorLockView.h"
 #include "DoorLock.h"
@@ -125,5 +124,3 @@ void DoorLockView::createDoorLockView(GenericDevice* model, const char* spanDevN
         RV_PRINTF("DoorLockView::createDoorLockView: tmp creation failed\n");   
     RV_PRINTF("DoorLockView::createDoorLockView completed\n");
 }
-
-#endif // ifdef HOME_KIT_1

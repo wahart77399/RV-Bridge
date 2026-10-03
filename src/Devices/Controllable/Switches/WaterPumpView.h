@@ -33,7 +33,6 @@
 //                                                            //
 ////////////////////////////////////////////////////////////////
 #include "RVConstants.h"
-#ifdef HOME_KIT_1
 #include "SpanView.h"
 #include "HomeSpan.h"
 #include "PacketQueue.h"
@@ -98,5 +97,4 @@ class WaterPumpView : public SpanView {
 
 };
 
-#endif
 #endif // HOME_KIT_1 // WATER_PUMP_VIEW_H

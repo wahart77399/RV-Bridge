@@ -1,6 +1,5 @@
 #include "RVConstants.h"
 #include "debug.h"
-#ifdef HOME_KIT_2
 #ifndef BATTERY_H
 #define BATTERY_H // once I'm ready to define this, move this below ifndef
 
@@ -367,4 +366,3 @@ class Battery : public GenericDevice {
 };
 
 #endif
-#endif // #endif // BATTERY_H // HOME_KIT_2

@@ -1,5 +1,4 @@
 #include "GeneratorView.h"
-#ifdef HOME_KIT_2
 GeneratorView::GeneratorView(Generator* model, const char* name)
     : PowerSensorView(model, name)
     // , model_(model)
@@ -19,5 +18,3 @@ bool GeneratorView::updateView()
     return PowerSensor::updateView
 }
     */
-
-#endif

@@ -5,7 +5,6 @@
 #include "HomeSpan.h"
 
 #include "RVConstants.h"
-#ifdef HOME_KIT_2
 
 
 typedef enum {
@@ -31,5 +30,4 @@ typedef enum {
 
 
 
-#endif // TANKS_DEFINITION_H
 #endif // ifdef HOME_KIT_2

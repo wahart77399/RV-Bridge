@@ -1,5 +1,4 @@
 #include "RVConstants.h"
-#ifdef HOME_KIT_2
 #include "elapsedMillis.h"
 #include "CoverView.h"
 #include "CoverDevice.h"
@@ -531,5 +530,3 @@ void CoverView::CoverController::requestFullRetract() {
     targetState_->setVal(static_cast<uint8_t>(target));
     moveTo(target);
 }
-
-#endif // HOME_KIT_2

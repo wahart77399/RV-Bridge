@@ -1,5 +1,4 @@
 #include "RVConstants.h"
-#ifdef HOME_KIT_2
 #include "Tanks.h"
 #include "TanksView.h"
 #include "PacketQueue.h"
@@ -61,5 +60,3 @@ void TanksView::createTanksView(GenericDevice* model, const char* spanDevName) {
         RV_PRINTF("TanksView::createTanksView: tmp creation failed\n");   
     RV_PRINTF("TanksView::createTanksView completed\n");
  }
-
- #endif // ifdef HOME_KIT_2

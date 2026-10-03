@@ -38,7 +38,6 @@
 #pragma once
 
 #include "RVConstants.h"
-#ifdef HOME_KIT_2
 
 #include "PowerSensor.h"
 
@@ -134,6 +133,5 @@ public:
                            uint8_t val = SOURCE_ADDRESS) override;
 };
 
-#endif // HOME_KIT_2
 
 // #endif

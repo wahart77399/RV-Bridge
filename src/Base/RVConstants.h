@@ -34,8 +34,6 @@
 ////////////////////////////////////////////////////////////////
 #include "Arduino.h"
 
-#define HOME_KIT_1
-#define HOME_KIT_2
 #define SMART_COACH_ESP32S3
 constexpr uint8_t INVALID_SIZE = 255;
 constexpr uint16_t INVALID_TANK_SIZE = 0x01f4;

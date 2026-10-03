@@ -1,5 +1,4 @@
 #include "RVConstants.h"
-#ifdef HOME_KIT_2
 #include "FloorHeatView.h"
 #include "FloorHeat.h"
 #include "Packet.h"
@@ -85,5 +84,3 @@ void FloorHeatView::createFloorHeatView(GenericDevice* model, const char* spanDe
         RV_PRINTF("FloorHeatView::createAwningView: tmp creation failed\n");   
     RV_PRINTF("FloorHeatView::createAwningView completed\n");
 }
-
-#endif // ifdef HOME_KIT_2

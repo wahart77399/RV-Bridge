@@ -31,7 +31,6 @@
 //                                                            //
 ////////////////////////////////////////////////////////////////
 #include "RVConstants.h"
-#ifdef HOME_KIT_1
 
 #include "ThermostatView.h"
 #include "Thermostat.h"
@@ -321,4 +320,3 @@ bool ThermostatView::updateView(void) {
         RV_PRINTF("ThermostatView::createThermostatView: tmp creation failed\n");   
     RV_PRINTF("ThermostatView::createThermostatView completed\n");
 }
-#endif // ifdef HOME_KIT_1

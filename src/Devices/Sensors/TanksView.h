@@ -1,5 +1,4 @@
 #include "RVConstants.h"
-#ifdef HOME_KIT_2
 #ifndef TANKS_VIEW_H
 #define TANKS_VIEW_H 
 #include "Arduino.h"
@@ -67,4 +66,3 @@ class TanksView : SpanView {
         
 };
 #endif // TANKS_VIEW_H
-#endif // ifdef HOME_KIT_2

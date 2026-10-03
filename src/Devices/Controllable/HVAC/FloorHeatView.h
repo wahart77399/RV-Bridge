@@ -1,5 +1,4 @@
 #include "RVConstants.h"
-#ifdef HOME_KIT_2
 #ifndef FLOOR_HEAT_VIEW_H
 #define FLOOR_HEAT_VIEW_H // once I'm ready to define this, move this below ifndef
 
@@ -183,4 +182,3 @@ class FloorHeatView : public SpanView {
 };
 
 #endif // ifndef FLOOR_HEAT_H
-#endif // ifdef HOME_KIT_2

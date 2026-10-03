@@ -4,7 +4,6 @@
 #include "HomeSpan.h"
 #include "PowerSensor.h"
 #include "RVConstants.h"
-#ifdef HOME_KIT_2
 
 constexpr uint8_t DEFAULT_NUM_LEGS = 2U;
 
@@ -44,4 +43,3 @@ private:
     boolean             needIO(void) const { return needIO_; }
     void                needIO(const boolean b) { needIO_ = b;}
 };
-#endif

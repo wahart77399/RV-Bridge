@@ -36,7 +36,6 @@
 ////////////////////////////////////////////////////////////////
 #include "RVConstants.h"
 #include "debug.h"
-#ifdef HOME_KIT_2
 #include "Arduino.h"
 #include "PowerSensor.h"
 #include "ATS_Definitions.h"
@@ -127,5 +126,4 @@ class AutomaticTransferSwitch : public PowerSensor {
         virtual boolean executeCommand(RVC_DGN dgn, const uint8_t* buffer, uint8_t val=SOURCE_ADDRESS); // this is only to deal with ATS dgns
 };
 
-#endif
 #endif // AUTOMATIC_TRANSFER_SWITCH_H // HOW_KIT_2

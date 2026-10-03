@@ -1,6 +1,5 @@
 #pragma once
 #include "RVConstants.h"
-#ifdef HOME_KIT_2
 
 #include "PowerSensor.h"
 
@@ -66,4 +65,3 @@ public:
     boolean executeCommand(RVC_DGN dgn, const uint8_t* buffer,
                            uint8_t val = SOURCE_ADDRESS) override;
 };
-#endif

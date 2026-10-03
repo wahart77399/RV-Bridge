@@ -1,5 +1,4 @@
 #include "RVConstants.h"
-#ifdef HOME_KIT_2
 #ifndef FLOOR_HEAT_DEFINITIONS_H
 #define FLOOR_HEAT_DEFINITIONS_H    
 #include "debug.h"
@@ -66,4 +65,3 @@ constexpr float_t FLOOR_HEAT_TEMP_LEVEL_10                          = 33.25F; //
 
 
 #endif  // ifndef FLOOR_HEAT_DEFINITIONS_H
-#endif // ifdef HOME_KIT_2

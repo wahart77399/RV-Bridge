@@ -265,7 +265,6 @@ class CoverDevice : public GenericDevice {
 */
 #include "RVConstants.h"
 #include "debug.h"
-#ifdef HOME_KIT_2
 #pragma once
 
 #include "GenericDevice.h"
@@ -330,5 +329,3 @@ public:
                                    const uint8_t* sendData = nullptr,
                                    uint8_t sAddress = SOURCE_ADDRESS) override;
 };
-
-#endif // HOME_KIT_2

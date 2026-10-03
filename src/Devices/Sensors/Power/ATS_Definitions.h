@@ -1,5 +1,4 @@
 #include "RVConstants.h"
-#ifdef HOME_KIT_2
 #ifndef ATS_DEFINITIONS_H
 #define ATS_DEFINITIONS_H
 
@@ -55,5 +54,4 @@ using ATS_LEG_TYPE    = ATSLeg;
 static const uint8_t ATS_INSTANCE_0_INVALID = 0;
 static const uint8_t ATS_INSTANCE_7_INVALID = 7;
 
-#endif
 #endif

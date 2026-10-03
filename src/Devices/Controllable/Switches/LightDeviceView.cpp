@@ -1,5 +1,4 @@
 #include "RVConstants.h"
-#ifdef HOME_KIT_1
 /*********************************************************************************
  *  MIT License
  *  
@@ -161,4 +160,3 @@ void LightDeviceView::createLightDeviceView(GenericDevice* model, const char* sp
         RV_PRINTF("LightDeviceView::createLightDeviceView: tmp creation failed\n");   
     RV_PRINTF("LightDeviceView::createLightDeviceView completed\n");
 }
-#endif

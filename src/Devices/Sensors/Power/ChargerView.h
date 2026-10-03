@@ -5,7 +5,6 @@
 
 #include "RVConstants.h"
 
-#ifdef HOME_KIT_2
 
 #include "PowerSensorView.h"
 #include "Charger.h"
@@ -33,6 +32,5 @@ private:
 
     void buildChargeAccessories(const char* name);
 };
-#endif
 #endif
 // #endif
