@@ -5,6 +5,7 @@
 #define FLOOR_HEAT_H 
 #include "GenericDevice.h"
 #include "FloorHeatDefinitions.h"
+#include "debug.h"
 
 class FloorHeat : public GenericDevice {
     private:
@@ -18,9 +19,11 @@ class FloorHeat : public GenericDevice {
             uint8_t* data = getCurrentData();
             if (data != nullptr) {
                 uint8_t status = data[FLOOR_HEAT_GEN_STATUS_INDEX];
-                if ((status & (FLOOR_HEAT_GEN_STATUS_HEATING_ON | FLOOR_HEAT_ELEMENT_STATUS_ON)) == (FLOOR_HEAT_GEN_STATUS_HEATING_ON | FLOOR_HEAT_ELEMENT_STATUS_ON)) {
+                constexpr uint8_t onMask = static_cast<uint8_t>(FLOOR_HEAT_GEN_STATUS_HEATING_ON) |
+                                           static_cast<uint8_t>(FLOOR_HEAT_ELEMENT_STATUS_ON);
+                if ((status & onMask) == onMask) {
                     result = true;
-                    //printf("FloorHeat::isTurnedOn - heating is ON\n");
+                    //RV_PRINTF("FloorHeat::isTurnedOn - heating is ON\n");
                     // keep it simple and make sure that only these bits are on
                     // data[FLOOR_HEAT_GEN_STATUS_INDEX] = FLOOR_HEAT_GEN_STATUS_HEATING_ON | FLOOR_HEAT_ELEMENT_STATUS_ON;
                 }
@@ -41,16 +44,16 @@ class FloorHeat : public GenericDevice {
         void turnFloorHeatOn(float_t temperatureC) {
             uint8_t* cData = getCommandData();
             if (cData != nullptr) {
-                // printf("FloorHeat::turnFloorHeatOn for index = %d - setting temperature to %f C\n",index(), temperatureC);
+                // RV_PRINTF("FloorHeat::turnFloorHeatOn for index = %d - setting temperature to %f C\n",index(), temperatureC);
                 uint16_t tempValue = convFromTempC(static_cast<double>(temperatureC));
-                // printf("FloorHeat::turnFloorHeatOn for index = %d - converted temperature to raw int value %d\n",index(), tempValue);
+                // RV_PRINTF("FloorHeat::turnFloorHeatOn for index = %d - converted temperature to raw int value %d\n",index(), tempValue);
                 // cData[FLOOR_HEAT_GEN_STATUS_INDEX] = FLOOR_HEAT_GEN_STATUS_HEATING_ON | FLOOR_HEAT_ELEMENT_STATUS_ON;
                 cData[FLOOR_HEAT_GEN_STATUS_INDEX] = FLOOR_HEAT_COMMAND_ON;
 
                 setLilEndian(cData,
                              FLOOR_HEAT_COMMAND_SET_TEMPERATURE_MSB_INDEX, FLOOR_HEAT_COMMAND_SET_TEMPERATURE_LSB_INDEX, 
                              tempValue);
-                // printf("FloorHeat::turnFloorHeatOn for index = %d - on/off = %x, command data msb: %02x, lsb: %02x\n", 
+                // RV_PRINTF("FloorHeat::turnFloorHeatOn for index = %d - on/off = %x, command data msb: %02x, lsb: %02x\n", 
                 //    index(), cData[FLOOR_HEAT_GEN_STATUS_INDEX], cData[FLOOR_HEAT_COMMAND_SET_TEMPERATURE_MSB_INDEX], cData[FLOOR_HEAT_COMMAND_SET_TEMPERATURE_LSB_INDEX]);
                 executeCommand(FLOOR_HEAT_COMMAND, cData);
             }
@@ -76,11 +79,11 @@ class FloorHeat : public GenericDevice {
             if (data != nullptr) {
                 uint8_t msb = data[FLOOR_HEAT_STATUS_MEASURED_TEMPERATURE_MSB_INDEX];
                 uint8_t lsb = data[FLOOR_HEAT_STATUS_MEASURED_TEMPERATURE_LSB_INDEX];
-                // printf("FloorHeat::currentFloorHeatTemperature - raw msb: %02x, lsb: %02x\n", msb, lsb);
+                // RV_PRINTF("FloorHeat::currentFloorHeatTemperature - raw msb: %02x, lsb: %02x\n", msb, lsb);
                 uint16_t tempValue = getLilEndian(msb, lsb);
-                // printf("FloorHeat::currentFloorHeatTemperature - combined raw value: %d\n", tempValue);
+                // RV_PRINTF("FloorHeat::currentFloorHeatTemperature - combined raw value: %d\n", tempValue);
                 result = convToTempC(tempValue);
-                // printf("FloorHeat::currentFloorHeatTemperature - converted temperature: %f C\n", result);
+                // RV_PRINTF("FloorHeat::currentFloorHeatTemperature - converted temperature: %f C\n", result);
 
                 // uint16_t tempValue = (static_cast<uint16_t>(data[FLOOR_HEAT_STATUS_MEASURED_TEMPERATURE_MSB_INDEX]) << 8) |
                 //                      static_cast<uint16_t>(data[FLOOR_HEAT_STATUS_MEASURED_TEMPERATURE_LSB_INDEX]);
@@ -114,18 +117,18 @@ class FloorHeat : public GenericDevice {
                 switch (dgn) {
 
                     case FLOOR_HEAT_COMMAND:
-                        // printf("FloorHeat::setData: FLOOR_HEAT_COMMAND received\n");
+                        // RV_PRINTF("FloorHeat::setData: FLOOR_HEAT_COMMAND received\n");
                         for (uint8_t i = 1; i < 8; i++) {
                             cData[i] = data[i]; // copy the command data
                         }
                         break;
                     case FLOOR_HEAT_STATUS:
-                        // printf("FloorHeat::setData: FLOOR_HEAT STATUS received for index %d: ", index());
+                        // RV_PRINTF("FloorHeat::setData: FLOOR_HEAT STATUS received for index %d: ", index());
                         for (uint8_t i = 1; i < 8; i++) {
                             rawData[i] = data[i]; // copy the status data
-                            // printf(" - byte %d: %02x", i, data[i]);
+                            // RV_PRINTF(" - byte %d: %02x", i, data[i]);
                         }
-                        // printf("\n");
+                        // RV_PRINTF("\n");
                         break;
                     default:
                         // do nothing

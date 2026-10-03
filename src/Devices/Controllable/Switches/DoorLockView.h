@@ -40,6 +40,7 @@
 #include "HomeSpan.h"
 #include "PacketQueue.h"
 #include "DGN.h"
+#include "debug.h"
 
 class DoorLock;
 

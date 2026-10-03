@@ -33,8 +33,10 @@
 //                                                            //
 ////////////////////////////////////////////////////////////////
 #include "Arduino.h"
-// #include <mutex>
-#include "CAN_config.h"
+#include "CanFrameTypes.h"
+
+// constexpr gpio_num_t CAN_TX = static_cast<gpio_num_t>(11);  // Connects to CTX
+// constexpr gpio_num_t CAN_RX = static_cast<gpio_num_t>(12);  // Connects to CRX
 
 class CoachESP32 {
     private:
@@ -44,8 +46,8 @@ class CoachESP32 {
         static const uint8_t indicatorPinG = 15;
         static const uint8_t indicatorPinB = 4;
         static const uint8_t sourceAddress = 145;
-        static const gpio_num_t canTxPin = GPIO_NUM_25;
-        static const gpio_num_t canRxPin = GPIO_NUM_26;
+        static const gpio_num_t canTxPin = CAN_TX;
+        static const gpio_num_t canRxPin = CAN_RX;
         // static std::ostringstream oss;
         
 

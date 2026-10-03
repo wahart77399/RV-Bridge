@@ -37,6 +37,7 @@
 #include "DoorLock.h"
 #include "Packet.h"
 #include "DGN.h"
+#include "debug.h"
 
 
 
@@ -46,7 +47,7 @@ const uint8_t DoorLockView::VALID_UNLOCKED_STATE = 0x00;
 
 void DoorLockView::createBridge(void) {
     if (!DoorLockView::bridgeCreated) {
-        printf("DoorLockView::createBridge called\n");
+        RV_PRINTF("DoorLockView::createBridge called\n");
         // homeSpan.begin(Category::Locks,"HomeSpan Locks");
         // create the bridge for the light switch
         // homeSpan.begin(Category::Bridges, "RV-Bridge-On-Off-Switch", DEFAULT_HOST_NAME, "RV-Bridge-ESP32");
@@ -54,7 +55,7 @@ void DoorLockView::createBridge(void) {
         // new Service::AccessoryInformation();
         // new Characteristic::Identify();
         DoorLockView::bridgeCreated = true;
-        printf("DoorLockView::createBridge completed\n");
+        RV_PRINTF("DoorLockView::createBridge completed\n");
     }
 }
 
@@ -68,7 +69,7 @@ boolean DoorLockView::DoorLockController::update(void) {                        
         if (model != nullptr) {
             uint8_t* rawData = model->getCurrentData();
             model->setLockedFlag(isLocked());
-            printf("DoorLockView::DoorLockController::update - on: %d\n", model->getLockedFlag());
+            RV_PRINTF("DoorLockView::DoorLockController::update - on: %d\n", model->getLockedFlag());
             model->executeCommand(LOCK_COMMAND, rawData);
             result = true;
         }     
@@ -79,14 +80,14 @@ boolean DoorLockView::DoorLockController::update(void) {                        
 bool DoorLockView::updateView(void) {
     // the light switch may have been turned on/off at the wall and thus needs to be reflected in the SpanView
     // 
-    // printf("DoorLockView::updateView called\n");
+    // RV_PRINTF("DoorLockView::updateView called\n");
     bool updated = false;
     if (isNeedToUpdateView() && ChassisMobility::isParked()) { // don't mess with the state of the lock when the change is is initiated by the controller and not the model
         uint8_t instance = indexOfModel();   
         uint8_t index = -1;
         DoorLock* mdl = (DoorLock* )getModel();
         if (mdl != nullptr) {
-            // printf("DoorLockView::updateView - mdl not null\n");
+            // RV_PRINTF("DoorLockView::updateView - mdl not null\n");
             index = mdl->index();
             // toggle the door lock state
             boolean locked = mdl->isLocked();
@@ -96,11 +97,11 @@ bool DoorLockView::updateView(void) {
                 controller.unLockIt();
             // PacketQueue::clearLastPacketReceiveTime();
             // if (index == 1)
-                // printf("DoorLockView::updateView - locked = %d, spancharCurrentLockState->getVal() = %d\n", locked, controller.isLocked());
+                // RV_PRINTF("DoorLockView::updateView - locked = %d, spancharCurrentLockState->getVal() = %d\n", locked, controller.isLocked());
             updated = true;
         }        
     }
-    // printf("DoorLockView::updateView completed \n"); 
+    // RV_PRINTF("DoorLockView::updateView completed \n"); 
     return updated;
 }
 
@@ -110,7 +111,7 @@ DoorLockView::DoorLockView(GenericDevice* model, const char* spanDevName)
 }
 
 void DoorLockView::createDoorLockView(GenericDevice* model, const char* spanDevName) {
-    printf("DoorLockView::createDoorLockView called\n");
+    RV_PRINTF("DoorLockView::createDoorLockView called\n");
     SpanView::prepHomeSpan();
     DoorLockView::createBridge();
     new SpanAccessory(); 
@@ -119,10 +120,10 @@ void DoorLockView::createDoorLockView(GenericDevice* model, const char* spanDevN
     new Characteristic::Name(spanDevName);
     DoorLockView* tmp = new DoorLockView(model, spanDevName);
     if (tmp != nullptr)
-        printf("DoorLockView::createDoorLockView: tmp created successfully\n");
+        RV_PRINTF("DoorLockView::createDoorLockView: tmp created successfully\n");
     else
-        printf("DoorLockView::createDoorLockView: tmp creation failed\n");   
-    printf("DoorLockView::createDoorLockView completed\n");
+        RV_PRINTF("DoorLockView::createDoorLockView: tmp creation failed\n");   
+    RV_PRINTF("DoorLockView::createDoorLockView completed\n");
 }
 
 #endif // ifdef HOME_KIT_1

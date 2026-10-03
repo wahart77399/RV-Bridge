@@ -1,11 +1,9 @@
-#ifndef DGN_H
-#define DGN_H
+#pragma once
 #include <cstdint>
 #include <stdint.h>
 #include <mutex>
 #include <map>
-#include "ESP32CAN.h"
-#include "CAN_config.h"
+#include "CanFrameTypes.h"
 #include "PacketKit.h" // Make sure this header defines the PacketKit class before this file is included
 
 constexpr uint8_t RVCPercentMax = 250;
@@ -305,4 +303,3 @@ class DGN : public PacketKit {
         static void sendCommand(uint32_t command);
 };
 
-#endif //DGN_H

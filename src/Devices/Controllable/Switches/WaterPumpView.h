@@ -39,6 +39,7 @@
 #include "PacketQueue.h"
 #include <mutex>
 #include "DGN.h"
+#include "debug.h"
 
 class WaterPump;
 

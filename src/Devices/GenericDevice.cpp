@@ -34,6 +34,7 @@
 #include "GenericDevice.h"
 #include "Packet.h"
 #include "SpanView.h"
+#include "debug.h"
 
 
 CAN_frame_t* GenericDevice::buildCommand(RVC_DGN dgn) {
@@ -44,13 +45,13 @@ CAN_frame_t* GenericDevice::buildCommand(RVC_DGN dgn) {
 }
 
 void GenericDevice::printDevice(void) {
-    printf("Generic Device: %u \n", instance);
+    RV_PRINTF("Generic Device: %u \n", instance);
 }
 
 // MVC portion
 void GenericDevice::updateViews() {
     // get iterator and go thru each SpanView and update.
-    //printf("GenericDevice::updateViews called\n");
+    //RV_PRINTF("GenericDevice::updateViews called\n");
     if (!isViewsEmpty()) {
         /* 
         std::list<SpanView* >::iterator iter ;
@@ -70,7 +71,7 @@ void GenericDevice::updateViews() {
     // for (iter=getViews(); !isLastView(iter); ++iter) {
     //     (*iter)->updateView();
     // } 
-    //printf("GenericDevice::updateViews done\n");
+    //RV_PRINTF("GenericDevice::updateViews done\n");
 }
 
 void GenericDevice::addView(SpanView* v) { // this transfers ownership of the view to the model
@@ -94,14 +95,14 @@ void GenericDevice::deleteViews() { // must delete owned memory
 void GenericDevice::printPacketData(RVC_DGN dgn, uint8_t* data, PacketPrint printPacket) {
     // Print packet data based on DGN and data
     if (printPacket == packetPrintIfKnown || printPacket == packetPrintYes) 
-        printf("DGN: %u, Instance: %u, Group: %u, Data: ", dgn, instance, group);
+        RV_PRINTF("DGN: %u, Instance: %u, Group: %u, Data: ", dgn, instance, group);
 
 }
 */
 
 boolean GenericDevice::executeCommand(RVC_DGN dgn, const uint8_t* data, uint8_t val) {
     // Execute command based on DGN and data
-    // printf("GenericDevice::executeCommand called with dgn=%X, data=%s\n", dgn, data);
+    // RV_PRINTF("GenericDevice::executeCommand called with dgn=%X, data=%s\n", dgn, data);
     boolean cmdSuccess = false;
     if (data != nullptr) {
         // setCurrentData(data); don't do this!!!! different dgn data sets don't match it needs to be interpreted by DGN in the executeCommand
@@ -121,6 +122,6 @@ boolean GenericDevice::executeCommand(RVC_DGN dgn, const uint8_t* data, uint8_t 
         }
          // Assume command executed successfully
     }
-    // printf("GenericDevice::executeCommand: Command executed with dgn=%X, data=%s, cmdSuccess=%d\n", dgn, data, cmdSuccess);
+    // RV_PRINTF("GenericDevice::executeCommand: Command executed with dgn=%X, data=%s, cmdSuccess=%d\n", dgn, data, cmdSuccess);
     return cmdSuccess; // Command execution failed
 }

@@ -1,11 +1,11 @@
 #include "RVConstants.h"
 #ifdef HOME_KIT_2
 #ifndef TANKS_VIEW_H
-#define TANKS_VIEW_H // once I'm ready to define this, move this below ifndef
+#define TANKS_VIEW_H 
 #include "Arduino.h"
 
-//#include "TanksDefinition.h"
 #include "SpanView.h"
+#include "debug.h"
 
 class Tanks;
 
@@ -50,12 +50,6 @@ class TanksView : SpanView {
             void setTankSize(const uint16_t tankSize) { sizeValue = tankSize; }
             void setName(const char* nm) { name.setString(nm); }
             void setDescription(const char* desc) { name.setDescription(desc); percent->setDescription(desc); }
-
-            // void setTankFullState(const TankFullState state) {
-            //    if (statusLowTank != nullptr) {
-            //        statusLowTank->setVal(state);
-            //    }
-            //}
         };
         Tank* tank;
         void setTank(Tank* tnk) { tank = tnk; }

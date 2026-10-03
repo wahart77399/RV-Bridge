@@ -1,5 +1,5 @@
-#ifndef PACKETKIT_H
-#define PACKETKIT_H 
+#pragma once
+#include "debug.h"
 
 
 class PacketKit {
@@ -34,12 +34,12 @@ class PacketKit {
         // If startBit is less than 0, it will return 0.
         // If numBits is less than 0, it will return 0.
         static inline uint32_t getMsgBits(uint32_t msg, int8_t startBit, int8_t numBits) {
-            // printf("PacketKit::getMsgBits Start: msg=%#x, startBit=%d, numBits=%d\n", msg, startBit, numBits);
+            // RV_PRINTF("PacketKit::getMsgBits Start: msg=%#x, startBit=%d, numBits=%d\n", msg, startBit, numBits);
 	        int8_t shift = startBit - numBits + 1;
 	        uint32_t mask = 0xFFFFFFFF >> (32 - numBits);
             uint32_t result = (msg >> shift) & mask;
-            // printf("PacketKit::getMsgBits: shift=%d, mask=%#x\n", shift, mask);
-            // printf("PacketKit::getMsgBits End: result=%#x\n", result);
+            // RV_PRINTF("PacketKit::getMsgBits: shift=%d, mask=%#x\n", shift, mask);
+            // RV_PRINTF("PacketKit::getMsgBits End: result=%#x\n", result);
 	        return result;
         }
 
@@ -47,4 +47,4 @@ class PacketKit {
         PacketKit(const PacketKit&) {} // Prevent copy
         PacketKit& operator=(const PacketKit&) {return *this; } // Prevent assignment
 };
-#endif // PACKETKIT_H
+

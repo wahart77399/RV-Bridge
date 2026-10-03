@@ -9,6 +9,7 @@
 #include "DGN.h"
 #include "FloorHeatDefinitions.h"
 #include <map>
+#include "debug.h"
 class FloorHeat;
 
 class FloorHeatView : public SpanView {

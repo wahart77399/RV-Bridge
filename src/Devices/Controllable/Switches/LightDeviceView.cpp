@@ -33,92 +33,132 @@
 //                                                            //
 ////////////////////////////////////////////////////////////////
 
-#include "DC_LightSwitchView.h"
-#include "DC_Switch.h"
+#include "LightDeviceView.h"
+#include "LightDevice.h"
 #include "Packet.h"
 #include "PacketQueue.h"
+#include "debug.h"
 
 
-bool DC_LightSwitchView::bridgeCreated = false;
+bool LightDeviceView::bridgeCreated = false;
+boolean LightDeviceView::isItDimmable(void)  {
+    boolean result = false;
+    LightDevice* mdl = static_cast<LightDevice* >(this->getModel());
+    if (mdl != nullptr) {
+        result = mdl->isDimmable();
+    }
+    return result;
+}
 
-boolean DC_LightSwitchView::DC_LightSwitchController::update(void) {                              // update() method
+void LightDeviceView::setItOn(bool on) { 
+    LightDevice* mdl = static_cast<LightDevice*>(this->getModel());
+    if (mdl != nullptr)
+        mdl->setOn(on);
+}
+
+void LightDeviceView::setItsBrightness(uint8_t val) {
+    LightDevice* mdl = static_cast<LightDevice*>(this->getModel());
+    if (mdl != nullptr)
+        mdl->setBrightnessRaw(val);
+}
+
+LightDeviceView::LightController::LightController(LightDeviceView* vw, GenericDevice* mdl, const char* spanDeviceName)
+        : Service::LightBulb(),
+            power(nullptr),
+            brightness(nullptr),
+            model(nullptr),
+            view(nullptr) {
+    power = new Characteristic::On();
+    this->model = static_cast<LightDevice* >(mdl);
+    view = vw;
+    if ((vw != nullptr) && vw->isItDimmable()) 
+        brightness = new Characteristic::Brightness(DIMMER_QUARTER_BRIGHTNESS); // start with 1/4
+}
+
+bool LightDeviceView::LightController::update(void) {                              // update() method
         boolean result = false;
         view->dontUpdateTheView(); 
-        if (model != nullptr) {
+        // if (model != nullptr) {
             uint8_t* rawData = model->getCurrentData();
-            model->setOnFlag(isOn());
-            printf("DC_LightSwitchView::DC_LightSwitchController::update - on: %d\n", model->isOn());
+            view->setItOn(isOn());
+            if ((brightness != nullptr) && (view->isItDimmable())) {
+                uint8_t pct = brightness->getNewVal();
+                view->setItsBrightness(pct);
+            }
+            RV_PRINTF("LightDeviceView::LightDeviceController::update - on: %d\n", model->isOn());
             model->executeCommand(DC_DIMMER_COMMAND, rawData);
             result = true;
-        }     
+        // }     
         view->updateTheView();
         return(result);                               // return true
 } // update
 
-void DC_LightSwitchView::createBridge(void) {
-    if (!DC_LightSwitchView::bridgeCreated) {
-        printf("DC_LightSwitchView::createBridge called\n");
+void LightDeviceView::createBridge(void) {
+    if (!LightDeviceView::bridgeCreated) {
+        RV_PRINTF("LightDeviceView::createBridge called\n");
         // create the bridge for the light switch
         // homeSpan.begin(Category::Bridges, "RV-Bridge-On-Off-Switch", DEFAULT_HOST_NAME, "RV-Bridge-ESP32");
         // new SpanAccessory(); 
         // new Service::AccessoryInformation();
         // new Characteristic::Identify();
-        DC_LightSwitchView::bridgeCreated = true;
-        // printf("DC_LightSwitchView::createBridge completed\n");
+        LightDeviceView::bridgeCreated = true;
+        // RV_PRINTF("LightDeviceView::createBridge completed\n");
     }
 }
 
 
 
 #include "ChassisMobility.h"
-bool DC_LightSwitchView::updateView(void) {
+bool LightDeviceView::updateView(void) {
     // the light switch may have been turned on/off at the wall and thus needs to be reflected in the SpanView
     // 
-    // printf("DC_LightSwitchView::updateView called\n");
+    // RV_PRINTF("LightDeviceView::updateView called\n");
     bool updated = false;
     if (isNeedToUpdateView() && ChassisMobility::isParked()) { // don't mess with the state of the lock when the change is is initiated by the controller and not the model
         uint8_t instance = indexOfModel();   
         uint8_t index = -1;
-        DC_Switch* mdl = (DC_Switch* )getModel();
+        LightDevice* mdl = static_cast<LightDevice*>(getModel());
         if (mdl != nullptr) {
-            // printf("DC_SwitchView::updateView - mdl not null\n");
+            // RV_PRINTF("DC_SwitchView::updateView - mdl not null\n");
             index = mdl->index();;
             // toggle the switch state
             boolean on = mdl->isOn();
-            // printf("DC_SwitchView::updateView - on=%d\n", on);
+            // RV_PRINTF("DC_SwitchView::updateView - on=%d\n", on);
             controller.turnOn(on);
+            if (mdl->isDimmable())
+                controller.setBrightness(mdl->getBrightness());
             if (index == 0)
-                printf("DC_SwitchView::updateView - power = %d, controller.isOn() = %d\n", on, controller.isOn());
+                // RV_PRINTF("LightDeviceView::updateView - power = %d, controller.isOn() = %d\n", on, controller.isOn());
                 // mdl->setLockedFlag(!locked);
-                // ;
+                ;
             updated = true;
         }        
-        // printf("DC_LightSwitchView::updateView completed \n"); 
+        // RV_PRINTF("LightDeviceView::updateView completed \n"); 
     }
     return updated;
 }
 
 
-// const char* DC_LightSwitchView::name = "LightBulb"; // from Span.h
-// const char* DC_LightSwitchView::type = "43"; // from Span.h
+// const char* LightDeviceView::name = "LightBulb"; // from Span.h
+// const char* LightDeviceView::type = "43"; // from Span.h
 
-DC_LightSwitchView::DC_LightSwitchView(GenericDevice* model, const char* spanDevName) : SpanView(model), controller(this, model, spanDevName) {
+LightDeviceView::LightDeviceView(GenericDevice* model, const char* spanDevName) : SpanView(model), controller(this, model, spanDevName) {
 
 }
 
-void DC_LightSwitchView::createDC_LightSwitchView(GenericDevice* model, const char* spanDevName) {
-    printf("DC_LightSwitch::createDC_LightSwitch called\n");
+void LightDeviceView::createLightDeviceView(GenericDevice* model, const char* spanDevName) {
+    RV_PRINTF("LightDevice::createLightDevice called\n");
     SpanView::prepHomeSpan();
 
     new SpanAccessory(); 
     new Service::AccessoryInformation(); 
     new Characteristic::Identify();
     new Characteristic::Name(spanDevName);
-    DC_LightSwitchView* tmp = new DC_LightSwitchView(model, spanDevName);
+    LightDeviceView* tmp = new LightDeviceView(model, spanDevName);
     if (tmp != nullptr)
-        printf("DC_LightSwitchView::createDC_LightSwitchView: tmp created successfully\n");
+        RV_PRINTF("LightDeviceView::createLightDeviceView: tmp created successfully\n");
     else
-        printf("DC_LightSwitchView::createDC_LightSwitchView: tmp creation failed\n");   
-    printf("DC_LightSwitchView::createDC_LightSwitchView completed\n");
+        RV_PRINTF("LightDeviceView::createLightDeviceView: tmp creation failed\n");   
+    RV_PRINTF("LightDeviceView::createLightDeviceView completed\n");
 }
 #endif

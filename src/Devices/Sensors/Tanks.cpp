@@ -1,12 +1,12 @@
 #include "RVConstants.h"
 #ifdef HOME_KIT_2
 #include "Arduino.h"
-#include "ESP32CAN.h"
-#include "CAN_config.h"
+#include "CanFrameTypes.h"
 #include "Packet.h"
 #include "DGN.h"
 #include "Tanks.h"
 #include "PacketQueue.h"
+#include "debug.h"
 
 
 const uint8_t Tanks::TANKS_INDEX                  = 0; 
@@ -35,15 +35,15 @@ CAN_frame_t* Tanks::buildCommand(RVC_DGN dgn) { // do nothing - no commands will
 
 
 boolean Tanks::executeCommand(RVC_DGN dgn, const uint8_t* data, uint8_t sAddress) {
-    // printf("Tanks::executeCommand called with dgn=%#x\n", dgn);
+    // RV_PRINTF("Tanks::executeCommand called with dgn=%#x\n", dgn);
     boolean cmdExecuted = GenericDevice::executeCommand(dgn, data);
     if (!cmdExecuted) { // && (data != nullptr)) {
-        // printf("Tanks::executeCommand: Command not executed, building command for dgn=%#x\n", dgn);
+        // RV_PRINTF("Tanks::executeCommand: Command not executed, building command for dgn=%#x\n", dgn);
         CAN_frame_t* frame = nullptr;
         uint8_t* rawData = (uint8_t* )data;
         switch (dgn) {
             case (TANK_STATUS):
-                // printf("Tanks::executeCommand case LOCK_STATUS\n");
+                // RV_PRINTF("Tanks::executeCommand case LOCK_STATUS\n");
                 // then we don't send a command on the CAN bus, we update our views (HOME SPAN)
                 // the -> the views will requst the data from the buffer
                 setData(dgn, rawData);
@@ -51,7 +51,7 @@ boolean Tanks::executeCommand(RVC_DGN dgn, const uint8_t* data, uint8_t sAddress
                 cmdExecuted = true;
                 break;
             default:
-                printf("Tanks::executeCommand: Status and Commands not managed \n");
+                RV_PRINTF("Tanks::executeCommand: Status and Commands not managed \n");
                 break;
         }
     }

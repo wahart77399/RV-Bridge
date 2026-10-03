@@ -1,5 +1,6 @@
 #ifndef CHASSIS_MOBILITY_VIEW_H
 #define CHASSIS_MOBILITY_VIEW_H
+#include "debug.h"
 /*********************************************************************************
  *  MIT License
  *  

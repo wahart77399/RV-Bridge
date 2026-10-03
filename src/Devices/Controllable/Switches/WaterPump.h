@@ -1,5 +1,6 @@
 
 #include "RVConstants.h"
+#include "debug.h"
 #ifdef HOME_KIT_1
 #ifndef WATER_PUMP_H
 #define WATER_PUMP_H // once I'm ready to define this, move this below ifndef
@@ -91,7 +92,7 @@ class WaterPump : public GenericDevice {
                 uint8_t onOff = value & PUMP_MASK;
                 uint8_t otherData = rawData[WATER_PUMP_INDEX] & COMPLIMENT_MASK;
                 rawData[WATER_PUMP_INDEX] = otherData | onOff;
-                printf("WaterPump::turnPumpOn - rawData[WATER_PUMP_INDEX]=%#x\n", rawData[WATER_PUMP_INDEX]);
+                RV_PRINTF("WaterPump::turnPumpOn - rawData[WATER_PUMP_INDEX]=%#x\n", rawData[WATER_PUMP_INDEX]);
             }
         }
         virtual CAN_frame_t* buildCommand(RVC_DGN dgn);

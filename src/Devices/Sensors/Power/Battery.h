@@ -1,5 +1,5 @@
-
 #include "RVConstants.h"
+#include "debug.h"
 #ifdef HOME_KIT_2
 #ifndef BATTERY_H
 #define BATTERY_H // once I'm ready to define this, move this below ifndef
@@ -42,7 +42,6 @@
 #include "GenericDevice.h"
 #include "RVConstants.h"
 #include "BatteryDefinitions.h"
-//#include "Thermostat.h"
 #include "byteswap.h"
 
 class Battery : public GenericDevice {
@@ -121,19 +120,20 @@ class Battery : public GenericDevice {
             uint16_t result = OUT_OF_RANGE_DATA;
             if (data != nullptr) {
                 result = convToTempC(getLilEndian(data[DC_SOURCE_TEMPERATURE_MSB_INDEX], data[DC_SOURCE_TEMPERATURE_LSB_INDEX]));
-                // printf("Battery::temperature = %d\n", result);
+                // RV_PRINTF("Battery::temperature = %d\n", result);
             }
             return result;
         }
 
         const uint8_t level(void) const {
             uint8_t* data = getSource2Data();
-            uint8_t result = MAX_RVC_PERCENT * RVC_PERCENT_PRECISION; // default to 125%
-            if (data != nullptr) {
+            uint8_t result = 0U; // static_cast<uint8_t>(MAX_RVC_PERCENT * RVC_PERCENT_PRECISION) ; // default to 125%
+            if ((data != nullptr) && (data[DC_SOURCE_STATE_OF_CHARGE_INDEX] != OUT_OF_RANGE_DATA)) {
                 uint8_t tmp = data[DC_SOURCE_STATE_OF_CHARGE_INDEX];
-                result = (tmp <= MAX_RVC_PERCENT) ? tmp : MAX_RVC_PERCENT;
-                result = result * RVC_PERCENT_PRECISION;
-                // printf("Battery::level = %d\n", result);
+                RV_PRINTF("Battery::level tmp = %d\n", tmp);
+                result = (tmp <= static_cast<uint8_t>(MAX_RVC_PERCENT)) ? tmp : static_cast<uint8_t>(MAX_RVC_PERCENT);
+                result = static_cast<uint8_t>(static_cast<float_t>(result) * RVC_PERCENT_PRECISION);
+                // RV_PRINTF("Battery::level result = %d\n", result);
             }
             return result;
         }
@@ -145,10 +145,10 @@ class Battery : public GenericDevice {
                 uint8_t tmp = getLilEndian(data[DC_SOURCE_TIME_REMAINING_MSB_INDEX], data[DC_SOURCE_TIME_REMAINING_LSB_INDEX]);
                 if (tmp != 0xffff) {
                     result = tmp;
-                    printf("Battery::timeRemaining = %d\n", result);
+                    RV_PRINTF("Battery::timeRemaining = %d\n", result);
                 }
             } else {
-                printf("Battery::timeRemaining data is not valid\n");
+                RV_PRINTF("Battery::timeRemaining data is not valid\n");
             }
             return result;
         }
@@ -158,7 +158,7 @@ class Battery : public GenericDevice {
             uint8_t* data = getSource2Data();
             if (data != nullptr) {
                 empty = data[DC_SOURCE_TIME_INTERPRETATION] == TIME_TO_EMPTY;
-                // printf("Battery::timeToEmpty = %d\n", empty);
+                // RV_PRINTF("Battery::timeToEmpty = %d\n", empty);
             }
             return empty;
         } 
@@ -171,37 +171,37 @@ class Battery : public GenericDevice {
             uint8_t result = OUT_OF_RANGE_DATA;
             if (data != nullptr) {
                 result = data[DC_SOURCE_HEALTH_STATE_INDEX];
-                printf("Battery::health = %d\n", result);
+                RV_PRINTF("Battery::health = %d\n", result);
             } else {
-                printf("Battery::health data is not valid\n");
+                RV_PRINTF("Battery::health data is not valid\n");
             }
             return result;
         }
-        */
+        
 
         const uint16_t remainingCapacity(void) const {
             uint8_t* data = getSource3Data();
             uint16_t result = OUT_OF_RANGE_DATA;
             if (data != nullptr) {
-                result = /* convFromTempC( */ getLilEndian(data[DC_SOURCE_CAP_REMAINS_MSB_INDEX], data[DC_SOURCE_CAP_REMAINS_LSB_INDEX]); //);
-                // printf("Battery::remaining capacity = %d\n", result);
+                result = /* convFromTempC( * getLilEndian(data[DC_SOURCE_CAP_REMAINS_MSB_INDEX], data[DC_SOURCE_CAP_REMAINS_LSB_INDEX]); //);
+                // RV_PRINTF("Battery::remaining capacity = %d\n", result);
                 if (result == INVALID_AMP_HOURS)
                     result = OUT_OF_RANGE_DATA;
             } else {
-                printf("Battery::remaining capacity data is not valid\n");
+                RV_PRINTF("Battery::remaining capacity data is not valid\n");
             }
             return result;
         }
 
-        /* REMOVED - not currently used by Newmar
+        * REMOVED - not currently used by Newmar
         const uint8_t relativeCapacity(void) const {
             uint8_t* data = getSource3Data();
             uint8_t result = OUT_OF_RANGE_DATA;
             if (data != nullptr) {
                 result = data[DC_SOURCE_RELATIVE_CAP_INDEX];
-                printf("Battery:relativeCapacity percenatge = %d\n", result);
+                RV_PRINTF("Battery:relativeCapacity percenatge = %d\n", result);
             } else {
-                printf("Battery::relativeCapacity data is not valid\n");
+                RV_PRINTF("Battery::relativeCapacity data is not valid\n");
             }
             return result;
         }
@@ -211,7 +211,7 @@ class Battery : public GenericDevice {
             uint16_t result = OUT_OF_RANGE_DATA;
             if (data != nullptr) {
                 result = /* convFromTempC */ (getLilEndian(data[DC_SOURCE_AC_RIPPLE_MSB_INDEX], data[DC_SOURCE_AC_RIPPLE_LSB_INDEX]));
-                // printf("Battery::rmsRipple = %d\n", result);
+                // RV_PRINTF("Battery::rmsRipple = %d\n", result);
                 if (result == INVALID_RMS_RIPPLE)
                     result = OUT_OF_RANGE_DATA;
             }
@@ -225,9 +225,9 @@ class Battery : public GenericDevice {
             CHARGE_STATE result = UNDEFINED_CHARGE_STATE;
             if (data != nullptr) {
                 result = (CHARGE_STATE) data[DC_SOURCE_DESORED_CHARGE_STATE_INDEX];
-                printf("Battery::chargeState = %d\n", result);
+                RV_PRINTF("Battery::chargeState = %d\n", result);
             } else {
-                printf("Battery::chargeState data is not valid\n");
+                RV_PRINTF("Battery::chargeState data is not valid\n");
             }
             return result;
         }
@@ -237,9 +237,9 @@ class Battery : public GenericDevice {
             uint16_t result = OUT_OF_RANGE_DATA;
             if (data != nullptr) {
                 result = getLilEndian(data[DC_SOURCE_DESIRED_VOLT_MSB_INDEX], data[DC_SOURCE_DESIRED_VOLT_LSB_INDEX]);
-                printf("Battery::desiredVoltage = %d\n", result);
+                RV_PRINTF("Battery::desiredVoltage = %d\n", result);
             } else {
-                printf("Battery::desiredVoltage data is not valid\n");
+                RV_PRINTF("Battery::desiredVoltage data is not valid\n");
             }
             return result;
         }
@@ -249,9 +249,9 @@ class Battery : public GenericDevice {
             uint16_t result = OUT_OF_RANGE_DATA;
             if (data != nullptr) {
                 result = getLilEndian(data[DC_SOURCE_DESIRED_AMP_MSB_INDEX], data[DC_SOURCE_DESIRED_AMP_LSB_INDEX]);
-                printf("Battery::desiredCurrent = %d\n", result);
+                RV_PRINTF("Battery::desiredCurrent = %d\n", result);
             } else {
-                printf("Battery::desiredCurrent data is not valid\n");
+                RV_PRINTF("Battery::desiredCurrent data is not valid\n");
             }
             return result;
         }
@@ -261,9 +261,9 @@ class Battery : public GenericDevice {
             BATTERY_TYPE result = FLOODED_BATTERY;
             if (data != nullptr) {
                 result = (BATTERY_TYPE) data[DC_SOURCE_BATTERY_TYPE_INDEX];
-                printf("Battery::battery type = %d\n", result);
+                RV_PRINTF("Battery::battery type = %d\n", result);
             } else {
-                printf("Battery::battery type data is not valid\n");
+                RV_PRINTF("Battery::battery type data is not valid\n");
             }
             return result;  
         }
@@ -288,7 +288,7 @@ class Battery : public GenericDevice {
                         setDataFromSource(data, getSource4Data());
                         break;
                     default:
-                        printf("Battery::setData failed = no matching dgn - dgn= %0x\n", dgn);
+                        RV_PRINTF("Battery::setData failed = no matching dgn - dgn= %0x\n", dgn);
                 }
             }
         }

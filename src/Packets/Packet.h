@@ -34,11 +34,12 @@
 ////////////////////////////////////////////////////////////////
 #include "Arduino.h"
 #include "elapsedMillis.h"
-#include "ESP32CAN.h"
-#include "CAN_config.h"
-#include <mutex>
+
+#include "CanFrameTypes.h" 
+// #include <mutex>
 #include "PacketKit.h"
 #include "DGN.h"
+#include "debug.h"
 
 typedef enum {
 	packetPrintNo = 0,
@@ -52,9 +53,7 @@ constexpr uint8_t SOURCE_ADDRESS = 145U; // Start bit for source address extract
 class Packet : protected PacketKit
 {
     private:
-        //static std::mutex packetMutex;
         static PacketPrint packetPrintMode;
-        // static std::ostringstream oss;
 
         // @brief need to make sure this address is not being used elsewhere on the bus - this address will be the address of the ESP32/RV-Bridge from where messages will be sent.
         static const uint8_t sourceAddress = SOURCE_ADDRESS; 
@@ -75,10 +74,7 @@ class Packet : protected PacketKit
 
         static inline void printRemoteTransmissionRequest(CAN_frame_t *packet) {
             if (isRemoteTransmissionRequest(packet)) {
-                // std::ostringstream shortOss;
-                //shortOss << "Packet::printRemoteTransmissionRequest" << std::endl;
-                // LOGIT(VERBOSE_LOG_LEVEL, shortOss);
-                printf("Packet::printRemoteTransmissionRequest\n");
+                RV_PRINTF("Packet::printRemoteTransmissionRequest\n");
             }
         }
 

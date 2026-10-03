@@ -80,6 +80,9 @@ private:
     void handleRoot();
     void handleStatus();
     void handleRenameDevice();
+    void handleCoachUpdate();
+    void handleWifiReset();
+    void handleReboot();
     void handleNotFound();
 
     // The single instance

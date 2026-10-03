@@ -8,19 +8,21 @@
 
 
 boolean BatteryView::mapsInitialized = false;
-std::map<DC_SOURCE_INSTANCE_DEFINITION, std::string> BatteryView::instanceMap;
+// std::map<DC_SOURCE_INSTANCE_DEFINITION, std::string> BatteryView::instanceMap;
 std::map<DC_SOURCE_PRIORITY_DEFINTION,  std::string> BatteryView::priorityMap;
-std::map<CHARGE_STATE, std::string>                  BatteryView::chargeStateMap;
-std::map<BATTERY_TYPE, std::string>                  BatteryView::batteryTypeMap;
+//std::map<CHARGE_STATE, std::string>                  BatteryView::chargeStateMap;
+// std::map<BATTERY_TYPE, std::string>                  BatteryView::batteryTypeMap;
 
 void BatteryView::initialize(void) {
     if (!mapsInitialized) {
+        #ifdef INSTANCES
         instanceMap[INVALID_SOURCE] = "Invalid Source";
         instanceMap[MAIN_HOUSE_BATTERY] = "Main House Battery Bank";
         instanceMap[CHASSIS_START_BATTERY] = "Chassis Start Battery";
         instanceMap[SECONDARY_HOUSE_BATTERY] = "Secondary House Battery Bank";
         instanceMap[GENERATOR_STARTER_BATTERY] = "Generator Starter Battery";
         instanceMap[MFG_OTHER] = "Other";
+        #endif
 
         priorityMap[BATTERY_SOC_BMS_DEVICE] = "Battery SOC/BMS Device";
         priorityMap[INVERTER_CHARGER] = "Inverter / Charger";
@@ -29,7 +31,7 @@ void BatteryView::initialize(void) {
         priorityMap[MULTI_METER] = "Voltmeter/Ammeter";
         priorityMap[VOLT_METER] = "Voltmeter";
         priorityMap[NO_PRIORITY_ALWAYS_RPT] = "No prioirty - always reporting";
-
+        #ifdef INSTANCES
         chargeStateMap[UNDEFINED_CHARGE_STATE] = "Undefined, charging source decides (default)";
         chargeStateMap[DO_NOT_CHARGE_STATE] = "Do not charge";
         chargeStateMap[BULK_CHARGE_STATE] = "Bulk";
@@ -44,6 +46,7 @@ void BatteryView::initialize(void) {
         batteryTypeMap[AGM_BATTERY] = "AGM";
         batteryTypeMap[LITHIUM_BATTERY] = "Lithium-ion-Phosphate";
         batteryTypeMap[VENDOR_DEFINED] = "Reserved for Vendor";
+        #endif
     }
 }
 
@@ -77,8 +80,6 @@ bool BatteryView::updateView(void) {
             double voltage = mdl->directCurrentVoltage();
             double current = mdl->directCurrentAmperage();
             // double val = static_cast<double>(current);
-        // printf("BatteryView::updateView current = %d\n", current);
-        // printf("BatteryView::updateView DCCurrent = %f\n", val);
             if ((voltage != OUT_OF_RANGE_DATA) && ((voltage >= ZERO_PERCENT_DEGREE_F) && (voltage <= TWO_FORTY_VOLT_DEGREE_F))) {
                 batteryMeter->setDCVoltage(voltage);
             // printf("Battery::updateView DCVoltage = %f\n", voltage);
@@ -87,7 +88,9 @@ bool BatteryView::updateView(void) {
             // printf("Battery::updateView DCCurrent = %f\n", val);
                 batteryMeter->setDCCurrent(current);
             }
+            #ifdef INSTANCES
             batteryMeter->setDCInstance((DC_SOURCE_INSTANCE_DEFINITION)instance);
+            #endif
         // batteryMeter->setDCCurrent(mdl->directCurrentAmperage());
         }
         // status 2
@@ -121,11 +124,13 @@ bool BatteryView::updateView(void) {
         if (mdl->health() != OUT_OF_RANGE_DATA) 
             batteryMeter->setHealth(mdl->health());
         */
+       /**
         if (mdl->remainingCapacity() != OUT_OF_RANGE_DATA) {
             batteryMeter->setCapacityRemaining(mdl->remainingCapacity());
             //printf("BatteryView::updateView - Status3 - index = %d, capacity remaining = %d\n", 
                     //instance, mdl->remainingCapacity());
         }
+        */
         
         /* REMOVED - not currently used by Newmar
         if (mdl->relativeCapacity() != OUT_OF_RANGE_DATA)
@@ -174,7 +179,9 @@ BatteryView::BatteryView(GenericDevice* model, const char* spanDevName) : SpanVi
     new Characteristic::Name(spanDevName);
     BatteryView::BatteryState* meter = new BatteryView::BatteryState();
     if (model != nullptr) {
+        #ifdef INSTANCES
         meter->setDCInstance((DC_SOURCE_INSTANCE_DEFINITION)(model->index()));
+        #endif
         uint8_t* rawData = ((Battery*) model)->getCurrentData();
         meter->setPriority((DC_SOURCE_PRIORITY_DEFINTION)rawData[DC_SOURCE_PRIORITY_INDEX]);
     }

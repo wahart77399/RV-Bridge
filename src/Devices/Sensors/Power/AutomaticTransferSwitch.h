@@ -35,6 +35,7 @@
 //                                                            //
 ////////////////////////////////////////////////////////////////
 #include "RVConstants.h"
+#include "debug.h"
 #ifdef HOME_KIT_2
 #include "Arduino.h"
 #include "PowerSensor.h"
@@ -100,24 +101,23 @@ class AutomaticTransferSwitch : public PowerSensor {
         }
 
     protected:
+        uint8_t lineOf(RVC_DGN /*dgn*/, const uint8_t* raw) const override {
+            return static_cast<uint8_t>((byte0(raw) & ATS_LEG_MASK) >> ATS_LEG_SHIFT);
+        }
+
+        uint8_t ioOf(RVC_DGN /*dgn*/, const uint8_t* raw) const override {
+            const uint8_t ioType = static_cast<uint8_t>((byte0(raw) & ATS_IOTYPE_MASK) >> ATS_IOTYPE_SHIFT);
+            return (ioType == static_cast<uint8_t>(ATS_IO_Type::Output)) ? OUTPUT_LINE : INPUT_LINE;
+        }
         
         // virtual CAN_frame_t* buildCommand(RVC_DGN dgn); // do nothing - no commands will be sent to the ATS - we listen only
 
     public:
 
-        AutomaticTransferSwitch() : PowerSensor() {
-            // Constructor implementation
-        }
-
-        AutomaticTransferSwitch(const AutomaticTransferSwitch& orig) : PowerSensor(orig) {
-            // Copy constructor implementation
-        }
+        
+        void attachView(const char* name, bool showCurrent = true, bool showFault = true) override;
 
         AutomaticTransferSwitch(uint8_t address, uint8_t index) : PowerSensor(address, index) { 
-        }
-
-        AutomaticTransferSwitch(uint8_t* data) : PowerSensor(data) {
-            // Constructor with parameters implementation
         }
 
         virtual ~AutomaticTransferSwitch() {

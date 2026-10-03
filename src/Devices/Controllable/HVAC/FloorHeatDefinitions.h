@@ -2,6 +2,7 @@
 #ifdef HOME_KIT_2
 #ifndef FLOOR_HEAT_DEFINITIONS_H
 #define FLOOR_HEAT_DEFINITIONS_H    
+#include "debug.h"
 
 
 #include "Arduino.h"

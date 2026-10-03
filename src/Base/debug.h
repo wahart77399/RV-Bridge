@@ -1,23 +1,22 @@
-#ifndef DEBUGGING_H
-#define DEBUGGING_H
-#include "Arduino.h"
-#include "HomeSpan.h"
-#include <iostream>
-#include <sstream>  // For std::ostringstream
-#include <iomanip>
+// src/Base/debug.h
+#pragma once
 
-typedef enum {
-    VERBOSE_LOG_LEVEL = 2,
-    NOT_SO_VERBOSE_LOG_LEVEL = 1,
-    MIN_LOG_LEVEL = 0,
-    NO_LOG_LEVEL = 100
-} RVC_LOG_LEVEL;
-constexpr boolean DEBUGGING = true;
+// -------------------------------------------------------
+// Compile-time switch
+//   -DRV_DEBUG=1   → prints enabled
+//   -DRV_DEBUG=0   → all debug code disappears
+// -------------------------------------------------------
+#ifndef RV_DEBUG
+#define RV_DEBUG 0
+#endif
 
-constexpr RVC_LOG_LEVEL RVC_Log_Level = MIN_LOG_LEVEL;
-
-// std::ostringstream oss;
-
-void LOGIT(RVC_LOG_LEVEL level, std::ostringstream& s); 
-
+#if RV_DEBUG
+  #include <Arduino.h>
+  #define RV_PRINTF(...)        printf(__VA_ARGS__)
+  #define RV_PRINT(x)           print(x)
+  #define RV_PRINTLN(x)         println(x)
+#else
+  #define RV_PRINTF(...)        ((void)0)
+  #define RV_PRINT(x)           ((void)0)
+  #define RV_PRINTLN(x)         ((void)0)
 #endif

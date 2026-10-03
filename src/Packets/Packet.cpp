@@ -32,6 +32,7 @@
 //                                                            //
 ////////////////////////////////////////////////////////////////
 #include "Arduino.h"
+#include "debug.h"
 
 // #define CUSTOM_CHAR_HEADER
 #include "Packet.h"
@@ -65,38 +66,31 @@ void Packet::initPacket(CAN_frame_t* packet, uint8_t index, uint32_t msgID) {
 }
 
 boolean Packet::isRemoteTransmissionRequest(CAN_frame_t* packet) {
-	// Packet::oss << "Packet::isRemoteTransmissionRequest Start\n";
-	// LOGIT(VERBOSE_LOG_LEVEL, Packet::oss);
     boolean result = false;
     if (packet != nullptr) {
-		// printf("Packet::isRemoteTransmissionRequest: packet != nullptr\n");
-		// printf("Packet::isRemoteTransmissionRequest: RTR is %d\n", packet->FIR.B.RTR);
+		// RV_PRINTF("Packet::isRemoteTransmissionRequest: packet != nullptr\n");
+		// RV_PRINTF("Packet::isRemoteTransmissionRequest: RTR is %d\n", packet->FIR.B.RTR);
         result = (packet->FIR.B.RTR == CAN_RTR);
-		// printf("Packet::isRemoteTransmissionRequest: RTR is %s\n", result ? "true" : "false");
+		// RV_PRINTF("Packet::isRemoteTransmissionRequest: RTR is %s\n", result ? "true" : "false");
     }
-	//Packet::oss << "Packet::isRemoteTransmissionRequest End: " <<  result << std::endl;
-	// LOGIT(VERBOSE_LOG_LEVEL, Packet::oss);
     return result;
 }
 #include "Thermostat.h"
 void Packet::displayPacket(CAN_frame_t* packet, PacketPrint printPacket) {
-	//Packet::oss << "Packet::displayPacket start" << std::endl;
-	// LOGIT(VERBOSE_LOG_LEVEL, oss);
-	// std::lock_guard<std::mutex> lock(Packet::packetMutex);
 	if (isRemoteTransmissionRequest(packet)) {
-		printf("Packet::displayPacket: Remote Transmission Request received with ID 0x%08X, DLC %d\n", packet->MsgID, packet->FIR.B.DLC);
+		RV_PRINTF("Packet::displayPacket: Remote Transmission Request received with ID 0x%08X, DLC %d\n", packet->MsgID, packet->FIR.B.DLC);
 		printRemoteTransmissionRequest(packet);	
 	} else if (packet != nullptr) {
-		// printf("Packet::displayPacket: Packet received with ID 0x%08X, DLC %d\n", packet->MsgID, packet->FIR.B.DLC);
+		// RV_PRINTF("Packet::displayPacket: Packet received with ID 0x%08X, DLC %d\n", packet->MsgID, packet->FIR.B.DLC);
 
 		uint8_t sourceAddr = getSourceAddress(packet);
 		uint8_t* data = getData(packet);
 		uint8_t index = getIndex(data);
 		RVC_DGN dgn = DGN::getDGN(packet);
 		// if ((dgn == GENERATOR_AC_STATUS_1) || (dgn == GENERATOR_AC_STATUS_2) || (dgn == GENERATOR_AC_STATUS_3) || (dgn == GENERATOR_AC_STATUS_4)) {
-			// printf("Packet::displayPacket: Generator DGN received with DGN=0x%08X, ID 0x%08X, DLC %d, data 0x%08X \n",dgn, packet->MsgID, packet->FIR.B.DLC, *((uint32_t*)data));
-		if ((dgn == WINDOW_SHADE_CONTROL_COMMAND) || (dgn == WINDOW_SHADE_CONTROL_STATUS)) {  //  || 
-			printf("Packet::displayPacket: Window Shade DGN received with DGN=0x%08X, ID 0x%08X, DLC %d, data 0x%08X \n",dgn, packet->MsgID, packet->FIR.B.DLC, *((uint32_t*)data));
+			// RV_PRINTF("Packet::displayPacket: Generator DGN received with DGN=0x%08X, ID 0x%08X, DLC %d, data 0x%08X \n",dgn, packet->MsgID, packet->FIR.B.DLC, *((uint32_t*)data));
+		// if ((dgn == WINDOW_SHADE_CONTROL_COMMAND) || (dgn == WINDOW_SHADE_CONTROL_STATUS)) {  //  || 
+			// RV_PRINTF("Packet::displayPacket: Window Shade DGN received with DGN=0x%08X, ID 0x%08X, DLC %d, data 0x%08X \n",dgn, packet->MsgID, packet->FIR.B.DLC, *((uint32_t*)data));
 		// if ((dgn == AWNING_COMMAND) || (dgn == AWNING_COMMAND_2) || (dgn == AWNING_STATUS) || (dgn == AWNING_STATUS_2)) { //  || 
 		//	GOOD -> (dgn == FLOOR_HEAT_COMMAND) || (dgn == FLOOR_HEAT_STATUS)) { 
 		// if ((dgn==DC_DIMMER_COMMAND_2) || (dgn==DC_DIMMER_COMMAND) || (dgn == DC_DIMMER_STATUS_1) || (dgn == DC_DIMMER_STATUS_2) || (dgn == DC_DIMMER_STATUS_3)) { // rvc dgns are this or better
@@ -105,12 +99,12 @@ void Packet::displayPacket(CAN_frame_t* packet, PacketPrint printPacket) {
 		// NO BATTERY information on RVC if ((dgn == BATTERY_COMMAND) || (dgn == BATTERY_STATUS_1) || (dgn == BATTERY_STATUS_2) || (dgn == BATTERY_STATUS_3)) {
 		// if ((dgn == WATER_PUMP_COMMAND) || (dgn == WATER_PUMP_STATUS)) {
 		// if (((dgn == THERMOSTAT_COMMAND_1) || (dgn == THERMOSTAT_STATUS_1)) && (index < 5)) {
-		// if (((dgn == DC_SOURCE_STATUS_1) /* || (dgn == DC_SOURCE_STATUS_2) ||  (dgn == DC_SOURCE_STATUS_3) || (dgn == DC_SOURCE_STATUS_4) */ )) { // || 
+		if (((dgn == DC_SOURCE_STATUS_1) || (dgn == DC_SOURCE_STATUS_2) )) { // ||  (dgn == DC_SOURCE_STATUS_3) || (dgn == DC_SOURCE_STATUS_4) */ )) { // || 
 		//	(dgn == DC_SOURCE_STATUS_5) || (dgn == DC_SOURCE_STATUS_6) || (dgn == DC_SOURCE_STATUS_7) || (dgn == DC_SOURCE_STATUS_8) ||
 		//	(dgn == DC_SOURCE_STATUS_9) || (dgn == DC_SOURCE_STATUS_10) || (dgn == DC_SOURCE_STATUS_11) || (dgn == DC_SOURCE_STATUS_12) || 
 		//	(dgn == DC_SOURCE_STATUS_13))) {
 			// || ((dgn == ATS_AC_STATUS_1) || (dgn == ATS_AC_STATUS_2) || (dgn == ATS_AC_STATUS_3) || (dgn == ATS_AC_STATUS_4))
-		// if ((dgn == INVERTER_AC_STATUS_1) || (dgn == INVERTER_STATUS)) { /* || (dgn == INVERTER_AC_STATUS_2) || (dgn == INVERTER_AC_STATUS_3) || (dgn == INVERTER_AC_STATUS_4)) { */
+		// if /*( */(dgn == INVERTER_AC_STATUS_1) { //|| (dgn == INVERTER_STATUS)) { /* || (dgn == INVERTER_AC_STATUS_2) || (dgn == INVERTER_AC_STATUS_3) || (dgn == INVERTER_AC_STATUS_4)) { */
 		// if (dgn == TANK_STATUS) {
 		// if ((dgn == ATS_AC_STATUS_1)) { //  || (dgn == ATS_AC_STATUS_2) || (dgn == ATS_AC_STATUS_3) || (dgn == ATS_AC_STATUS_4) || (dgn == ATS_COMMAND)) {
 			uint8_t priority = getPriority(packet);
@@ -123,36 +117,22 @@ void Packet::displayPacket(CAN_frame_t* packet, PacketPrint printPacket) {
 				// uint16_t resultC = HVAC_Thermostat::convToTempC(data[6]<<8 | data[5]);
 				// std::ostringstream oss;
 				
-				/* Packet::oss << "Packet::displayPacket: DGN: " << std::hex << dgn << ", Source Address: " << sourceAddr << ", index: " << index << ", Priority: " << priority  
-					<< "Data : d[0]=" << std::hex << data[0] << "d[1]=" << std::hex << data[1] << "d[2]=" << std::hex << data[2] 
-					<< "d[3]=" << std::hex << data[3] << "d[4]=" << std::hex << data[4] << "d[5]=" << std::hex << data[5]
-					<< "d[6]=" << std::hex << data[6] << "d[7]=" << std::hex << data[7] << std::endl;
-				LOGIT(MIN_LOG_LEVEL, Packet::oss); 
-				*/
-				// if ((index == 0x42) || (index == 2))
-				printf("printf Packet::displayPacket: DGN %#x, index = %#x, Source Address %#x, Data : d[0]=%#x, d[1]=%#x, d[2]=%#x, d[3]=%#x, d[4]=%#x, d[5]=%#x, d[6]=%#x, d[7]=%#x\n", 
-						dgn, index, sourceAddr, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
-				//; // do nothing - just a place to put a breakpoint if needed
+				if (data[4] != 0x00) // && (data[0] != 0x41))
+				// RV_PRINTF("RV_PRINTF Packet::displayPacket: DGN %#x, index = %#x, Source Address %#x, Data : d[0]=%#x, d[1]=%#x, d[2]=%#x, d[3]=%#x, d[4]=%#x, d[5]=%#x, d[6]=%#x, d[7]=%#x\n", 
+				// 		dgn, index, sourceAddr, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+				; // do nothing - just a place to put a breakpoint if needed
 			}
         }
     }
-	//Packet::oss << "Packet::displayPacket end" << std::endl;
-	//LOGIT(VERBOSE_LOG_LEVEL, oss);
 }
 
 #include "ChassisMobility.h"
 void Packet::processPacket(CAN_frame_t *packet) 
 {
-	//Packet::oss << "Packet::processPacket Start\n";
-	//LOGIT(VERBOSE_LOG_LEVEL, Packet::oss);
-	// std::lock_guard<std::mutex> lock(Packet::packetMutex);
 	if ((packet != nullptr) && (!isRemoteTransmissionRequest(packet))) {
 
 		RVC_DGN dgn = DGN::getDGN(packet);
 		uint8_t* rawData = getData(packet);
-		//Packet::oss << "Packet::processPacket: DGN: " << std::hex << dgn << ", Source Address: << " << getSourceAddress(packet) << ", Index: " << getIndex(rawData) << std::endl; 
-		//		dgn, getSourceAddress(packet), getIndex(rawData));
-		// LOGIT(NOT_SO_VERBOSE_LOG_LEVEL, Packet::oss);
 		if (rawData != nullptr) {
 			DeviceFactory* factory = DeviceFactory::getInstance();
 			if (factory != nullptr) {
@@ -163,14 +143,10 @@ void Packet::processPacket(CAN_frame_t *packet)
 				}
 				
 			} else { 
-				//Packet::oss << "Packet::processPacket ERROR: factory null" << std::endl;
-				// LOGIT(NOT_SO_VERBOSE_LOG_LEVEL,Packet::oss); 
+				;	
 			}
 		}
 	}
-	// std::lock_guard<std::mutex> unlock(Packet::packetMutex);
-	//Packet::oss << "Packet::processPacket End" << std::endl;
-	//LOGIT(VERBOSE_LOG_LEVEL, Packet::oss);
 }
 
 const char* Packet::parseBufferForValuePair(const char* buff, int16_t& val1, int16_t& val2) {

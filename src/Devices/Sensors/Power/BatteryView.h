@@ -2,7 +2,7 @@
 #ifdef HOME_KIT_2
 #ifndef BATTERY_VIEW_H
 #define BATTERY_VIEW_H
-#define CUSTOM_CHAR_HEADER
+#include "CustomChars.h"
 #include "ATSView_Definitions.h"
 #include "HomeSpan.h"
 // #include "DC_SourceDefintions.h"
@@ -17,10 +17,13 @@ class Battery;
 
 class BatteryView : SpanView {
     private:
-        static std::map<DC_SOURCE_INSTANCE_DEFINITION, std::string> instanceMap;
+
         static std::map<DC_SOURCE_PRIORITY_DEFINTION,  std::string> priorityMap;
+        #ifdef INSTANCES
+        static std::map<DC_SOURCE_INSTANCE_DEFINITION, std::string> instanceMap;
         static std::map<CHARGE_STATE, std::string>                  chargeStateMap;
         static std::map<BATTERY_TYPE, std::string>                  batteryTypeMap;
+        #endif
         static boolean mapsInitialized; //  = false;
 
         static void initialize(void);
@@ -38,29 +41,31 @@ class BatteryView : SpanView {
             Characteristic::Amperage                    dcCurrent;
             // DC_SOURCE_STATUS_2
             Characteristic::BatteryTemperature          temperature;
-            Characteristic::CapacityRemaining           capacityRemaining;
+            // Characteristic::CapacityRemaining           capacityRemaining;
             Characteristic::RMSAmperage                 rmsRipple;
 
             
             BatteryState() : Service::TemperatureSensor(), 
                                 inst(), priority(),batteryLevel(tempCfromTempF(ONE_HUNDRED_PERCENT_DEGREE_F)), dcVoltage(12), dcCurrent(), temperature(72), 
-                                capacityRemaining(),  rmsRipple() {
+                                /* capacityRemaining(), */ rmsRipple() {
                 inst.setDescription("Battery Instance");
                 priority.setDescription("Battery Priority");
                 batteryLevel.setDescription("Battery Level");
                 dcVoltage.setDescription("DC Voltage");
                 dcCurrent.setDescription("DC Current");
                 temperature.setDescription("Battery Temperature");
-                capacityRemaining.setDescription("Capacity Remaining");
+                // capacityRemaining.setDescription("Capacity Remaining");
                 rmsRipple.setDescription("RMS Ripple");
                 new Characteristic::TemperatureDisplayUnits(homeKitTemperatureDisplayFahrenheit );
                 batteryLevel.setRange(tempCfromTempF(ZERO_PERCENT_DEGREE_F), tempCfromTempF(ONE_HUNDRED_PERCENT_DEGREE_F * 1.25), 1); // allow for over 100% charge
                 temperature.setRange(tempCfromTempF(ZERO_PERCENT_DEGREE_F), tempCfromTempF(ONE_HUNDRED_PERCENT_DEGREE_F * 2.0), 0.1); // allow for 200F
-                capacityRemaining.setRange(0, 1000, 1); // 0 Ah to 
+                // capacityRemaining.setRange(0, 1000, 1); // 0 Ah to 
             }
 
             // status 1
+            #ifdef INSTANCES
             void setDCInstance(const DC_SOURCE_INSTANCE_DEFINITION instanceName) { inst.setString(instanceMap[instanceName].c_str()); }
+            #endif
             void setPriority(const DC_SOURCE_PRIORITY_DEFINTION priorityName)  { priority.setString(priorityMap[priorityName].c_str()); }
             void setBatteryLevel(const float_t val) { 
                 float adjVal = tempCfromTempF(val);
@@ -79,7 +84,7 @@ class BatteryView : SpanView {
                         adjVal = static_cast<float_t>(ONE_HUNDRED_PERCENT_DEGREE_F - 7.0); // limit to 93F for now - need to check with HomeKit spec 
                 }
             } 
-            void setCapacityRemaining(const uint16_t val)                      { /* printf("BatteryView::capacityRemaining %d\n", val); */ capacityRemaining.setVal(val); }
+            // void setCapacityRemaining(const uint16_t val)                      { /* printf("BatteryView::capacityRemaining %d\n", val); */ capacityRemaining.setVal(val); }
             void setRMSRipple(const float_t val)                               { /* printf("Battery:setRMSRipple val=%f\n", val); */ rmsRipple.setVal(val/1000.0); } // this is millivolts - need volts
 
         };

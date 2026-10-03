@@ -1,7 +1,8 @@
 #include "RVConstants.h"
+#pragma once
 #ifdef HOME_KIT_1
-#ifndef DC_DIMMABLESWITCHVIEW_H
-#define DC_DIMMABLESWITCHVIEW_H
+// #ifndef LIGHTDEVICEVIEW_H
+// #define DC_LIGHTSWITCHVIEW_H
 
 /*********************************************************************************
  *  MIT License
@@ -40,77 +41,93 @@
 #include "HomeSpan.h"
 #include "DGN.h"
 #include "PacketQueue.h"
-#include "DCDimmerCmd.h"
+#include "LightDeviceCmd.h"
+#include "debug.h"
 
-class DC_DimmableSwitch;
-constexpr uint8_t RVCBrightMax = 200;
+class LightDevice;
 
 // DC SwitchView provides the view of the HomeKit - it is both a View from MVC is built as a facade to the SpanService
 // see HomeSpan.h for more info
-class DC_DimmableSwitchView : public SpanView {
-    protected:
-        
+class LightDeviceView : public SpanView {
     private:
         const uint8_t Lamp = 0; // not a dimmable switch
-        static const char* name; //  = "DimmableBulb"; // from Span.h
-        static const char* type; //  = "43"; // from Span.h
-        static const char  DIMMABLE_FXN_COMMAND; //  = 'o';
-        static const char* DIMMABLE_FXN_COMMAND_DESCRIPTION; // = "<index>=<state:0-1>,... - send onOff to <index>";
+        // static const char* name; //  = "LightBulb"; // from Span.h
+        // static const char* type; //  = "43"; // from Span.h
+        static const char  ON_OFF_COMMAND; //  = 'o';
+        static const char* ON_OFF_COMMAND_DESCRIPTION; // = "<index>=<state:0-1>,... - send onOff to <index>";
+        static const char  ON_OFF_STATUS; // = 'O';
+        static const char* ON_OFF_STATUS_DESCRIPTION; // = "<index> to retrieve current state in HomeSpan";
+        
+        struct LightController:Service::LightBulb {
 
-        struct DC_DimmableSwitchController: Service::LightBulb {
-
-                DC_DimmableSwitch*          model;
-                DC_DimmableSwitchView*      view;
-                SpanCharacteristic*         power;
-                SpanCharacteristic*         brightness;
+                LightDevice*    	model = nullptr;
+                LightDeviceView* 	view =  nullptr;
+                SpanCharacteristic*	power = nullptr;
+		        SpanCharacteristic*	brightness = nullptr;
 
 
-
-                DC_DimmableSwitchController(DC_DimmableSwitchView* vw, GenericDevice* mdl, const char* spanDeviceName) : Service::LightBulb() {
-                    power = new Characteristic::On();
-                    brightness = new Characteristic::Brightness(25); // start with 1/4 brightness
-                    this->model = (DC_DimmableSwitch* )mdl;
-                    view = vw;
-                }
+                LightController(LightDeviceView* vw, GenericDevice* mdl, const char* spanDeviceName);
                 boolean update(void); 
                 boolean isOn(void) { return power->getNewVal(); }
-                void turnOn(boolean val) { power->setVal(val); PacketQueue::clearLastPacketReceiveTime();}
+                void turnOn(boolean val) { power->setVal(val);  PacketQueue::clearLastPacketReceiveTime();}
                 void setBrightness(uint8_t bright) { 
                     if (bright <= MAX_PERCENT) 
                         brightness->setVal(bright); 
                     else
                         brightness->setVal(MAX_PERCENT);
                 } 
+                uint8_t getBrightness(void) { return (brightness != nullptr) ? brightness->getNewVal() : 0U; } 
 
-                uint8_t getBrightness(void) { return brightness->getNewVal(); } // multiply by 2 for 
         }; 
 
-        DC_DimmableSwitchController controller;
-        DC_DimmableSwitchView(DC_DimmableSwitchView& vw) = delete;
+        LightController controller;
+        boolean isItDimmable(void);
+        void setItOn(bool on);
+        void setItsBrightness(uint8_t val);
+        
 
-        DC_DimmableSwitchView& operator=(const DC_DimmableSwitchView&) = delete; // Prevent assignment
+
+        LightDeviceView(LightDeviceView& vw) = delete;
+
+        LightDeviceView& operator=(const LightDeviceView&) = delete; // Prevent assignment
+
+        
+        static bool bridgeCreated;
+        static void createBridge(void); 
 
 
-        // creating cohesion between the DC_Switch and this class so that the model can friend the static callback cmdSendOnOff
-        friend class DC_DimmableSwitch;
+        // creating cohesion between the LightDevice and this class so that the model can friend the static callback cmdSendOnOff
+        friend class LightDevice;
 
 
     protected:
+        inline void turnOnLight(void) {
+            controller.turnOn(true); // turn on the light
+        }
+
+        inline void turnOffLight(void) {
+            controller.turnOn(false);  // turn off the light
+        }
+
+        // inline const char* getSpanDeviceName(void) const { return spanDeviceName; } // return the name of the device for this view
         
+
+        const uint8_t RVCBrightMax = 200;
         // @brief need to review this... doesn't seem right SpanService(type, name)
-        DC_DimmableSwitchView(GenericDevice* model, const char* spanDevName);
+        LightDeviceView(GenericDevice* model, const char* spanDevName);
     public:
 
-        // static void cmdCallback(RVC_DGN dgn, const char* buff);
         
         /// @brief destructor
-        virtual ~DC_DimmableSwitchView(void) { 
+        virtual ~LightDeviceView(void) { 
         }
 
         // update HomeSpan view per changes in model
-        virtual bool updateView(void);
+        bool updateView(void) override;
 
-        static void createDC_DimmableSwitchView(GenericDevice* model, const char* spanDevName); 
+        static void createLightDeviceView(GenericDevice* model, const char* spanDevName); 
+                /// @brief destructor
+
 };
-#endif // DC_SWITCHVIEW_H
+// #endif // DC_SWITCHVIEW_H
 #endif // HOME_KIT_1

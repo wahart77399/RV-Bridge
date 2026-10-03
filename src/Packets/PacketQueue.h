@@ -1,85 +1,104 @@
-#ifndef RVC_PACKET_QUEUE_H
-#define RVC_PACKET_QUEUE_H
-/*********************************************************************************
- *  MIT License
- *  
- *  Copyright (c) 2023 Randy Ubillos
- *  
- *  https://github.com/rubillos/RV-Bridge
- *  
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
- *  of this software and associated documentation files (the "Software"), to deal
- *  in the Software without restriction, including without limitation the rights
- *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- *  copies of the Software, and to permit persons to whom the Software is
- *  furnished to do so, subject to the following conditions:
- *  
- *  The above copyright notice and this permission notice shall be included in all
- *  copies or substantial portions of the Software.
- *  
- *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- *  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- *  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- *  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- *  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- *  SOFTWARE.
- *  
- ********************************************************************************/
- 
-////////////////////////////////////////////////////////////////
-//                                                            //
-//    RV-Bridge: A HomeKit to RV-C interface for the ESP32    //
-//                                                            //
-////////////////////////////////////////////////////////////////
+/*
+Platformio.ini will need to be modified
+; -----------------------------------------------------------------------------
+; HomeSpan 2.x path (Arduino-ESP32 3 / IDF 5) — use after TWAI PacketQueue is in
+; -----------------------------------------------------------------------------
+[env:HomeSpan2]
+build_type = release
+platform = espressif32 @ 6.11.0
+; Pin Arduino 3.x if the platform default is still 2.x:
+; platform_packages =
+;     framework-arduinoespressif32 @ 3.0.7
+lib_deps =
+    elapsedMillis
+    homespan/HomeSpan@^2.1.8
+build_flags =
+    ${env.build_flags}
+*/
+
+#pragma once
 
 #include "Arduino.h"
-
 #include "elapsedMillis.h"
-#include "ESP32CAN.h"
-#include "CAN_config.h"
-#include <mutex>
+#include "CanFrameTypes.h"
+#include <driver/gpio.h>
+#include <driver/twai.h>
 
-constexpr uint16_t receiveQueueSize = 10;
-constexpr uint16_t sendQueueSize = 8;
+// Timing / sizing (explicit constants)
+constexpr uint16_t kReceiveQueueSize       = 10;
+constexpr uint16_t kSendQueueSize          = 8;
+constexpr uint32_t kSendPacketIntervalMs   = 50;
+constexpr uint32_t kMinSendPacketIntervalMs = 5;
+constexpr uint32_t kPacketBlinkTimeMs      = 25;
+constexpr uint32_t kHeartbeatRateMs        = 3000;
+constexpr uint32_t kHeartbeatBlinkTimeMs   = 10;
+constexpr gpio_num_t kCanTxPin             = CAN_TX; // static_cast<gpio_num_t>(11);
+constexpr gpio_num_t kCanRxPin             = CAN_RX; // static_cast<gpio_num_t>(12);
+constexpr uint32_t kTwaiRxTimeoutMs        = 0;   // non-blocking poll
+constexpr uint32_t kTwaiTxTimeoutMs        = 10;
 
-constexpr uint32_t sendPacketIntervalmS = 50;
-constexpr uint32_t minSendPacketIntervalmS = 5;
-
-constexpr unsigned long lastSendTime = 1000UL;
-constexpr unsigned long lastRecvTime = 1000UL;
-constexpr uint32_t packetBlinkTime = 25;
-constexpr uint32_t heatbeatRate = 3000;
-constexpr uint32_t heartbeatBlinkTime = 10;
-constexpr gpio_num_t canTxPin = GPIO_NUM_25;
-constexpr gpio_num_t canRxPin = GPIO_NUM_26;
-
-
+/**
+ * PacketQueue
+ * Owns TWAI install/start, RX poll → CAN_frame_t, and a software TX queue.
+ * Language policy: non-copyable, non-assignable (static facade + deleted instance ops).
+ */
 class PacketQueue {
-    private:
-        // static std::mutex packetQueueMutex;
-        static CAN_frame_t packetQueue[sendQueueSize];
-        static bool packetShortGap[sendQueueSize];
-        static uint16_t packetQueueHead;
-        static int16_t packetQueueTail;
-        static bool doCANWrite;
-        static elapsedMillis lastPacketSendTime;
-        static elapsedMillis lastPacketRecvTime;
-        static bool sendIndicator;
-	    static bool recvIndicator;
-        static elapsedMillis heartbeatTime;
+public:
+    // --- Language behaviors (explicit) ---
+    PacketQueue() = delete;
+    ~PacketQueue() = delete;
+    PacketQueue(const PacketQueue&) = delete;
+    PacketQueue& operator=(const PacketQueue&) = delete;
+    PacketQueue(PacketQueue&&) = delete;
+    PacketQueue& operator=(PacketQueue&&) = delete;
 
-        PacketQueue() = delete; // Prevent instantiation
-        PacketQueue(const PacketQueue&) = delete; // Prevent copy
-        PacketQueue& operator=(const PacketQueue&) = delete; // Prevent assignment
+    // --- Behaviors (public) ---
+    static bool initialize(gpio_num_t txPin = kCanTxPin,
+                           gpio_num_t rxPin = kCanRxPin,
+                           twai_timing_config_t timing = TWAI_TIMING_CONFIG_250KBITS());
 
+    /** Legacy entry used by CoachESP32 — configures pins from CAN_device_t then initialize(). */
+    static bool initPacketQueue(CAN_device_t& cfg);
 
-    public:
-        static void adjustTimingOfPacketRecieve(void);
-        static bool initPacketQueue(CAN_device_t& );
-        static void processPacketQueue(void);
-        static void queuePacket(CAN_frame_t* packet, bool shortGap=false);
-        static bool packetReceived(CAN_device_t* CAN_cfg, CAN_frame_t*);
-        static void clearLastPacketReceiveTime(void) {PacketQueue::lastPacketRecvTime=0;}
+    /** Poll one TWAI frame into outPacket; on success runs Packet::processPacket path via caller. */
+    static bool packetReceived(CAN_device_t* cfg, CAN_frame_t* outPacket);
+
+    /** Queue a frame for rate-limited transmit. */
+    static bool queuePacket(const CAN_frame_t& frame);
+
+    /** Drain software TX queue to TWAI (call from poll loop). */
+    static void processPacketQueue(void);
+
+    /** Legacy timing helper used from main loop. */
+    static void adjustTimingOfPacketRecieve(void);
+
+    static void clearLastPacketReceiveTime(void);
+
+protected:
+    // --- Internal behaviors (class-only) ---
+    static bool installTwaiDriver(gpio_num_t txPin, gpio_num_t rxPin, const twai_timing_config_t& timing);
+    static bool startTwaiDriver(void);
+    static bool stopTwaiDriver(void);
+
+    static void canFrameFromTwai(const twai_message_t& in, CAN_frame_t& out);
+    static void twaiFromCanFrame(const CAN_frame_t& in, twai_message_t& out);
+
+    static bool transmitFrame(const CAN_frame_t& frame);
+    static bool receiveFrame(CAN_frame_t& outPacket);
+
+    static bool pushSendQueue(const CAN_frame_t& frame);
+    static bool popSendQueue(CAN_frame_t& outFrame);
+
+private:
+    // --- Attribute mediation only ---
+    static bool& driverInstalled(void);
+    static bool& driverStarted(void);
+    static uint8_t& sendHead(void);
+    static uint8_t& sendTail(void);
+    static uint8_t& sendCount(void);
+    static CAN_frame_t* sendQueue(void);
+    static elapsedMillis& timeSinceLastSend(void);
+    static elapsedMillis& timeSinceLastRecv(void);
+    static elapsedMillis& timeSinceAdjust(void);
 };
-#endif // PACKET_QUEUE_H
+

@@ -41,6 +41,7 @@
 #include <mutex>
 #include "DGN.h"
 #include "HVAC_defintions.h"
+#include "debug.h"
 
 
 

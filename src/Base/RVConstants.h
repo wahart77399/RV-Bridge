@@ -34,8 +34,10 @@
 ////////////////////////////////////////////////////////////////
 #include "Arduino.h"
 
-// #define HOME_KIT_1
+#define HOME_KIT_1
 #define HOME_KIT_2
+// #define SMART_COACH_ESP32
+#define SMART_COACH_ESP32S3
 constexpr uint8_t INVALID_SIZE = 255;
 constexpr uint16_t INVALID_TANK_SIZE = 0x01f4;
 constexpr float_t INVALID_TEMPERATURE = -273.0F;
@@ -51,6 +53,7 @@ constexpr uint8_t TWO_FORTY_VOLT_DEGREE_F = 240;
 constexpr uint8_t MAX_RVC_PERCENT = 250;
 constexpr float_t RVC_PERCENT_PRECISION = 0.5;
 constexpr uint8_t DELAY_TIME = 30; 
+constexpr uint8_t MAX_PERCENT = 100;
 
 constexpr double  tempCOffset = -273.0;
 constexpr double  tempCScale = 0.03125;
@@ -58,6 +61,8 @@ constexpr double  tempCRoundingOffset = -0.25;
 
 const float_t AAC_LOWER_LIMIT = -81.0;
 const float_t AAC_UPPER_LIMIT = 81.0;
+const float_t VAC_LOWER_LIMIT = -20.0F;
+const float_t VAC_UPPER_LIMIT = 250.0F;
 
 enum class INVERTER_IO_TYPE : uint8_t {
     INVERTER_INPUT =  0x00,
@@ -70,12 +75,12 @@ enum class INVERTER_LINE_TYPE : uint8_t {
 } ;
 
 // Tank Capaciity should be in a CSV file that is read on input so recompiles are not needed for new coaches
-typedef enum {
+enum class TANK_CAPACITIES : uint16_t {
     NEWMAR_ESSEX_2022_FRESH     = 398, // liters
     NEWMAR_ESSEX_2022_GRAY      = 302,
     NEWMAR_ESSEX_2022_BLACK     = 227,
     NEWMAR_ESSEX_2022_LPG       = 0xffff 
-} TANK_CAPACITIES;
+};
 
 #include "byteswap.h"
 

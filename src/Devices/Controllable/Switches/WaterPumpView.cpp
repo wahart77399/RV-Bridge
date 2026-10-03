@@ -37,6 +37,7 @@
 #include "WaterPump.h"
 #include "Packet.h"
 #include "DGN.h"
+#include "debug.h"
 
 // bool bridgeCreated = false;
 
@@ -46,7 +47,7 @@ boolean WaterPumpView::WaterPumpController::update(void) {                      
         if (model != nullptr) {
             uint8_t* rawData = model->getCurrentData();
             model->turnPumpOn(isOn());
-            printf("WaterPumpView::WaterPumpController::update - on: %d\n", model->isPumpOn());
+            RV_PRINTF("WaterPumpView::WaterPumpController::update - on: %d\n", model->isPumpOn());
             model->executeCommand(WATER_PUMP_COMMAND, rawData);
             result = true;
         }     
@@ -59,20 +60,20 @@ bool WaterPumpView::updateView(void) {
     bool updated = false;
     // the light switch may have been turned on/off at the wall and thus needs to be reflected in the SpanView
     // 
-    // printf("WaterPumpView::updateView called - isNeedToUpdateView = %d\n", isNeedToUpdateView());
+    // RV_PRINTF("WaterPumpView::updateView called - isNeedToUpdateView = %d\n", isNeedToUpdateView());
     if (isNeedToUpdateView() && ChassisMobility::isParked()) { // don't mess with the state of the lock when the change is is initiated by the controller and not the model
         uint8_t instance = indexOfModel();   
         uint8_t index = -1;
         WaterPump* mdl = (WaterPump* )getModel();
         if (mdl != nullptr) {
-            // printf("WaterPumpView::updateView - mdl not null\n");
+            // RV_PRINTF("WaterPumpView::updateView - mdl not null\n");
             index = WATER_PUMP_INDEX;
             // toggle the door lock state
             boolean on = mdl->isPumpOn();
-            // printf("WaterPumpView::updateView - on=%d\n", on);
+            // RV_PRINTF("WaterPumpView::updateView - on=%d\n", on);
             controller.turnOn(on);
             if (index == 0)
-                // printf("WaterPumpView::updateView - power = %d, controller.isOn() = %d\n", on, controller.isOn());
+                // RV_PRINTF("WaterPumpView::updateView - power = %d, controller.isOn() = %d\n", on, controller.isOn());
                 // mdl->setLockedFlag(!locked);
                 ;
 
@@ -80,7 +81,7 @@ bool WaterPumpView::updateView(void) {
         }        
         
     }
-    // printf("WaterPumpView::updateView completed \n"); 
+    // RV_PRINTF("WaterPumpView::updateView completed \n"); 
     return updated;
 }
 
@@ -89,7 +90,7 @@ WaterPumpView::WaterPumpView(GenericDevice* model, const char* spanDevName) : Sp
 }
 
 void WaterPumpView::createWaterPumpView(GenericDevice* model, const char* spanDevName) {
-    printf("WaterPumpView::createWaterPumpView called\n");
+    RV_PRINTF("WaterPumpView::createWaterPumpView called\n");
     SpanView::prepHomeSpan();
 
     new SpanAccessory(); 
@@ -98,10 +99,10 @@ void WaterPumpView::createWaterPumpView(GenericDevice* model, const char* spanDe
     new Characteristic::Name(spanDevName);
     WaterPumpView* tmp = new WaterPumpView(model, spanDevName);
     if (tmp != nullptr)
-        printf("WaterPumpView::createWaterPumpView: tmp created successfully\n");
+        RV_PRINTF("WaterPumpView::createWaterPumpView: tmp created successfully\n");
     else
-        printf("WaterPumpView::createWaterPumpView: tmp creation failed\n");   
-    printf("WaterPumpView::createWaterPumpView completed\n");
+        RV_PRINTF("WaterPumpView::createWaterPumpView: tmp creation failed\n");   
+    RV_PRINTF("WaterPumpView::createWaterPumpView completed\n");
 }
 
 #endif

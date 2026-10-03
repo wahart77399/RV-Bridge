@@ -1,13 +1,10 @@
-#ifndef DC_SWITCH_H
-#define DC_SWITCH_H
+#pragma once
 /*********************************************************************************
  *  MIT License
  *  
  *  Copyright (c) 2023 Randy Ubillos
  *  
  *  https://github.com/rubillos/RV-Bridge
- *  
- *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
  *  in the Software without restriction, including without limitation the rights
  *  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
@@ -37,13 +34,21 @@
 #include "Arduino.h"
 #include "GenericDevice.h"
 #include "Packet.h"
-#include "DC_LightSwitchView.h"
-#include "DCDimmerCmd.h"
+#include "LightDeviceCmd.h"
+#include "debug.h"
 
+#ifndef DC_DIMMER_COMMAND_BRIGHTNESS_INDEX
 constexpr uint8_t DC_DIMMER_COMMAND_BRIGHTNESS_INDEX = 1; // index in the data array for the dimmer command
+#endif
+#ifndef DC_DIMMER_STATUS_3_BRIGHTNESS_INDEX
 constexpr uint8_t DC_DIMMER_STATUS_3_BRIGHTNESS_INDEX = 2; // index in the data array for the dimmer command duration
+#endif
 
-class DC_Switch : public GenericDevice {
+enum class LightKind : uint8_t {OnOff, Dimmable};
+
+
+class LightDevice : public GenericDevice {
+        friend class LightDeviceView;
     protected:
         const uint8_t SWITCH_OFF = DIMMER_STATUS_3_SWITCH_OFF;
     private:
@@ -53,8 +58,29 @@ class DC_Switch : public GenericDevice {
         const uint8_t RVCBrightMax = 200; 
         const uint8_t RVC_CONTINUOUS_DURATION = 0xff; // from spec RV-C Specification on DC_DIMMER_COMMAND_2
         
+        LightKind lightKind; // kind of light: OnOff or Dimmable
+        friend class LightView; // allow {LightView to access private members
 
+        uint8_t getBrightnessRaw() const {
+            const uint8_t* d = getCurrentData();
+            return d ? d[DC_DIMMER_COMMAND_BRIGHTNESS_INDEX] : DIMMER_STATUS_3_SWITCH_OFF;
+        }
 
+        void setBrightnessRaw(uint8_t bright) {
+            uint8_t* d = getCurrentData();
+            if (d != nullptr) {
+                if (bright <= DIMMER_STATUS_3_SWITCH_OFF) {
+                    d[DC_DIMMER_COMMAND_BRIGHTNESS_INDEX] = DIMMER_STATUS_3_SWITCH_OFF;
+
+                } else if (bright > MAX_PERCENT) {
+                    d[DC_DIMMER_COMMAND_BRIGHTNESS_INDEX] = MAX_PERCENT;
+                } else {
+                    d[DC_DIMMER_COMMAND_BRIGHTNESS_INDEX] = bright;
+                }
+            }
+        }
+
+        /**
         uint8_t getOnFlag(void) const {
             uint8_t isOn = SWITCH_OFF; // default to off
             uint8_t* rawData = (uint8_t* )getCurrentData();
@@ -62,7 +88,7 @@ class DC_Switch : public GenericDevice {
                 isOn = rawData[DC_DIMMER_COMMAND_BRIGHTNESS_INDEX]; // get the brightness value
             }
             return isOn;
-        }
+        } */
 
         // creating cohesion between the view/controller and the model 
         // cmdSendOnOff is a callback for the HomeSpan SpanView derived class DC_LightSwitch - it will need to update the model per
@@ -70,8 +96,12 @@ class DC_Switch : public GenericDevice {
         /// @param buff 
         // friend void DC_LightSwitchView::cmdSendOnOff(const char *buff);
         // friend void DC_LightSwitchView::cmdOnOffStatus(const char* buff);
-        friend class DC_LightSwitchView;
-        const bool isOn(void) const { return getOnFlag()>SWITCH_OFF; }
+
+        bool isOn(void) const { // { return getOnFlag()>SWITCH_OFF; }
+            return getBrightnessRaw() > DIMMER_STATUS_3_SWITCH_OFF;
+        }
+
+        bool isDimmable() const { return lightKind == LightKind::Dimmable; }
 
     protected:
 
@@ -88,7 +118,7 @@ class DC_Switch : public GenericDevice {
                     case DC_DIMMER_STATUS_2:
                     case DC_DIMMER_STATUS_3:
                         if (data[DC_DIMMER_STATUS_3_BRIGHTNESS_INDEX] == 0)
-                            data[DC_DIMMER_STATUS_3_BRIGHTNESS_INDEX] = SWITCH_OFF; // translate 
+                            data[DC_DIMMER_STATUS_3_BRIGHTNESS_INDEX] = DIMMER_STATUS_3_SWITCH_OFF; // SWITCH_OFF; // translate 
                         rawData[DC_DIMMER_COMMAND_BRIGHTNESS_INDEX] = data[DC_DIMMER_STATUS_3_BRIGHTNESS_INDEX];
                         break;
                     default:
@@ -98,48 +128,50 @@ class DC_Switch : public GenericDevice {
             }
         }
 
-        void setOnFlag(bool on) {
-            uint8_t* rawData = (uint8_t* )getCurrentData();
-            if (rawData != nullptr) { 
-                if (on && (rawData[DC_DIMMER_COMMAND_BRIGHTNESS_INDEX] <= SWITCH_OFF)){
-                    rawData[DC_DIMMER_COMMAND_BRIGHTNESS_INDEX] = SWITCH_ON;
-                } else if (on && (rawData[DC_DIMMER_COMMAND_BRIGHTNESS_INDEX] > SWITCH_OFF)) {
-                    if (rawData[DC_DIMMER_COMMAND_BRIGHTNESS_INDEX] > RVCBrightMax)
-                        rawData[DC_DIMMER_COMMAND_BRIGHTNESS_INDEX] = RVCBrightMax;  // else do nothing
-                } else
-                    rawData[DC_DIMMER_COMMAND_BRIGHTNESS_INDEX] = SWITCH_OFF;
-                // updateViews();
+        void setOn(bool on) {
+            if (on) {
+                setBrightnessRaw(MAX_PERCENT);
+            } else {
+                setBrightnessRaw(DIMMER_STATUS_3_SWITCH_OFF);
             }
         }
-        virtual CAN_frame_t* buildCommand(RVC_DGN dgn);
+
+        uint8_t getBrightness() const {
+            uint8_t result = 0;
+            uint8_t d = getBrightnessRaw();
+            if (d > DIMMER_STATUS_3_SWITCH_OFF) {
+                if (d >= MAX_PERCENT)
+                    result = MAX_PERCENT; // OK I need to look up MAX_PERCENT and remove magic numbers
+                else
+                    result = ((d * 100UL) / MAX_PERCENT);
+            }
+            return result;
+        }
+        
+        CAN_frame_t* buildCommand(RVC_DGN dgn) override;
         // virtual boolean sendCommand(RVC_DGN dgn);
 
     public:
-        DC_Switch() : GenericDevice() {
-            // Constructor implementation
-            ;
-        }
-        DC_Switch(const DC_Switch& orig) : GenericDevice(orig) {
-            // Copy constructor implementation
-            ;
+
+
+        LightDevice(uint8_t address, uint8_t instance, LightKind k=LightKind::Dimmable) : GenericDevice(address, instance),lightKind(k) {  // I chose dimmable cuz most in coach are
+            // RV_PRINTF("LightDevice constructor called with address=%d, instance=%d\n", address, instance); 
+            // setOnFlag(false); // initialize the switch to off
+            // Constructor with parameters implementation
+            setBrightnessRaw(DIMMER_STATUS_3_SWITCH_OFF);
+            // RV_PRINTF("LightDevice(%u, %u%s)\n", address, instance, k==LightKind::Dimmable ? "Dimmable" : "OnOff");
         }
 
-        DC_Switch(uint8_t address, uint8_t instance) : GenericDevice(address, instance) {  
-            printf("DC_Switch constructor called with address=%d, instance=%d\n", address, instance); 
-            setOnFlag(false); // initialize the switch to off
+        LightDevice(uint8_t* data) : GenericDevice(data), lightKind(LightKind::Dimmable) {
             // Constructor with parameters implementation
         }
-
-        DC_Switch(uint8_t* data) : GenericDevice(data) {
-            // Constructor with parameters implementation
-        }
-        virtual ~DC_Switch() {
+        virtual ~LightDevice() {
             // Destructor implementation
             
         } 
 
 
-        virtual boolean executeCommand(RVC_DGN dgn, const uint8_t* buffer, uint8_t val=SOURCE_ADDRESS); // execute command based on DGN and data received from the controller
+        virtual boolean executeCommand(RVC_DGN dgn, const uint8_t* buffer, uint8_t val=SOURCE_ADDRESS) override; // execute command based on DGN and data received from the controller
 };
-#endif // DC_SWITCH_H
+// #endif // DC_SWITCH_H
 #endif // ifdef HOME_KIT_1

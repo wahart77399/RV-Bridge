@@ -1,5 +1,6 @@
 
 #include "RVConstants.h"
+#include "debug.h"
 #ifdef HOME_KIT_1
 #ifndef DOOR_LOCKS_H
 #define DOOR_LOCKS_H 
@@ -97,7 +98,7 @@ class DoorLock : public GenericDevice {
 
     public:
         DoorLock(uint8_t address, uint8_t instance) : GenericDevice(address, instance) { 
-            printf("DoorLock constructor called with address=%d, instance=%d, group=%d\n", address, instance); 
+            RV_PRINTF("DoorLock constructor called with address=%d, instance=%d, group=%d\n", address, instance); 
             // Constructor with parameters implementation
         }
 

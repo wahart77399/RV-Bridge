@@ -34,6 +34,7 @@
 #include "SpanView.h"
 #include "HomeSpan.h"
 #include "GenericDevice.h"
+#include "debug.h"
 
 boolean SpanView::prepped = false;
 /**
@@ -76,7 +77,7 @@ void SpanView::prepHomeSpan(void) {
 	// This method can be used to prepare HomeSpan for the view
 	// For example, setting up characteristics or services
 	if (!SpanView::prepped) {
-		printf("SpanView::prepHomeSpan called\n");
+		RV_PRINTF("SpanView::prepHomeSpan called\n");
 		// Set up HomeSpan characteristics or services here
 		// Example: HomeSpan.addAccessory(new SpanAccessory());
 		// This is just a placeholder, actual implementation may vary
@@ -85,7 +86,7 @@ void SpanView::prepHomeSpan(void) {
 		// new Service::AccessoryInformation();
 		// new Characteristic::Identify();
 		SpanView::prepped = true;
-		printf("SpanView::prepHomeSpan - completed Preparing HomeSpan for SpanView...\n");
+		RV_PRINTF("SpanView::prepHomeSpan - completed Preparing HomeSpan for SpanView...\n");
 	}
 }
 

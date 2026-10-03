@@ -1,5 +1,6 @@
-#ifndef DCDIMMERCMD_H
-#define DCDIMMERCMD_H
+#pragma once
+// #ifndef LIGHTDEVICECMD_H
+// #define LIGHTDEVICECMD_H
 /*********************************************************************************
  *  MIT License
  *  
@@ -39,28 +40,29 @@
  * enum for on/off and dimmer switches to be used throughout the hierarchy of DC_Switch and potentially other switches
  *  
  */
-typedef enum {
-	DCDimmerCmdSetBrightness = 0,
-	DCDimmerCmdOnDuration,
-	DCDimmerCmdOnDelay,
-	DCDimmerCmdOff,
-	DCDimmerCmdStop,
-	DCDimmerCmdToggle,
-	DCDimmerCmdMemoryOff,
-	DCDimmerCmdRampBrightness,
-	DCDimmerCmdRampToggle,
-	DCDimmerCmdRampUp,
-	DCDimmerCmdRampDown,
-	DCDimmerCmdRampUpDown,
-	DCDimmerCmdLock,
-	DCDimmerCmdUnlock,
-	DCDimmerCmdFlash,
-	DCDimmerCmdFlashMomentarily,
+/*
+enum class LightDeviceCMD:uint8_t {
+	LightDeviceCmdSetBrightness = 0,
+	LightDeviceCmdOnDuration,
+	LightDeviceCmdOnDelay,
+	LightDeviceCmdOff,
+	LightDeviceCmdStop,
+	LightDeviceCmdToggle,
+	LightDeviceCmdMemoryOff,
+	LightDeviceCmdRampBrightness,
+	LightDeviceCmdRampToggle,
+	LightDeviceCmdRampUp,
+	LightDeviceCmdRampDown,
+	LightDeviceCmdRampUpDown,
+	LightDeviceCmdLock,
+	LightDeviceCmdUnlock,
+	LightDeviceCmdFlash,
+	LightDeviceCmdFlashMomentarily,
 
-	DCDimmerCmdNA = 255
-} DCDimmerCmd;
-
+	LightDeviceCmdNA = 255
+};
+*/
 constexpr uint8_t DIMMER_STATUS_3_SWITCH_OFF = 0x6;
-constexpr uint8_t MAX_PERCENT = 100;
-#endif
+constexpr uint8_t DIMMER_QUARTER_BRIGHTNESS = 25U;
+// #endif
 #endif //HOME_KIT_1

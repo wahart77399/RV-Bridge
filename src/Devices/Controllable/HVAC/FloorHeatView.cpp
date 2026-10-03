@@ -4,6 +4,7 @@
 #include "FloorHeat.h"
 #include "Packet.h"
 #include "DGN.h"
+#include "debug.h"
 
 float_t FloorHeatView::levelToTemperature(FLOOR_HEAT_LEVEL lvl) {
             return levelToTemperatureMap[lvl];
@@ -16,7 +17,7 @@ boolean FloorHeatView::FloorHeatController::update(void) {
         view->dontUpdateTheView();
         if (/* onOff->updated()) { //  || */ targetTemp->updated() || targetState->updated()) {
             float_t closestTemp = view->closestTemperature(targetTemp->getNewVal<float_t>());
-            //printf("FloorHeatView::FloorHeatController::update  - onOff: %d, targetTemp - %f\n", 
+            //RV_PRINTF("FloorHeatView::FloorHeatController::update  - onOff: %d, targetTemp - %f\n", 
             //   onOff->getNewVal(), closestTemp);
             if (/* onOff->getNewVal() == false) { // || */ (targetState->getNewVal() == FLOOR_HEAT_OFF) || (closestTemp < FLOOR_HEAT_TEMP_STORE)) {
                 model->turnFloorHeatOff();
@@ -40,34 +41,34 @@ FloorHeatView::FloorHeatView(GenericDevice* model, const char* spanDevName)
 
 
 bool FloorHeatView::updateView(void) {
-    // printf("FloorHeatView::updateView called\n");
+    // RV_PRINTF("FloorHeatView::updateView called\n");
     bool updated = false;
     if (isNeedToUpdateView()) { // don't mess with the state of the lock when the change is is initiated by the controller and not the model
         uint8_t instance = indexOfModel();   
         uint8_t index = -1;
         FloorHeat* mdl = (FloorHeat* )getModel();
         if ((mdl != nullptr) && (controller != nullptr)) { 
-            // printf("FloorHeatView::updateView - on = %d, & temp is %f\n", mdl->isTurnedOn(), mdl->currentFloorHeatSetting());
+            // RV_PRINTF("FloorHeatView::updateView - on = %d, & temp is %f\n", mdl->isTurnedOn(), mdl->currentFloorHeatSetting());
             if ((mdl->currentFloorHeatSetting() >= FLOOR_HEAT_TEMP_STORE) || mdl->isTurnedOn()) {
-                //printf("FloorHeatView::updateView - on with temp = %f\n", mdl->currentFloorHeatSetting());
+                //RV_PRINTF("FloorHeatView::updateView - on with temp = %f\n", mdl->currentFloorHeatSetting());
                 controller->turnOn();
                 controller->setTemperature(mdl->currentFloorHeatSetting() >= FLOOR_HEAT_TEMP_STORE ? 
                                             mdl->currentFloorHeatSetting() : FLOOR_HEAT_TEMP_STORE);
 
             } else {
-                //printf("FloorHeatView::updateView - off\n");
+                //RV_PRINTF("FloorHeatView::updateView - off\n");
                 controller->turnOff();
             }
             updated = true;
         }        
     }
 
-    // printf("FloorHeatView::updateView completed \n"); 
+    // RV_PRINTF("FloorHeatView::updateView completed \n"); 
     return updated;
 }
 
 void FloorHeatView::createFloorHeatView(GenericDevice* model, const char* spanDevName) {
-    printf("FloorHeatView::createAwningView called\n");
+    RV_PRINTF("FloorHeatView::createAwningView called\n");
 
     FloorHeatView* vw = new FloorHeatView(model, spanDevName);
 
@@ -79,10 +80,10 @@ void FloorHeatView::createFloorHeatView(GenericDevice* model, const char* spanDe
     vw->setController(ctrl);
 
     if (vw != nullptr)
-        printf("FloorHeatView::createAwningView: tmp created successfully\n");
+        RV_PRINTF("FloorHeatView::createAwningView: tmp created successfully\n");
     else
-        printf("FloorHeatView::createAwningView: tmp creation failed\n");   
-    printf("FloorHeatView::createAwningView completed\n");
+        RV_PRINTF("FloorHeatView::createAwningView: tmp creation failed\n");   
+    RV_PRINTF("FloorHeatView::createAwningView completed\n");
 }
 
 #endif // ifdef HOME_KIT_2

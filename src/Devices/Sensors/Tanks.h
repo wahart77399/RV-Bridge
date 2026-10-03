@@ -8,6 +8,7 @@
 #include "GenericDevice.h"
 #include "TanksDefinition.h"
 #include <map>
+#include "debug.h"
 
 
 
@@ -35,6 +36,7 @@ class Tanks : public GenericDevice {
 
     private:
         friend class TanksView;
+        uint16_t tankSize; // in liters
 
         uint16_t size(void) const { 
             uint16_t result = INVALID_SIZE;
@@ -44,7 +46,7 @@ class Tanks : public GenericDevice {
                 if (tankSize < INVALID_TANK_SIZE)
                     result = tankSize;
                 else 
-                    result = NEWMAR_ESSEX_2022_FRESH;
+                    result = tankSize; // return the tank size from the model if the data is invalid
             }
             return result;
         }
@@ -78,18 +80,18 @@ class Tanks : public GenericDevice {
 
     public:
 
-        Tanks() : GenericDevice() {
+        Tanks() : GenericDevice(), tankSize(INVALID_TANK_SIZE) {
             // Constructor implementation
         }
 
-        Tanks(const Tanks& orig) : GenericDevice(orig) {
+        Tanks(const Tanks& orig) : GenericDevice(orig), tankSize(orig.tankSize) {
             // Copy constructor implementation
         }
 
-        Tanks(uint8_t address, uint8_t index) : GenericDevice(address, index) { 
+        Tanks(uint8_t address, uint8_t index, uint16_t size) : GenericDevice(address, index), tankSize(size) { 
         }
 
-        Tanks(uint8_t* data) : GenericDevice(data) {
+        Tanks(uint8_t* data) : GenericDevice(data), tankSize(INVALID_TANK_SIZE) {
             // Constructor with parameters implementation
         }
 

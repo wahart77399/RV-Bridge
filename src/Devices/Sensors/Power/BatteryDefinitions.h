@@ -1,4 +1,5 @@
 #include "RVConstants.h"
+//#include "debug.h"
 #ifdef HOME_KIT_2
 #ifndef BATTERY_DEFINITIONS_H
 #define BATTERY_DEFINITIONS_H
@@ -84,6 +85,17 @@ const float_t ADC_OFFSET = 2000000;
 const uint32_t ADC_ZERO = 0x77359400;
 const uint16_t INVALID_AMP_HOURS = 0xffffu;
 const uint16_t INVALID_RMS_RIPPLE = 0xffffu;
+/*
+const float_t VDC_UPPER_LIMIT = 15.0f;
+const float_t VDC_LOWER_LIMIT = 0.0f;
+const float_t VDC_NOMINAL_VALUE = 12.0f;
+const float_t ADC_UPPER_LIMIT = 50.0f;
+const float_t ADC_LOWER_LIMIT = -50.0f;
+const float_t ADC_NOMINAL_VALUE = 0.0f;
+const float_t VDC_RIPPLE_UPPER_LIMIT = 2500.0f;
+const float_t VDC_RIPPLE_LOWER_LIMIT = 0.0f;
+const float_t VDC_RIPPLE_NOMINAL_VALUE = 0.0f;
+*/
 
 #endif
 #endif // ifdef HOME_KIT_2

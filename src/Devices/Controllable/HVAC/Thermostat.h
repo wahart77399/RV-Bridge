@@ -41,6 +41,7 @@
 
 #include "HVAC_defintions.h"
 #include "RVConstants.h"
+#include "debug.h"
 
 // constexpr double  tempCOffset = -273.0;
 // constexpr double  tempCScale = 0.03125;
@@ -107,7 +108,7 @@ class HVAC_Thermostat : public GenericDevice {
                 uint16_t temp = convFromTempC(tempC);
                 tempData[THERMOSTAT_COOL_TEMP_LSB] = temp >> 8;
                 tempData[THERMOSTAT_COOL_TEMP_MSB] = temp & 0xff;
-                printf("HVAC_Thermostat::setCoolTemp end - temp = tempData[5] %d, tempData[6] %d, Temp = %d", tempData[5], tempData[6], tempC);
+                RV_PRINTF("HVAC_Thermostat::setCoolTemp end - temp = tempData[5] %d, tempData[6] %d, Temp = %d", tempData[5], tempData[6], tempC);
             }
         }
 
@@ -194,7 +195,7 @@ class HVAC_Thermostat : public GenericDevice {
                             break;
                     
                         default:
-                            printf("********** WARNING: THESE THERMOSTAT DGNs ARE NOT SUPPORTED************* \n");
+                            RV_PRINTF("********** WARNING: THESE THERMOSTAT DGNs ARE NOT SUPPORTED************* \n");
                             break;
                     }
                 }

@@ -1,215 +1,32 @@
-#include "RVConstants.h"
-#ifdef HOME_KIT_2
-#include "Inverter.h"
 #include "InverterView.h"
-#include "PacketQueue.h"
+#include "PowerSensorView.h"
+#ifdef HOME_KIT_2
 
-// #include "ChassisMobility.h"
+InverterView::InverterView(Inverter* model, const char* name, const uint8_t numLegs, bool io,
+                    bool showCurrent, bool showFault)
+    : PowerSensorView(model, name, numLegs, io, showCurrent, showFault)
+{
+    // Re-use the shared voltage/current presentation
+    // (or duplicate the small accessory block if you prefer no extra include)
+    /**
+    new SpanAccessory();
+        new Service::AccessoryInformation();
+            new Characteristic::Name(name);
+        // voltage + current characteristics identical to PowerSensorView
 
-bool InverterView::updateView(void) {
-        // 
-    // printf("InverterView::updateView called\n");
-    bool updated = false;
-    uint8_t instance = indexOfModel();   
-    uint8_t index = -1;
-    Inverter* mdl = (Inverter* )getModel();
-    if ((mdl != nullptr)) { // && (voltageView != nullptr) && (currentView != nullptr))  {
-        uint8_t* rawData = mdl->getCurrentData();
-        INVERTER_LINE_TYPE ln = mdl->getLine(rawData);
-        INVERTER_IO_TYPE io = mdl->getIO(rawData);
-        if ((voltageViewMap[ln][io] != nullptr) && (currentViewMap[ln][io] != nullptr)) {
-            // if (instance > 1)      
-            //     printf("InverterView::updateView updating view for index %d have mapped voltage and current line %d io %d\n",instance, ln, io);
-            uint16_t volt = mdl->rmsVoltage(static_cast<uint8_t>(ln), static_cast<uint8_t>(io));
-            int16_t amp = mdl->rmsCurrent(static_cast<uint8_t>(ln), static_cast<uint8_t>(io));
-            boolean vFault = (mdl->isOpenNeutralFault() || mdl->isOpenGroundFault() || mdl->isReversePolarityFault());
-            boolean aFault = mdl->isGroundCurrentFault();
-            // printf("InverterView::updateView voltage = %f, current = %f \n", volt, amp);
-
-            // if (volt < 250)
-            voltageViewMap[ln][io]->rmsVoltage(volt);
-            voltageViewMap[ln][io]->voltageFault(vFault);
-            //printf("InverterView::updateView adjusted current = %f \n", adjAmp);
-            // if (amp < 100)
-            currentViewMap[ln][io]->rmsCurrent(amp);
-            currentViewMap[ln][io]->currentFault(aFault);
-            //printf("InverterView::updateView rmsVoltage = %d, voltageFault = %d, rmsCurrent = %d, currentFault = %d \n", 
-            //    volt, vFault, amp, aFault);
-            PacketQueue::clearLastPacketReceiveTime();
-            updated = true; 
-        }
-    }
-    // printf("InverterView::updateView completed \n"); 
-    return updated;
- }
-
- /**
- InverterView::InverterView(GenericDevice* model, const char* spanDevName) 
-        : SpanView(model), voltageViewMap(), currentViewMap() {
-} */
-
-void InverterView::createInverterView(GenericDevice* model, const char* spanDevName) {
-    printf("InverterView::createInverterView called\n");
-    SpanView::prepHomeSpan();
-    // InverterView::createBridge();
-    new SpanAccessory(); 
-    new Service::AccessoryInformation(); 
-    new Characteristic::Identify();
-    new Characteristic::Name(spanDevName);
-    InverterView* tmp = new InverterView(model, spanDevName);
-
-    // line 1 input
-    
-    const char* append1 = " Volt";
-    const char* line1Append = " L1";
-    const char* line2Append = " L2";
-    const char* ioInputAppend = " In";
-    const char* ioOutputAppend = " Out";
-
-    const char* append2 = " Current";
-    size_t buffer_size = strlen(spanDevName) + strlen(append1) + strlen(line1Append) + strlen(ioInputAppend) + 1; 
-    char* voltName = new char[buffer_size];
-    strcpy(voltName, spanDevName);
-    strcat(voltName, append1);
-    strcat(voltName, line1Append);
-    strcat(voltName, ioInputAppend);
-
-
-    buffer_size = strlen(spanDevName) + strlen(append2) + strlen(line1Append) + strlen(ioInputAppend) + 1;
-    char* currentName = new char[buffer_size];
-    strcpy(currentName, spanDevName);
-    strcat(currentName, append2);
-    strcat(currentName, line1Append);
-    strcat(currentName, ioInputAppend);
-    // line 1 input
-    /** **/
-    new SpanAccessory(); 
-    new Service::AccessoryInformation(); 
-    new Characteristic::Identify();
-    new Characteristic::Name(voltName);
-    InverterView::InverterVoltage* vvw = new InverterView::InverterVoltage(tmp, (Inverter* )model, voltName);
-    tmp->setVoltageView(vvw, INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE, INVERTER_IO_TYPE::INVERTER_INPUT);
-
-    new SpanAccessory(); 
-    new Service::AccessoryInformation(); 
-    new Characteristic::Identify();
-    new Characteristic::Name(currentName);
-    InverterView::InverterCurrent* cvw = new InverterView::InverterCurrent(tmp, (Inverter* )model, currentName);
-    tmp->setCurrentView(cvw, INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE, INVERTER_IO_TYPE::INVERTER_INPUT);
-    /* */
-    delete[] voltName;
-    delete[] currentName;
-
-    // line 1 output
-
-    buffer_size = strlen(spanDevName) + strlen(append1) + strlen(line1Append) + strlen(ioOutputAppend) + 1; 
-    voltName = new char[buffer_size];
-    strcpy(voltName, spanDevName);
-    strcat(voltName, append1);
-    strcat(voltName, line1Append);
-    strcat(voltName, ioOutputAppend);
-  
-
-
-    buffer_size = strlen(spanDevName) + strlen(append2) + strlen(line1Append) + strlen(ioOutputAppend) + 1;
-    currentName = new char[buffer_size];
-    strcpy(currentName, spanDevName);
-    strcat(currentName, append2);
-    strcat(currentName, line1Append);
-    strcat(currentName, ioOutputAppend);
-
-    new SpanAccessory(); 
-    new Service::AccessoryInformation(); 
-    new Characteristic::Identify();
-    new Characteristic::Name(voltName);
-    /*InverterView::InverterVoltage* */ vvw = new InverterView::InverterVoltage(tmp, (Inverter* )model, voltName);
-    tmp->setVoltageView(vvw, INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE, INVERTER_IO_TYPE::INVERTER_OUTPUT);
-
-    new SpanAccessory(); 
-    new Service::AccessoryInformation(); 
-    new Characteristic::Identify();
-    new Characteristic::Name(currentName);
-    /* InverterView::InverterCurrent* */ cvw = new InverterView::InverterCurrent(tmp, (Inverter* )model, currentName);
-    tmp->setCurrentView(cvw, INVERTER_LINE_TYPE::INVERTER_LINE_1_TYPE, INVERTER_IO_TYPE::INVERTER_OUTPUT);
-
-    delete[] voltName;
-    delete[] currentName;
-
-
-    // line 2 input
-    /** **/
-    buffer_size = strlen(spanDevName) + strlen(append1) + strlen(line2Append) + strlen(ioInputAppend) + 1; 
-    voltName = new char[buffer_size];
-    strcpy(voltName, spanDevName);
-    strcat(voltName, append1);
-    strcat(voltName, line2Append);
-    strcat(voltName, ioInputAppend);
-
-
-    buffer_size = strlen(spanDevName) + strlen(append2) + strlen(line2Append) + strlen(ioInputAppend) + 1;
-    currentName = new char[buffer_size];
-    strcpy(currentName, spanDevName);
-    strcat(currentName, append2);
-    strcat(currentName, line2Append);
-    strcat(currentName, ioInputAppend);
-
-    new SpanAccessory(); 
-    new Service::AccessoryInformation(); 
-    new Characteristic::Identify();
-    new Characteristic::Name(voltName);
-    vvw = new InverterView::InverterVoltage(tmp, (Inverter* )model, voltName);
-    tmp->setVoltageView(vvw, INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE, INVERTER_IO_TYPE::INVERTER_INPUT);
-
-    new SpanAccessory(); 
-    new Service::AccessoryInformation(); 
-    new Characteristic::Identify();
-    new Characteristic::Name(currentName);
-    cvw = new InverterView::InverterCurrent(tmp, (Inverter* )model, currentName);
-    tmp->setCurrentView(cvw, INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE, INVERTER_IO_TYPE::INVERTER_INPUT);
-
-    delete[] voltName;
-    delete[] currentName;
-
-    // line 2 output
-    buffer_size = strlen(spanDevName) + strlen(append1) + strlen(line2Append) + strlen(ioOutputAppend) + 1; 
-    voltName = new char[buffer_size];
-    strcpy(voltName, spanDevName);
-    strcat(voltName, append1);
-    strcat(voltName, line2Append);
-    strcat(voltName, ioOutputAppend);
-
-
-    buffer_size = strlen(spanDevName) + strlen(append2) + strlen(line2Append) + strlen(ioOutputAppend) + 1;
-    currentName = new char[buffer_size];
-    strcpy(currentName, spanDevName);
-    strcat(currentName, append2);
-    strcat(currentName, line2Append);
-    strcat(currentName, ioOutputAppend);
-
-    new SpanAccessory(); 
-    new Service::AccessoryInformation(); 
-    new Characteristic::Identify();
-    new Characteristic::Name(voltName);
-    vvw = new InverterView::InverterVoltage(tmp, (Inverter* )model, voltName);
-    tmp->setVoltageView(vvw, INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE, INVERTER_IO_TYPE::INVERTER_OUTPUT);
-
-    new SpanAccessory(); 
-    new Service::AccessoryInformation(); 
-    new Characteristic::Identify();
-    new Characteristic::Name(currentName);
-    cvw = new InverterView::InverterCurrent(tmp, (Inverter* )model, currentName);
-    tmp->setCurrentView(cvw, INVERTER_LINE_TYPE::INVERTER_LINE_2_TYPE, INVERTER_IO_TYPE::INVERTER_OUTPUT);
-
-    delete[] voltName;
-    delete[] currentName;
-    /* */
-    
-
-    if (tmp != nullptr)
-        printf("InverterView::createInverterView: tmp created successfully\n");
-    else
-        printf("InverterView::createInverterView: tmp creation failed\n");   
-    printf("InverterView::createInverterView completed\n");
+    */
 }
 
-#endif // ifdef HOME_KIT_2
+/**
+bool InverterView::updateView()
+{
+    bool result = false;
+    if (model_ != nullptr) {
+        // push model_->rmsVoltage() / rmsCurrent() into characteristics
+        result = true;
+    }
+    return result;
+}
+    */
+
+#endif

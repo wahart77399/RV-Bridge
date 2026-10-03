@@ -37,6 +37,7 @@
 #include "Thermostat.h"
 #include "Packet.h"
 #include "DGN.h"
+#include "debug.h"
  
 bool ThermostatView::categoryCreated = false;
 void ThermostatView::createCategory(void) {
@@ -49,7 +50,7 @@ boolean ThermostatView::FanController::update(void) {
     if ((_active != nullptr) && (speed != nullptr) && (targetState != nullptr) && (model != nullptr) && (view != nullptr)) {
         view->dontUpdateTheView();
 	    if (_active->updated() || speed->updated() || targetState->updated()) {
-		    printf("ThermostatView::FanController::update  - active: %d, speed - %d, targetState - %d\n", 
+		    RV_PRINTF("ThermostatView::FanController::update  - active: %d, speed - %d, targetState - %d\n", 
             _active->getNewVal(), speed->getNewVal(), targetState->getNewVal());
             // updated = view->updateView();
             if (speed->updated()) {
@@ -98,11 +99,11 @@ uint16_t ThermostatView::FanController::getSpeed(void) const {
     	spd = spd * view->HomeKitPercentMax / RVCPercentMax;
 
 	    if ((_active != nullptr) && (newActive != _active->getVal())) {
-		    printf("Thermostat::FanController::setModeSpeed #%d - setActive: %d\n", (uint32_t)millis(), model->index(), newActive);
+		    RV_PRINTF("Thermostat::FanController::setModeSpeed #%d - setActive: %d\n", (uint32_t)millis(), model->index(), newActive);
 		    _active->setVal(newActive);
 	    }
 	    if ((speed != nullptr) && (spd != speed->getVal())) {
-		    printf("Thermostat::FanController::setModeSpeed #%d - setSpeed: %d\n", model->index(), spd);
+		    RV_PRINTF("Thermostat::FanController::setModeSpeed #%d - setSpeed: %d\n", model->index(), spd);
 		    speed->setVal((spd < 100) ? spd : INITIAL_ROTATION_SPEED);
         }
         PacketQueue::clearLastPacketReceiveTime();
@@ -202,7 +203,7 @@ void ThermostatView::ThermostatController::setInfo(RVCMode opMode, RVCFanMode fa
                         // do nothing
                 }
                 if (fabs(coolTemp - targetTemp->getVal<double>()) > 0.2) {
-	    			    // printf("ThermostatView::ThermostatController - Cool Thermostat #%d: targetTemp = %f\n", model->index(), coolTemp);
+	    			    // RV_PRINTF("ThermostatView::ThermostatController - Cool Thermostat #%d: targetTemp = %f\n", model->index(), coolTemp);
 		    		    targetTemp->setVal(coolTemp);
 		        }
                 
@@ -220,7 +221,7 @@ void ThermostatView::ThermostatController::setInfo(RVCMode opMode, RVCFanMode fa
                         // do nothing
                 }
                 if (fabs(heatTemp - targetTemp->getVal<double>()) > 0.2) {
-	    			    // printf("ThermostatView::ThermostatController - Heat Thermostat #%d: targetTemp = %f\n", model->index(), heatTemp);
+	    			    // RV_PRINTF("ThermostatView::ThermostatController - Heat Thermostat #%d: targetTemp = %f\n", model->index(), heatTemp);
 		    		    targetTemp->setVal(heatTemp);
 		        }
                 break;
@@ -266,7 +267,7 @@ void ThermostatView::ThermostatController::setInfo(RVCMode opMode, RVCFanMode fa
 
 bool ThermostatView::updateView(void) {
         // 
-    // printf("DoorLockView::updateView called\n");
+    // RV_PRINTF("DoorLockView::updateView called\n");
     bool updated = false;
     if (isNeedToUpdateView() && ChassisMobility::isParked()) { // don't mess with the state of the lock when the change is is initiated by the controller and not the model
         uint8_t instance = indexOfModel();   
@@ -282,7 +283,7 @@ bool ThermostatView::updateView(void) {
             updated = true; 
         }
     }
-    // printf("DoorLockView::updateView completed \n"); 
+    // RV_PRINTF("DoorLockView::updateView completed \n"); 
     return updated;
  }
 
@@ -291,7 +292,7 @@ bool ThermostatView::updateView(void) {
  }
 
  void ThermostatView::createThermostatView(GenericDevice* model, const char* spanDevName) {
-    printf("ThermostatView::createThermostatView called\n");
+    RV_PRINTF("ThermostatView::createThermostatView called\n");
     SpanView::prepHomeSpan();
 
     ThermostatView* vw = new ThermostatView(model, spanDevName);
@@ -320,9 +321,9 @@ bool ThermostatView::updateView(void) {
 
 
     if (vw != nullptr)
-        printf("ThermostatView::createThermostatView: tmp created successfully\n");
+        RV_PRINTF("ThermostatView::createThermostatView: tmp created successfully\n");
     else
-        printf("ThermostatView::createThermostatView: tmp creation failed\n");   
-    printf("ThermostatView::createThermostatView completed\n");
+        RV_PRINTF("ThermostatView::createThermostatView: tmp creation failed\n");   
+    RV_PRINTF("ThermostatView::createThermostatView completed\n");
 }
 #endif // ifdef HOME_KIT_1
