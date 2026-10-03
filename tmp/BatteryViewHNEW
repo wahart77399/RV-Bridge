@@ -1,0 +1,32 @@
+// BatteryView.h / .cpp (thin)
+#pragma once
+#include "SpanView.h"
+#include "Battery.h"
+#include "RVConstants.h"
+#ifdef HOME_KIT_2
+
+
+// remember, Battery has only 1 leg and it is ONLY DC (no AC) so we cannot use the 
+// PowerSensorView
+class BatteryView : public SpanView {
+public:
+    BatteryView() = delete;
+    BatteryView(const BatteryView&) = delete;
+    BatteryView& operator=(const BatteryView&) = delete;
+    BatteryView(BatteryView&&) = delete;
+    BatteryView& operator=(BatteryView&&) = delete;
+    ~BatteryView() = default;
+
+    BatteryView(Battery* model, const char* name);
+    bool updateView() override;
+
+private:
+    Battery* model_;
+    SpanCharacteristic* voltageChar_;
+    SpanCharacteristic* currentChar_;
+    SpanCharacteristic* rippleChar_;
+
+    SpanCharacteristic* ripple(void) const { return rippleChar_; }
+    void ripple(SpanCharacteristic* rip) { rippleChar_ = rip; }
+};
+#endif

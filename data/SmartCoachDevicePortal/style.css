@@ -53,11 +53,31 @@ h1 { font-size: clamp(42px, 5.5vw, 78px); line-height: .98; letter-spacing: -.07
 .coach-dialog { background: #f8f8f2; border: 1px solid #cdd7ca; box-shadow: 0 24px 80px rgba(6, 25, 20, .3); color: #19342d; max-height: calc(100vh - 32px); max-width: 720px; padding: 0; width: calc(100% - 32px); }
 .coach-dialog::backdrop { backdrop-filter: blur(3px); background: rgba(8, 25, 22, .68); }
 .coach-dialog-header { align-items: flex-start; border-bottom: 1px solid #d8ded5; display: flex; justify-content: space-between; gap: 20px; padding: 22px 26px 18px; }
+.coach-dialog-actions { align-items: center; display: flex; gap: 9px; }
+.coach-edit-button { background: #365a43; border: 1px solid #365a43; color: white; font-size: 11px; font-weight: 700; padding: 9px 12px; }
+.coach-edit-button[hidden] { display: none; }
+.coach-edit-button:focus-visible, .coach-edit-save:focus-visible { outline: 2px solid #56815e; outline-offset: 3px; }
 .coach-dialog-header .section-kicker { color: #708177; }
 .coach-dialog-header h2 { font-size: 23px; margin: 7px 0 0; }
 .coach-dialog-header p { color: #738178; font-family: 'DM Mono', monospace; font-size: 10px; margin: 7px 0 0; }
 .coach-dialog-close { background: transparent; border: 1px solid #d5ddd2; color: #365a43; font-size: 22px; height: 34px; line-height: 1; width: 34px; }
 .coach-dialog-content { max-height: calc(100vh - 145px); overflow: auto; padding: 4px 26px 26px; }
+.coach-edit-form { display: grid; gap: 17px; padding-top: 14px; }
+.coach-edit-section { border: 0; border-top: 1px solid #d8ded5; margin: 0; min-width: 0; padding: 13px 0 0; }
+.coach-edit-section legend { color: #708177; font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: .08em; padding: 0 8px 0 0; text-transform: uppercase; }
+.coach-edit-grid { display: grid; gap: 12px 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.coach-edit-field { color: #708177; display: grid; font-family: 'DM Mono', monospace; font-size: 9px; gap: 6px; letter-spacing: .04em; min-width: 0; text-transform: uppercase; }
+.coach-edit-field input { background: white; border: 1px solid #cbd5c7; color: #19342d; font-family: 'Manrope', sans-serif; font-size: 13px; min-width: 0; outline: 0; padding: 9px 10px; text-transform: none; width: 100%; }
+.coach-edit-field input:focus-visible { border-color: #56815e; box-shadow: 0 0 0 2px rgba(86, 129, 94, .18); }
+.coach-edit-records { display: grid; gap: 13px; }
+.coach-edit-record { border-top: 1px solid #e3e8e0; padding-top: 12px; }
+.coach-edit-record:first-child { border-top: 0; padding-top: 0; }
+.coach-edit-record h3 { color: #29473b; font-size: 12px; margin: 0 0 11px; }
+.coach-edit-error { color: #a4493d; font-size: 11px; min-height: 16px; margin: 0; }
+.coach-edit-actions { display: flex; justify-content: flex-end; gap: 9px; }
+.coach-edit-actions button { background: transparent; border: 1px solid #cad4c7; color: #365a43; font-size: 11px; font-weight: 700; padding: 9px 12px; }
+.coach-edit-actions .coach-edit-save { background: #365a43; border-color: #365a43; color: white; }
+.coach-edit-actions button:disabled { cursor: wait; opacity: .6; }
 .coach-detail-fields { display: grid; gap: 15px 20px; grid-template-columns: repeat(auto-fit, minmax(125px, 1fr)); margin: 16px 0; }
 .coach-detail-fields div { min-width: 0; }
 .coach-detail-fields dt { color: #87938b; font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: .06em; text-transform: uppercase; }
@@ -69,6 +89,7 @@ h1 { font-size: clamp(42px, 5.5vw, 78px); line-height: .98; letter-spacing: -.07
 .coach-detail-record .coach-detail-fields { margin: 10px 0; }
 .coach-dialog-empty { color: #738178; font-size: 12px; }
 @media (max-width: 480px) { .coach-dialog-header { padding: 18px 18px 15px; }.coach-dialog-content { padding: 2px 18px 20px; } }
+@media (max-width: 480px) { .coach-edit-grid { grid-template-columns: 1fr; }.coach-dialog-actions { gap: 6px; } }
 .rename-dialog { background: #f8f8f2; border: 1px solid #cdd7ca; box-shadow: 0 24px 80px rgba(6, 25, 20, .3); color: #19342d; max-width: 420px; padding: 0; width: calc(100% - 32px); }
 .rename-dialog::backdrop { backdrop-filter: blur(3px); background: rgba(8, 25, 22, .68); }
 .rename-form { padding: 22px 24px 24px; }
@@ -96,6 +117,14 @@ h1 { font-size: clamp(42px, 5.5vw, 78px); line-height: .98; letter-spacing: -.07
 .privacy-content code { color: #29473b; font-family: 'DM Mono', monospace; font-size: 11px; }
 .privacy-draft-warning { background: #eef3e7; border-left: 2px solid #a6bd77; margin-top: 18px !important; padding: 12px 14px; }
 @media (max-width: 600px) { .footer { align-items: flex-start; flex-direction: column; gap: 10px; }.footer-actions { flex-wrap: wrap; gap: 8px 18px; }.footer-sync { display: none; }.privacy-content { padding: 2px 18px 20px; } }
+.wifi-reset-button { background: transparent; border: 1px solid rgba(226, 151, 130, .55); color: #f0b4a3; font-family: 'DM Mono', monospace; font-size: 9px; padding: 8px 10px; text-transform: uppercase; }
+.wifi-reset-button:hover { background: rgba(226, 151, 130, .12); }
+.wifi-reset-button:focus-visible { outline: 2px solid #f0b4a3; outline-offset: 3px; }
+.wifi-reset-button:disabled { cursor: wait; opacity: .6; }
+.device-reboot-button { background: transparent; border: 1px solid rgba(139, 213, 163, .5); color: #a9daba; font-family: 'DM Mono', monospace; font-size: 9px; padding: 8px 10px; text-transform: uppercase; }
+.device-reboot-button:hover { background: rgba(139, 213, 163, .1); }
+.device-reboot-button:focus-visible { outline: 2px solid #a9daba; outline-offset: 3px; }
+.device-reboot-button:disabled { cursor: wait; opacity: .6; }
 .dgn-button, .rename-button { align-items: center; background: transparent; border: 0; color: #60786b; display: flex; font-size: 11px; justify-content: space-between; padding: 3px 0; text-align: left; }
 .dgn-button { flex: 1; }
 .dgn-button span { align-items: center; background: #e8f0dd; border-radius: 50%; color: #668050; display: flex; font-family: 'DM Mono', monospace; font-size: 9px; height: 20px; justify-content: center; width: 20px; }

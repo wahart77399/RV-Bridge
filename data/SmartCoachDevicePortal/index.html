@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
     <meta name="theme-color" content="#102624" />
-    <title>SmartCoachDevicePortal V0.1.0</title>
+    <title>SmartCoachDevicePortal V0.1.1</title>
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -52,10 +52,12 @@
       </section>
 
       <footer class="footer">
-        <span>SmartCoachDevicePortal V0.1.0</span>
+        <span>SmartCoachDevicePortal V0.1.1</span>
         <div class="footer-actions">
           <span class="footer-sync"><span class="footer-dot"></span> Synced with coach bridge</span>
           <button class="footer-legal-link" id="privacy-open" type="button">Privacy notice <span>(draft)</span></button>
+          <button class="wifi-reset-button" id="wifi-reset-button" type="button">Reset Wi-Fi</button>
+          <button class="device-reboot-button" id="device-reboot-button" type="button">Reboot SmartCoach</button>
         </div>
       </footer>
     </main>
@@ -67,7 +69,10 @@
           <h2 id="coach-dialog-title">Coach details</h2>
           <p id="coach-dialog-subtitle"></p>
         </div>
-        <button class="coach-dialog-close" id="coach-dialog-close" type="button" aria-label="Close coach details" title="Close">×</button>
+        <div class="coach-dialog-actions">
+          <button class="coach-edit-button" id="coach-edit-button" type="button" hidden>Edit</button>
+          <button class="coach-dialog-close" id="coach-dialog-close" type="button" aria-label="Close coach details" title="Close">×</button>
+        </div>
       </header>
       <div class="coach-dialog-content" id="coach-detail-content">
         <p class="coach-dialog-empty">Waiting for coach data</p>
@@ -97,7 +102,7 @@
       <div class="privacy-content">
         <p class="privacy-draft-warning">This draft describes the current prototype. It is not a final privacy policy or legal advice.</p>
         <section><h3>Information used</h3><p>The portal reads coach and device configuration, including coach identifiers and specifications, device types, network addresses, indexes, and device names. It reads <code>coach.json</code> and <code>devices.json</code> from the connected bridge and refreshes them periodically.</p></section>
-        <section><h3>How information is used</h3><p>The portal displays the configuration in your browser. When you rename a device, the new name and that device's type, source address, and RVC index are sent to the bridge and saved in <code>devices.json</code>.</p></section>
+        <section><h3>How information is used</h3><p>The portal displays the configuration in your browser. When you rename a device, its new name and its type, source address, and RVC index are saved in <code>devices.json</code>. Coach details, tank capacities, cover timings, and battery specifications are saved in <code>coach.json</code>.</p></section>
         <section><h3>Storage and retention</h3><p>Configuration is stored on the bridge filesystem. The page holds fetched data in browser memory while it is open. This prototype does not set cookies, create user accounts, or include analytics code. Bridge access logs and browser-managed storage are outside this page's control.</p></section>
         <section><h3>Third-party services</h3><p>The page currently requests fonts from Google Fonts. Your browser connects to Google's font services to retrieve those assets; Google may receive connection information such as your IP address. Consider self-hosting the fonts or removing the external request before release.</p></section>
         <section><h3>Operator and contact</h3><p>The responsible operator, privacy contact, applicable regions, and any retention or deletion contact are not yet specified. Add these details and have the final notice reviewed for the places where the portal will be offered.</p></section>
@@ -121,6 +126,7 @@
       const syncStatus = document.querySelector("#sync-status");
       const coachDialog = document.querySelector("#coach-dialog");
       const coachDetailContent = document.querySelector("#coach-detail-content");
+      const coachEditButton = document.querySelector("#coach-edit-button");
       const renameDialog = document.querySelector("#rename-dialog");
       const renameForm = document.querySelector("#rename-form");
       const renameInput = document.querySelector("#rename-name");
@@ -131,6 +137,7 @@
       let devices = [...sampleDevices];
       let hasRuntimeDevices = false;
       let coachData = null;
+      let isEditingCoach = false;
       let pendingRenameId = null;
 
       function formatDetailLabel(value) {
@@ -193,6 +200,7 @@
 
       function renderCoachDetails(coach) {
         coachDetailContent.replaceChildren();
+        coachEditButton.hidden = false;
         const entries = Object.entries(coach);
         appendDetailFields(coachDetailContent, entries.filter(([, value]) => value === null || typeof value !== "object"));
         for (const [key, value] of entries) {
@@ -203,6 +211,173 @@
           emptyMessage.className = "coach-dialog-empty";
           emptyMessage.textContent = "No coach details are available.";
           coachDetailContent.append(emptyMessage);
+        }
+      }
+
+      function updateCoachSummary(coach) {
+        const coachName = [coach.make, coach.model].filter(Boolean).join(" ");
+        document.querySelector("#coach-name").textContent = coachName || "Coach details";
+        document.querySelector("#coach-year").textContent = coach.year ?? "Not set";
+        document.querySelector("#coach-floorplan").textContent = coach.floorplan || "Not set";
+        document.querySelector("#coach-id").textContent = coach.coachId || "Not set";
+        document.querySelector("#coach-dialog-subtitle").textContent = [coach.year, coachName, coach.floorplan && `Floorplan ${coach.floorplan}`].filter(Boolean).join(" · ");
+      }
+
+      function appendCoachEditorField(parent, labelText, value, type, data, options = {}) {
+        const label = document.createElement("label");
+        label.className = "coach-edit-field";
+        label.append(document.createTextNode(labelText));
+        const input = document.createElement("input");
+        input.type = type;
+        input.value = value ?? "";
+        Object.assign(input.dataset, data);
+        if (type === "text") {
+          input.maxLength = 64;
+        } else {
+          input.required = true;
+          input.min = options.min;
+          input.max = options.max;
+          input.step = options.step || "1";
+        }
+        label.append(input);
+        parent.append(label);
+      }
+
+      function createCoachEditorSection(parent, title) {
+        const section = document.createElement("fieldset");
+        section.className = "coach-edit-section";
+        const legend = document.createElement("legend");
+        legend.textContent = title;
+        section.append(legend);
+        parent.append(section);
+        return section;
+      }
+
+      function renderCoachEditor(coach) {
+        isEditingCoach = true;
+        coachEditButton.hidden = true;
+        const form = document.createElement("form");
+        form.className = "coach-edit-form";
+
+        const identity = createCoachEditorSection(form, "Coach profile");
+        const identityFields = document.createElement("div");
+        identityFields.className = "coach-edit-grid";
+        appendCoachEditorField(identityFields, "Year", coach.year, "number", { group: "coach", field: "year", integer: "true" }, { min: "1900", max: "2200" });
+        appendCoachEditorField(identityFields, "Make", coach.make, "text", { group: "coach", field: "make" });
+        appendCoachEditorField(identityFields, "Model", coach.model, "text", { group: "coach", field: "model" });
+        appendCoachEditorField(identityFields, "Floorplan", coach.floorplan, "text", { group: "coach", field: "floorplan" });
+        appendCoachEditorField(identityFields, "Coach ID", coach.coachId, "text", { group: "coach", field: "coachId" });
+        identity.append(identityFields);
+
+        const tanks = createCoachEditorSection(form, "Tanks");
+        const tankRecords = document.createElement("div");
+        tankRecords.className = "coach-edit-records";
+        (Array.isArray(coach.tanks) ? coach.tanks : []).forEach((tank, index) => {
+          const record = document.createElement("div");
+          record.className = "coach-edit-record";
+          const heading = document.createElement("h3");
+          heading.textContent = `Tank ${tank.instance}`;
+          const fields = document.createElement("div");
+          fields.className = "coach-edit-grid";
+          appendCoachEditorField(fields, "Name", tank.name, "text", { group: "tanks", index: String(index), field: "name" });
+          appendCoachEditorField(fields, "Capacity (liters)", tank.capacityLiters, "number", { group: "tanks", index: String(index), field: "capacityLiters", integer: "true" }, { min: "0", max: "65535" });
+          record.append(heading, fields);
+          tankRecords.append(record);
+        });
+        if (!tankRecords.childElementCount) tankRecords.textContent = "No tank specifications configured.";
+        tanks.append(tankRecords);
+
+        const coverTimes = createCoachEditorSection(form, "Retract / extend times");
+        const coverRecords = document.createElement("div");
+        coverRecords.className = "coach-edit-records";
+        Object.entries(coach.coverTimes || {}).forEach(([name, timing]) => {
+          const record = document.createElement("div");
+          record.className = "coach-edit-record";
+          const heading = document.createElement("h3");
+          heading.textContent = name;
+          const fields = document.createElement("div");
+          fields.className = "coach-edit-grid";
+          appendCoachEditorField(fields, "Extend (seconds)", timing.extendSec, "number", { group: "coverTimes", key: name, field: "extendSec", integer: "true" }, { min: "1", max: "65535" });
+          appendCoachEditorField(fields, "Retract (seconds)", timing.retractSec, "number", { group: "coverTimes", key: name, field: "retractSec", integer: "true" }, { min: "1", max: "65535" });
+          record.append(heading, fields);
+          coverRecords.append(record);
+        });
+        if (!coverRecords.childElementCount) coverRecords.textContent = "No cover timings configured.";
+        coverTimes.append(coverRecords);
+
+        const batteries = createCoachEditorSection(form, "Batteries");
+        const batteryRecords = document.createElement("div");
+        batteryRecords.className = "coach-edit-records";
+        (Array.isArray(coach.batteries) ? coach.batteries : []).forEach((battery, index) => {
+          const record = document.createElement("div");
+          record.className = "coach-edit-record";
+          const heading = document.createElement("h3");
+          heading.textContent = `Battery ${battery.instance}`;
+          const fields = document.createElement("div");
+          fields.className = "coach-edit-grid";
+          appendCoachEditorField(fields, "Name", battery.name, "text", { group: "batteries", index: String(index), field: "name" });
+          appendCoachEditorField(fields, "Nominal voltage (V)", battery.nominalVoltage, "number", { group: "batteries", index: String(index), field: "nominalVoltage" }, { min: "0.1", max: "1000", step: "0.1" });
+          appendCoachEditorField(fields, "Capacity (Ah)", battery.capacityAh, "number", { group: "batteries", index: String(index), field: "capacityAh" }, { min: "0", max: "100000", step: "0.1" });
+          record.append(heading, fields);
+          batteryRecords.append(record);
+        });
+        if (!batteryRecords.childElementCount) batteryRecords.textContent = "No battery specifications configured.";
+        batteries.append(batteryRecords);
+
+        const error = document.createElement("p");
+        error.className = "coach-edit-error";
+        error.setAttribute("role", "alert");
+        const actions = document.createElement("div");
+        actions.className = "coach-edit-actions";
+        const cancel = document.createElement("button");
+        cancel.type = "button";
+        cancel.textContent = "Cancel";
+        const save = document.createElement("button");
+        save.type = "submit";
+        save.className = "coach-edit-save";
+        save.textContent = "Save coach details";
+        actions.append(cancel, save);
+        form.append(error, actions);
+        form.addEventListener("submit", saveCoachDetails);
+        cancel.addEventListener("click", () => {
+          isEditingCoach = false;
+          renderCoachDetails(coachData);
+        });
+        coachDetailContent.replaceChildren(form);
+      }
+
+      async function saveCoachDetails(event) {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const error = form.querySelector(".coach-edit-error");
+        const save = form.querySelector(".coach-edit-save");
+        const updatedCoach = JSON.parse(JSON.stringify(coachData));
+        for (const input of form.querySelectorAll("input")) {
+          const { group, field, index, key } = input.dataset;
+          const value = input.type === "number" ? Number(input.value) : input.value.trim();
+          if (group === "coach") updatedCoach[field] = value;
+          if (group === "tanks" || group === "batteries") updatedCoach[group][Number(index)][field] = value;
+          if (group === "coverTimes") updatedCoach.coverTimes[key][field] = value;
+        }
+
+        save.disabled = true;
+        error.textContent = "";
+        try {
+          const response = await fetch("/coach/update", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updatedCoach)
+          });
+          if (!response.ok) throw new Error("The bridge rejected the coach details");
+          coachData = updatedCoach;
+          isEditingCoach = false;
+          updateCoachSummary(coachData);
+          renderCoachDetails(coachData);
+          showToast("Coach details saved. Reboot SmartCoach to apply configuration changes.");
+        } catch (saveError) {
+          error.textContent = "Could not save coach details to the bridge.";
+        } finally {
+          if (save.isConnected) save.disabled = false;
         }
       }
 
@@ -226,13 +401,8 @@
 
         if (coach && typeof coach === "object" && !Array.isArray(coach)) {
           coachData = coach;
-          const coachName = [coach.make, coach.model].filter(Boolean).join(" ");
-          document.querySelector("#coach-name").textContent = coachName || "Coach details";
-          document.querySelector("#coach-year").textContent = coach.year ?? "Not set";
-          document.querySelector("#coach-floorplan").textContent = coach.floorplan || "Not set";
-          document.querySelector("#coach-id").textContent = coach.coachId || "Not set";
-          document.querySelector("#coach-dialog-subtitle").textContent = [coach.year, coachName, coach.floorplan && `Floorplan ${coach.floorplan}`].filter(Boolean).join(" · ");
-          renderCoachDetails(coach);
+          updateCoachSummary(coach);
+          if (!isEditingCoach) renderCoachDetails(coach);
         }
 
         if (!Array.isArray(config)) {
@@ -352,6 +522,32 @@
       privacyDialog.addEventListener("click", (event) => {
         if (event.target === privacyDialog) privacyDialog.close();
       });
+      document.querySelector("#wifi-reset-button").addEventListener("click", async (event) => {
+        if (!window.confirm("Clear the saved Wi-Fi SSID and password? SmartCoach will reboot into the Captive Portal.")) return;
+        const button = event.currentTarget;
+        button.disabled = true;
+        button.textContent = "Resetting...";
+        try {
+          const response = await fetch("/wifi/reset", { method: "POST" });
+          if (!response.ok) throw new Error("Wi-Fi reset failed");
+          showToast("Wi-Fi cleared. SmartCoach is rebooting into the Captive Portal.");
+        } catch (error) {
+          showToast("Could not confirm reset. SmartCoach may be rebooting.");
+        }
+      });
+      document.querySelector("#device-reboot-button").addEventListener("click", async (event) => {
+        if (!window.confirm("Reboot SmartCoach? The bridge will be temporarily unavailable.")) return;
+        const button = event.currentTarget;
+        button.disabled = true;
+        button.textContent = "Rebooting...";
+        try {
+          const response = await fetch("/reboot", { method: "POST" });
+          if (!response.ok) throw new Error("Reboot failed");
+          showToast("SmartCoach is rebooting.");
+        } catch (error) {
+          showToast("Could not confirm reboot. SmartCoach may be restarting.");
+        }
+      });
 
       search.addEventListener("input", renderDevices);
       document.querySelector("#scan-button").addEventListener("click", (event) => {
@@ -361,7 +557,16 @@
         loadRuntimeConfig();
       });
       document.querySelector("#coach-details-button").addEventListener("click", () => coachDialog.showModal());
+      coachEditButton.addEventListener("click", () => {
+        if (coachData) renderCoachEditor(coachData);
+      });
       document.querySelector("#coach-dialog-close").addEventListener("click", () => coachDialog.close());
+      coachDialog.addEventListener("close", () => {
+        if (isEditingCoach && coachData) {
+          isEditingCoach = false;
+          renderCoachDetails(coachData);
+        }
+      });
       coachDialog.addEventListener("click", (event) => {
         if (event.target === coachDialog) coachDialog.close();
       });

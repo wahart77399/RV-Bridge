@@ -1,0 +1,60 @@
+// Battery.h
+#pragma once
+#include "RVConstants.h"
+#ifdef HOME_KIT_2
+
+#include "PowerSensor.h"
+#include "BatteryDefinitions.h"
+
+class BatteryView;
+
+class Battery : public PowerSensor {
+    friend class BatteryView;
+
+private:
+    uint8_t source2Data_[DATA_SIZE];
+    uint8_t source3Data_[DATA_SIZE];
+    uint8_t source4Data_[DATA_SIZE];
+
+    uint8_t*       source1Data()       { return dataBuffer(); }
+    uint8_t*       source2Data()       { return source2Data_; }
+    uint8_t*       source3Data()       { return source3Data_; }
+    uint8_t*       source4Data()       { return source4Data_; }
+    const uint8_t* source1Data() const { return dataBuffer(); }
+    const uint8_t* source2Data() const { return source2Data_; }
+    const uint8_t* source3Data() const { return source3Data_; }
+    const uint8_t* source4Data() const { return source4Data_; }
+
+    static uint32_t rd_le32(const uint8_t* p) {
+        return (uint32_t)p[0] | ((uint32_t)p[1] << 8) |
+               ((uint32_t)p[2] << 16) | ((uint32_t)p[3] << 24);
+    }
+
+    void  copySource(const uint8_t* src, uint8_t* dst);
+    float directCurrentVoltage() const;
+    float directCurrentAmperage() const;
+    uint16_t rmsRipple() const;
+
+protected:
+    void setData(RVC_DGN dgn, uint8_t* data) override;
+
+public:
+    Battery() = delete;
+    Battery(const Battery&) = delete;
+    Battery& operator=(const Battery&) = delete;
+    Battery(Battery&&) = delete;
+    Battery& operator=(Battery&&) = delete;
+    ~Battery() = default;
+
+    Battery(uint8_t address, uint8_t instance, uint8_t priority = 0);
+
+    void attachView(const char* name);
+
+    uint16_t rmsVoltage(uint8_t line = 0, uint8_t io = 0) override;
+    uint16_t rmsCurrent(uint8_t line = 0, uint8_t io = 0) override;
+    uint16_t rmsRipplemv() const;
+
+    boolean executeCommand(RVC_DGN dgn, const uint8_t* buffer,
+                           uint8_t val = SOURCE_ADDRESS) override;
+};
+#endif

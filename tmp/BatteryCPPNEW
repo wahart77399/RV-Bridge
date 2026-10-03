@@ -1,0 +1,129 @@
+// Battery.cpp
+#include "RVConstants.h"
+#ifdef HOME_KIT_2
+
+#include "Battery.h"
+#include "BatteryView.h"
+#include "Packet.h"
+#include "DGN.h"
+
+Battery::Battery(uint8_t address, uint8_t instance, uint8_t priority)
+    : PowerSensor(address, instance)
+{
+    uint8_t* d = dataBuffer();
+    if (d != nullptr) {
+        d[DC_SOURCE_INSTANCE_INDEX] = instance;
+        d[DC_SOURCE_PRIORITY_INDEX] = priority;
+    }
+    for (uint8_t i = 0; i < DATA_SIZE; ++i) {
+        source2Data_[i] = OUT_OF_RANGE_DATA;
+        source3Data_[i] = OUT_OF_RANGE_DATA;
+        source4Data_[i] = OUT_OF_RANGE_DATA;
+    }
+    source2Data_[DC_SOURCE_INSTANCE_INDEX] = instance;
+    source2Data_[DC_SOURCE_PRIORITY_INDEX] = priority;
+    source3Data_[DC_SOURCE_INSTANCE_INDEX] = instance;
+    source3Data_[DC_SOURCE_PRIORITY_INDEX] = priority;
+    source4Data_[DC_SOURCE_INSTANCE_INDEX] = instance;
+    source4Data_[DC_SOURCE_PRIORITY_INDEX] = priority;
+}
+
+void Battery::copySource(const uint8_t* src, uint8_t* dst)
+{
+    if (src != nullptr && dst != nullptr) {
+        for (int i = DC_SOURCE_PRIORITY_INDEX; i <= DC_SOURCE_CURRENT_LSB_2_INDEX; ++i) {
+            dst[i] = src[i];
+        }
+    }
+}
+
+float Battery::directCurrentVoltage() const
+{
+    float result = 0.0f;
+    const uint8_t* data = source1Data();
+    if (data != nullptr) {
+        uint16_t value = getLilEndian(data[DC_SOURCE_VOLTAGE_MSB_INDEX],
+                                      data[DC_SOURCE_VOLTAGE_LSB_INDEX]);
+        if (value < VDC_MAX) {
+            result = (value - VDC_OFFSET) * VDC_PRECISION;
+        }
+    }
+    return result;
+}
+
+float Battery::directCurrentAmperage() const
+{
+    float result = 0.0f;
+    const uint8_t* data = source1Data();
+    if (data != nullptr) {
+        const uint8_t* cur = &data[DC_SOURCE_CURRENT_MSB_1_INDEX];
+        uint32_t raw = rd_le32(cur);
+        if (raw != 0xFFFFFFFFu) {
+            result = (static_cast<float>(static_cast<int64_t>(raw) -
+                                         static_cast<int64_t>(ADC_ZERO))) *
+                     static_cast<float>(ADC_PRECISION);
+        }
+    }
+    return result;
+}
+
+uint16_t Battery::rmsRipple() const
+{
+    uint16_t result = OUT_OF_RANGE_DATA;
+    const uint8_t* data = source3Data();
+
+    if (data != nullptr) {
+        result = getLilEndian(data[DC_SOURCE_AC_RIPPLE_MSB_INDEX],
+                              data[DC_SOURCE_AC_RIPPLE_LSB_INDEX]);
+        if (result == INVALID_RMS_RIPPLE) {
+            result = OUT_OF_RANGE_DATA;
+        }
+    }
+    return result;
+}
+
+void Battery::setData(RVC_DGN dgn, uint8_t* data)
+{
+    if (data != nullptr) {
+        switch (dgn) {
+            case DC_SOURCE_STATUS_1: copySource(data, source1Data()); break;
+            case DC_SOURCE_STATUS_2: copySource(data, source2Data()); break;
+            case DC_SOURCE_STATUS_3: copySource(data, source3Data()); break;
+            case DC_SOURCE_STATUS_4: copySource(data, source4Data()); break;
+            default: break;
+        }
+    }
+}
+
+void Battery::attachView(const char* name)
+{
+    BatteryView* view = new BatteryView(this, name);
+    addView(view);
+}
+
+uint16_t Battery::rmsVoltage(uint8_t /*line*/, uint8_t /*io*/)
+{
+    return static_cast<uint16_t>(directCurrentVoltage() * 10.0f);
+}
+
+uint16_t Battery::rmsCurrent(uint8_t /*line*/, uint8_t /*io*/)
+{
+    return static_cast<uint16_t>(directCurrentAmperage() * 10.0f);
+}
+
+uint16_t Battery::rmsRipplemv() const
+{
+    return rmsRipple();
+}
+
+boolean Battery::executeCommand(RVC_DGN dgn, const uint8_t* buffer, uint8_t /*val*/)
+{
+    boolean handled = PowerSensor::executeCommand(dgn, buffer);
+    if (!handled && buffer != nullptr) {
+        setData(dgn, const_cast<uint8_t*>(buffer));
+        updateViews();
+        handled = true;
+    }
+    return handled;
+}
+#endif

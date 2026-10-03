@@ -1,0 +1,307 @@
+
+#include "RVConstants.h"
+#ifdef HOME_KIT_2
+#include "elapsedMillis.h"
+#include "CoverView.h"
+#include "CoverDevice.h"
+#include "debug.h"
+
+bool CoverView::bridgeCreated = false;
+
+CoverKind CoverView::kind(void) const {
+    CoverKind result = CoverKind::Awning;
+    CoverDevice* mdl = reinterpret_cast<CoverDevice*>(const_cast<CoverView*>(this)->getModel());
+    if (mdl != nullptr) {
+        result = mdl->kind();
+    }
+    return result;
+}
+
+void CoverView::createBridge(void) {
+    if (!CoverView::bridgeCreated) {
+        RV_PRINTF("CoverView::createBridge called\n");
+        CoverView::bridgeCreated = true;
+        RV_PRINTF("CoverView::createBridge completed\n");
+    }
+}
+
+void CoverView::CoverController::extendCover(float amount) {
+    if ((model != nullptr) && (view != nullptr) && (isReadyToExtend())) {
+        // fully Extended = 0% in Homekit but 100 in RVC, so if the number is 0, we want to extend to 100, if the number is 25, then we extend to 75
+        uint8_t amt = (view->kind() == CoverKind::Awning) ?  static_cast<uint8_t>(round(static_cast<float>(AWNING_MAX_PERCENT) - amount)) // fully extended = 0 in HomeKit so, to extend to 100% in RVX, we need to subtract the amount from the Max
+                         : static_cast<uint8_t>(round(static_cast<float>(SHADES_MAX_PERCENT) - amount));  // fully extended = 0 in HomeKit so, to extend to 100% in RVX, we need to subtract the amount from the Max
+
+        printf("CoverView::CoverController::extendAwning %d\n", amt);
+
+        model->extend(amt);
+    }
+}
+void CoverView::CoverController::retractCover(float amount) {
+    if ((model != nullptr) && (view != nullptr) && (isReadyToRetract())) {
+        // fully retracted = 100 in HomeKit but 0 in RCX, so we want to retract to amount from homekit. So if the amount is 100, we retract to 0, if the amount is 75, we retract to 25
+        uint8_t amt = (view->kind() == CoverKind::Awning) ? static_cast<uint8_t>(round(static_cast<float>(AWNING_MAX_PERCENT) - amount)) 
+                        : static_cast<uint8_t>(round(static_cast<float>(SHADES_MAX_PERCENT - amount))); // fully retracted = 100 in HomeKit so, to retract to 0% in RCC, we need to subtract the amount
+        printf("CoverView::retractAwining %d\n", amt);
+        model->retract(amt);
+    }
+}
+
+void CoverView::CoverController::stopCover(void) {
+    if ((model != nullptr) && (isReadyToStop())) {
+        printf("CoverView::CoverController::stopAwning\n");
+        model->stop();
+    }
+}
+
+#include "ChassisMobility.h"
+
+boolean CoverView::CoverController::update(void) {
+    boolean updated = false;
+
+    view->dontUpdateTheView(); 
+    currentExtendedPosition(currentState->getVal<float>());
+    if ((targetState->updated()) && (model != nullptr) && (ChassisMobility::isParked())) {
+        float targetValue = targetState->getNewVal<float>();
+        updated = true;
+        printf("CoverView::CoverController::update targetValue = %f, currentExtendedPosition = %f\n", targetValue, currentExtendedPosition());
+        // is target value > to current position? -> remember 100% is fully retracted in HOMEKIT
+        // so, it target value > current position, then it needs to retract]
+
+        if (targetValue < currentExtendedPosition()) {
+            printf("CoverView::CoverController::update Retract to %f\n", targetValue);
+            clearCommands();
+            readyToRetract();
+            targetExtendedPosition(targetValue);
+            travelTime(static_cast<uint16_t>(round((currentExtendedPosition() - targetValue) * timeToFullyExtend() / static_cast<float>(MAX_PERCENT))));
+            // targetTime = (targetValue - )/100.0F * timeToFullyExtend gives us the time needed to extend to target
+            //travelTime = (uint16_t)((targetValue - currentExtendedPosition ) * timeToFullyRetract / 100.0F);
+            printf("CoverView::CoverController::update Retract to %f, travelTime = %d\n", targetValue, travelTime());
+        } else if (targetValue > currentExtendedPosition()) {
+            printf("CoverView::CoverController::update to Extend to %f\n", targetValue);
+            clearCommands();
+            readyToExtend();
+            travelTime(static_cast<uint16_t>(round((targetValue - currentExtendedPosition()) * timeToFullyRetract() / static_cast<float>(MAX_PERCENT))));
+            //travelTime = (uint16_t)((currentExtendedPosition - targetValue) * timeToFullyExtend / 100.0F);
+            targetExtendedPosition(targetValue);
+            // printf("CoverView::CoverController::update Extend to %f, travelTime = %d\n", targetValue, travelTime);
+        } else { 
+            // target is same as current
+            clearCommands();
+            readyToStop();
+            travelTime(0);
+
+        }
+    }
+    view->updateTheView();
+	return updated;
+}
+
+void CoverView::CoverController::loop(void) {
+    uint8_t updatedPosition = currentState->getVal<uint8_t>();
+    if (!isReadyToStop() && (view != nullptr) && (ChassisMobility::isParked())) {
+        if (isReadyToExtend()) { // && (!isAwningInMotion())) {
+            // start the extend
+            //out->setVal(true); // set the out characteristic to true to indicate we are extending
+            // extending(true);
+            view->dontUpdateTheView(); 
+            // RV_PRINTF("CoverView::CoverController::loop starting extend travelTime %d\n", travelTime);
+            if (!isCoverInMotion()) { 
+                
+                printf("CoverView::CoverController::loop starting extend - not moving so startMoving\n");
+                if (!isReadyToStop()) {
+                    printf("CoverView::CoverController::loop starting extend - not stopping so extend\n");
+                    extendCover(targetExtendedPosition());
+                    startMoving();
+                    delay(DELAY_TIME);
+                }
+            } else {
+                // current position is (travel time - start time)/traveltime *100 + current x * 1+%
+                unsigned long stime = startTime();
+                float percent = static_cast<float>(travelTime() - stime);
+                percent = 1.0F - (percent/static_cast<float>(travelTime()));
+                printf("CoverView::CoverController::loop extending progress percent = %f\n", percent * 100.0F);
+                float extendedPosition = (view->kind() == CoverKind::Awning) ? 
+                        (percent * (static_cast<float>(AWNING_FULLY_RETRACTED_PCT) - targetExtendedPosition()))
+                        : (percent * (static_cast<float>(SHADES_FULLY_CLOSED_PCT) - targetExtendedPosition()));
+                // RV_PRINTF("CoverView::CoverController::loop extending, progress = startTime %d, travelTime %d, position %f\n", stime, travelTime, extendedPosition);
+                updatedPosition = static_cast<uint16_t>(static_cast<int16_t>(extendedPosition));  
+                // RV_PRINTF("CoverView::CoverController::loop extending, current position= %d, targetExtendedPosition= %f\n", updatedPosition, targetExtendedPosition);            
+                currentState->setVal(updatedPosition);
+                currentExtendedPosition(static_cast<float>(updatedPosition));
+                // RV_PRINTF("CoverView::CoverController::loop extend, current position= %f, targetExtendedPosition= %f\n", currentExtendedPosition, targetExtendedPosition);
+                extendCover(targetExtendedPosition());
+                delay(DELAY_TIME);
+            }
+
+            view->updateTheView();
+        } else if ((isReadyToRetract())) { // && (!isAwningInMotion())) {
+            // start the retract
+            // extending(false); // set the out characteristic to false to indicate we are retracting
+            view->dontUpdateTheView(); 
+            printf("CoverView::CoverController::loop starting retract travelTime %d\n", travelTime());
+            if (!isCoverInMotion()) {
+                // RV_PRINTF("CoverView::CoverController::loop starting retract - not moving so startMoving\n");
+                if (!isReadyToStop()) {
+                    // RV_PRINTF("CoverView::CoverController::loop starting retract - not stopping so retrat\n");
+                    retractCover(targetExtendedPosition());
+                    startMoving();
+                    delay(DELAY_TIME);
+                }
+            } else {
+                 // current position is (travel time - start time)/traveltime *100 + current x * 1+%
+                unsigned long stime = startTime();
+                float percent = static_cast<float>(travelTime() - stime);
+                percent = 1.0F - (percent/static_cast<float>(travelTime()));
+                printf("CoverView::CoverController::loop retracting progress percent = %f\n", percent * 100.0F);
+                float extendedPosition = (1.0F - percent) * targetExtendedPosition(); // (currentExtendedPosition- targetExtendedPosition);
+                printf("CoverView::CoverController::loop retracting progress = startTime %d, travelTime %d, position %f\n", stime, travelTime(), extendedPosition);
+                updatedPosition = static_cast<uint16_t>(static_cast<int16_t>(extendedPosition));
+
+                currentState->setVal(updatedPosition);
+                currentExtendedPosition(extendedPosition);
+                // RV_PRINTF("CoverView::CoverController::loop retract, current position= %f, targetExtendedPosition= %f\n", currentExtendedPosition, targetExtendedPosition);
+                retractCover(targetExtendedPosition());
+                delay(DELAY_TIME);
+            }
+            view->updateTheView();
+        } else if ((isReadyToStop())) { // && (isAwningInMotion())) {
+            // stop the cover
+            view->dontUpdateTheView(); 
+            // RV_PRINTF("CoverView::CoverController::loop stopping cover\n");
+            stopMoving();
+            clearCommands();
+            // RV_PRINTF("CoverView::CoverController::loop stopping currentExtendedPosition = %f\n", currentExtendedPosition);
+            view->updateTheView();
+        } else {
+            //if (currentExtendedPosition != targetExtendedPosition)
+            // RV_PRINTF("CoverView::CoverController::loop else: currentExtendedPosition = %f\n", currentExtendedPosition);
+        }
+
+    }
+} 
+
+boolean CoverView::CoverController::isCoverExtended(void) { 
+    // return targetState->getNewVal() == CoverView::FULLY_OPEN_SHADE; 
+    boolean isExtended = (currentExtendedPosition() > 0.0F);
+    if (model != nullptr) {
+        isExtended = model->isExtended();
+    }
+    return isExtended;
+}
+
+boolean CoverView::CoverController::isCoverRetracted(void) { 
+    // return targetState->getNewVal() == CoverView::CLOSED_SHADE; 
+    boolean isRetracted = (currentExtendedPosition() == static_cast<float>(AWNING_MAX_PERCENT));
+    return isRetracted;
+}
+
+boolean CoverView::CoverController::isCoverFullyExtended(void) {
+    boolean isFullyExtended = (currentExtendedPosition() == static_cast<float>(AWNING_MIN_PERCENT));
+    return isFullyExtended;
+}
+boolean CoverView::CoverController::isCoverFullyRetracted(void) {
+    boolean isFullyRetracted = isCoverRetracted();
+    return isFullyRetracted;
+}
+
+// CoverExtendRetractController is a service that allows the cover to be extended or retracted fully with a single command. It is used in conjunction with the CoverController which controls the position of the cover. The CoverExtendRetractController has an "out" characteristic that can be set to true to extend the cover fully or false to retract it fully. It also has an update method that checks if the "out" characteristic has been updated and sends the appropriate command to the CoverController.
+
+boolean CoverView::CoverExtendRetractController::update(void) {
+    boolean updated = false;
+    if (view != nullptr) {
+        view->dontUpdateTheView(); 
+    
+        if (out->updated() && (coverController != nullptr) && (ChassisMobility::isParked())) {
+            boolean outValue = out->getNewVal<boolean>();
+            // RV_PRINTF("CoverView::CoverExtendRetractController::update outValue = %d\n", outValue);
+            if (outValue) {
+                // fully extend the cover
+                coverController->clearCommands();
+                coverController->readyToExtend();
+                (view->kind() == CoverKind::Awning) ? coverController->targetExtendedPosition(static_cast<float>(AWNING_FULLY_EXTENDED_PCT))
+                                    : coverController->targetExtendedPosition(static_cast<float>(SHADES_FULLY_CLOSED_PCT));
+                coverController->travelTime(static_cast<uint16_t>(coverController->timeToFullyExtend()));
+                //RV_PRINTF("CoverView::CoverExtendRetractController::update fully extend, travelTime = %d\n", coverController->travelTime);
+            } else {
+                // fully retract the cover
+                coverController->clearCommands();
+                coverController->readyToRetract();
+                (view->kind() == CoverKind::Awning) ? coverController->targetExtendedPosition(static_cast<float>(AWNING_FULLY_RETRACTED_PCT))
+                                    : coverController->targetExtendedPosition(static_cast<float>(SHADES_FULLY_OPEN_PCT));;
+                coverController->travelTime(static_cast<uint16_t>(coverController->timeToFullyRetract()));
+                // RV_PRINTF("CoverView::CoverExtendRetractController::update fully retract, travelTime = %d\n", coverController->travelTime);
+            }
+            updated = true;
+        }
+        view->updateTheView();
+    }
+    return updated;
+}
+
+void CoverView::CoverExtendRetractController::loop(void) {
+    if (coverController != nullptr) {
+        coverController->loop();
+    }
+}
+
+
+#include "ChassisMobility.h"
+bool CoverView::updateView(void) {
+    // the light switch may have been turned on/off at the wall and thus needs to be reflected in the SpanView
+    // 
+    // RV_PRINTF("CoverView::updateView called\n");
+    bool updated = false;
+    if (isNeedToUpdateView() && ChassisMobility::isParked()) { // don't mess with the state of the lock when the change is is initiated by the controller and not the model
+        uint8_t instance = indexOfModel();   
+        uint8_t index = -1;
+        CoverDevice* mdl = reinterpret_cast<CoverDevice*>(getModel());
+        if (mdl != nullptr) { 
+            // RV_PRINTF("CoverView::updateView - mdl not null\n");
+            index = mdl->index();
+            if (extendRetractController != nullptr) {
+                // RV_PRINTF("CoverView::updateView - mdl not null and extendRetractController not null\n");
+                if ((controller != nullptr) && (controller->isCoverExtended())) {
+                    // RV_PRINTF("CoverView::updateView - mdl not null and controller not null and cover is extended\n");
+                    extendRetractController->extending(true);
+                } else {
+                    // RV_PRINTF("CoverView::updateView - mdl not null and controller not null and cover is NOT extended\n");
+                    extendRetractController->extending(false);
+                }
+            }
+            updated = true;
+        }        
+    }
+
+    // RV_PRINTF("CoverView::updateView completed \n"); 
+    return updated;
+}
+
+
+CoverView::CoverView(GenericDevice* model, const char* spanDevName) 
+        : SpanView(model), controller(nullptr) {
+}
+
+void CoverView::createCoverView(GenericDevice* model, const char* spanDevName, float extTime, float retTime) {
+    RV_PRINTF("CoverView::createCoverView called\n");
+    SpanView::prepHomeSpan();
+    CoverView::createBridge();
+
+
+    CoverView* vw = new CoverView(model, spanDevName);
+
+    new SpanAccessory(); 
+    new Service::AccessoryInformation(); 
+    new Characteristic::Identify();
+    new Characteristic::Name(spanDevName);
+    CoverView::CoverController* ctrl = new CoverView::CoverController(vw, model, spanDevName, extTime, retTime);
+    vw->setController(ctrl);
+    CoverView::CoverExtendRetractController* extCtrl = new CoverView::CoverExtendRetractController(vw, model, ctrl);
+    vw->setExtendRetractController(extCtrl);    
+
+    if (vw != nullptr)
+        RV_PRINTF("CoverView::createCoverView: tmp created successfully\n");
+    else
+        RV_PRINTF("CoverView::createCoverView: tmp creation failed\n");   
+    RV_PRINTF("CoverView::createCoverView completed\n");
+}
+#endif

@@ -1,0 +1,26 @@
+{
+  "year": 2022,
+  "make": "Newmar",
+  "model": "Essex",
+  "floorplan": "4551",
+  "coachId": "801504",
+  "tanks": [
+    {"instance": 0, "capacityLiters": 398, "name" : "fresh" },
+    {"instance": 1, "capacityLiters": 227, "name" : "black"},
+    {"instance": 2, "capacityLiters": 302, "name" : "gray"}
+  ],
+  "coverTimes": {
+    "Front Awning": { "extendSec": 45, "retractSec": 50 },
+    "Rear Awning":  { "extendSec": 40, "retractSec": 45 },
+    "Door Awning":  { "extendSec": 25, "retractSec": 30 },
+    "Living Room Day Shades": {"extendSec": 40, "retractSec": 40},
+    "Living Room Night Shades": {"extendSec": 40, "retractSec": 40},
+    "Bedroom Day Shades": {"extendSec": 40, "retractSec": 40},
+    "Bedroom Night Shades": {"extendSec": 40, "retractSec": 40},
+    "Bathroom Day Shades": {"extendSec": 40, "retractSec": 40},
+    "Bathroom Night Shades": {"extendSec": 40, "retractSec": 40}
+  },
+  "batteries": [
+    {"instance": 0, "nominalVoltage": 12.0, "capacityAh": 400,"name": "house"}
+  ]
+}
