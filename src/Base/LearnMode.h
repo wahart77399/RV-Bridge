@@ -43,6 +43,7 @@ private:
     static constexpr uint16_t    FILE_VERSION         = 1;
     static constexpr uint32_t    DEFAULT_DURATION_SEC = 72UL * 3600UL;
     static constexpr uint32_t    SAVE_INTERVAL_SEC    = 300;
+    static constexpr uint32_t    FINISH_RETRY_MS      = 60000;
     static constexpr uint32_t    MIN_HITS             = 3;            // ignore one-off frames
     static constexpr const char* LEARN_FILE           = "/learn.bin";
     static constexpr const char* LEARN_TMP            = "/learn.tmp";
@@ -58,6 +59,7 @@ private:
     static uint32_t   durationSec_;
     static uint32_t   lastSavedSec_;
     static uint32_t   lastTickMs_;
+    static uint32_t   lastFinishAttemptMs_;
 
     static void   start(uint32_t durationSec);
     static void   finish();

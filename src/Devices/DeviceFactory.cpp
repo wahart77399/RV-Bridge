@@ -6,7 +6,11 @@
 #include "ArduinoJson.h"
 #include "FS.h"
 #include "LittleFS.h"
+#include <Preferences.h>
 #include "debug.h"
+#ifdef FUTURE
+#include "BridgeDiagnostics.h"
+#endif
 
 
 DeviceFactory* DeviceFactory::instance = nullptr;
@@ -16,11 +20,12 @@ std::map<RVC_DGN, std::map<uint8_t, GenericDevice*>> DeviceFactory::DGN2DeviceMa
 
 namespace {
     uint32_t accessoryCount(const String& type) {
-        if (type == "Thermostat") return 3;
-        if (type == "Inverter" || type == "Generator") return 4;
-        if (type == "ATS") return 8;
-        if (type == "Charger") return 7;
-        return 1;
+        uint32_t count = 1;
+        if (type == "Thermostat") count = 3;
+        else if (type == "Inverter" || type == "Generator") count = 4;
+        else if (type == "ATS") count = 8;
+        else if (type == "Charger") count = 7;
+        return count;
     }
 
     bool replaceJsonFile(const char* path, const char* tempPath, const char* backupPath,
@@ -29,7 +34,7 @@ namespace {
         LittleFS.remove(tempPath);
         File output = LittleFS.open(tempPath, "w");
         if (output) {
-            size_t expected = measureJson(document);
+            size_t expected = measureJsonPretty(document);
             size_t written = serializeJsonPretty(document, output);
             output.flush();
             output.close();
@@ -85,13 +90,18 @@ namespace {
 DeviceFactory* DeviceFactory::getInstance() {
     if (!DeviceFactory::instance) {
         DeviceFactory::instance = new DeviceFactory();
-        ChassisMobility* chassis = ChassisMobility::getInstance();
-        const uint8_t defaultChassisIndex = DEFAULT_CHASSIS_INDEX;
-        instance->DGN2DeviceMap[CHASSIS_MOBILITY_COMMAND][defaultChassisIndex] = chassis;
-        instance->DGN2DeviceMap[CHASSIS_MOBILITY_STATUS][defaultChassisIndex] = chassis;
-        instance->DGN2DeviceMap[CHASSIS_MOBILITY_STATUS_2][defaultChassisIndex] = chassis;
-        SpanView::setNextAccessoryAid(chassisAccessoryAid);
-        ChassisMobilityView::createChassisMobilityView((GenericDevice* )chassis, "Chassis Mobility Sensor");
+        if (chassisAccessoryAid >= 2) {
+            ChassisMobility* chassis = ChassisMobility::getInstance();
+            const uint8_t defaultChassisIndex = DEFAULT_CHASSIS_INDEX;
+            instance->DGN2DeviceMap[CHASSIS_MOBILITY_COMMAND][defaultChassisIndex] = chassis;
+            instance->DGN2DeviceMap[CHASSIS_MOBILITY_STATUS][defaultChassisIndex] = chassis;
+            instance->DGN2DeviceMap[CHASSIS_MOBILITY_STATUS_2][defaultChassisIndex] = chassis;
+            SpanView::setNextAccessoryAid(chassisAccessoryAid);
+            ChassisMobilityView::createChassisMobilityView((GenericDevice* )chassis, "Chassis Mobility Sensor");
+#ifdef FUTURE
+            BridgeDiagnostics::registerDevice(chassis, "ChassisMobility", "Chassis Mobility Sensor", defaultChassisIndex, 0);
+#endif
+        }
     }
     return DeviceFactory::instance;
 }
@@ -490,69 +500,80 @@ bool DeviceFactory::loadDeviceConfigs(const char* path, std::vector<DeviceConfig
 }
 
 bool DeviceFactory::assignStableAids(std::vector<DeviceConfig>& devices, uint32_t& coachChassisAid) {
-    bool hasDeviceAids = false;
-    for (const DeviceConfig& device : devices) {
-        hasDeviceAids = hasDeviceAids || (device.aid != 0);
-    }
-
-    uint32_t nextAid = 2;
-    if (!hasDeviceAids) {
-        for (DeviceConfig& device : devices) {
-            if (device.enabled) {
-                device.aid = nextAid;
-                nextAid += accessoryCount(device.type);
-            }
+    bool valid = false;
+    Preferences registry;
+    do {
+        if (!registry.begin("sc-aids", false)) break;
+        uint32_t reservedChassis = registry.getUInt("chassis", 0);
+        uint32_t nextAid = registry.getUInt("next", 2);
+        if (nextAid < 2) break;
+        if (reservedChassis != 0) {
+            if (coachChassisAid != 0 && coachChassisAid != reservedChassis) break;
+            coachChassisAid = reservedChassis;
         }
-        if (coachChassisAid == 0) {
-            coachChassisAid = nextAid;
-        }
-        nextAid = coachChassisAid + 2;
-        for (DeviceConfig& device : devices) {
-            if (!device.enabled) {
-                device.aid = nextAid;
-                nextAid += accessoryCount(device.type);
-            }
-        }
-    } else {
-        uint32_t maxEnabledEnd = 2;
-        uint32_t maxReservedEnd = (coachChassisAid > 0) ? coachChassisAid + 2 : 2;
+        bool hasDeviceAids = false;
+        uint32_t enabledAccessories = 3;
+        bool rangesValid = true;
         for (const DeviceConfig& device : devices) {
-            if (device.aid > 0) {
-                uint32_t endAid = device.aid + accessoryCount(device.type);
-                if (endAid > maxReservedEnd) maxReservedEnd = endAid;
-                if (device.enabled && (endAid > maxEnabledEnd)) maxEnabledEnd = endAid;
+            uint32_t count = accessoryCount(device.type);
+            hasDeviceAids = hasDeviceAids || device.aid != 0;
+            rangesValid = rangesValid && device.aid <= UINT32_MAX - count;
+            if (device.enabled) enabledAccessories += count;
+            if (device.aid != 0 && rangesValid && device.aid + count > nextAid) {
+                nextAid = device.aid + count;
             }
         }
-        if (coachChassisAid == 0) {
-            coachChassisAid = maxEnabledEnd;
+        if (!rangesValid || enabledAccessories > 150) break;
+
+        bool legacyMigration = !hasDeviceAids && reservedChassis == 0 && coachChassisAid == 0 && nextAid == 2;
+        if (legacyMigration) {
+            for (DeviceConfig& device : devices) {
+                if (device.enabled) {
+                    device.aid = nextAid;
+                    nextAid += accessoryCount(device.type);
+                }
+            }
         }
-        if (maxReservedEnd < coachChassisAid + 2) {
-            maxReservedEnd = coachChassisAid + 2;
-        }
-        nextAid = maxReservedEnd;
+        if (coachChassisAid == 0) coachChassisAid = nextAid;
+        if (coachChassisAid < 2 || coachChassisAid > UINT32_MAX - 2) break;
+        if (nextAid < coachChassisAid + 2) nextAid = coachChassisAid + 2;
         for (DeviceConfig& device : devices) {
             if (device.aid == 0) {
+                uint32_t count = accessoryCount(device.type);
+                if (nextAid > UINT32_MAX - count) {
+                    rangesValid = false;
+                    break;
+                }
                 device.aid = nextAid;
-                nextAid += accessoryCount(device.type);
+                nextAid += count;
             }
         }
-    }
-
-    bool unique = (coachChassisAid > 1);
-    for (size_t i = 0; i < devices.size(); ++i) {
-        uint32_t firstEnd = devices[i].aid + accessoryCount(devices[i].type);
-        if (devices[i].aid < 2 ||
-            ((devices[i].aid < coachChassisAid + 2) && (firstEnd > coachChassisAid))) {
-            unique = false;
-        }
-        for (size_t j = i + 1; j < devices.size(); ++j) {
-            uint32_t secondEnd = devices[j].aid + accessoryCount(devices[j].type);
-            if ((devices[i].aid < secondEnd) && (devices[j].aid < firstEnd)) {
-                unique = false;
+        if (!rangesValid) break;
+        for (size_t first = 0; first < devices.size(); ++first) {
+            uint32_t firstEnd = devices[first].aid + accessoryCount(devices[first].type);
+            if (devices[first].aid < 2 ||
+                (devices[first].aid < coachChassisAid + 2 && firstEnd > coachChassisAid)) {
+                rangesValid = false;
+            }
+            for (size_t second = first + 1; second < devices.size(); ++second) {
+                uint32_t secondEnd = devices[second].aid + accessoryCount(devices[second].type);
+                if (devices[first].aid < secondEnd && devices[second].aid < firstEnd) {
+                    rangesValid = false;
+                }
             }
         }
-    }
-    return unique;
+        if (!rangesValid) break;
+        bool saved = true;
+        if (registry.getUInt("next", 0) != nextAid) {
+            saved = registry.putUInt("next", nextAid) == sizeof(uint32_t);
+        }
+        if (saved && registry.getUInt("chassis", 0) != coachChassisAid) {
+            saved = registry.putUInt("chassis", coachChassisAid) == sizeof(uint32_t);
+        }
+        valid = saved;
+    } while (false);
+    registry.end();
+    return valid;
 }
 
 bool DeviceFactory::saveDeviceMetadata(const char* path, const std::vector<DeviceConfig>& devices) {
@@ -619,7 +640,11 @@ void DeviceFactory::createFromDeviceConfig(const std::vector<DeviceConfig>& devi
             auto it = creators.find(dev.type);
             if (it != creators.end()) {
                 SpanView::setNextAccessoryAid(dev.aid);
-                if (it->second(dev, coach) != nullptr) {
+                GenericDevice* device = it->second(dev, coach);
+                if (device != nullptr) {
+#ifdef FUTURE
+                    BridgeDiagnostics::registerDevice(device, dev.type.c_str(), dev.name.c_str(), dev.rvcIndex, dev.sourceAddress);
+#endif
                     RV_PRINTF("Created %s (%s) idx=%u\n", dev.name.c_str(), dev.type.c_str(), dev.rvcIndex);
                 }
             } else {
@@ -633,25 +658,24 @@ void DeviceFactory::createFromDeviceConfig(const std::vector<DeviceConfig>& devi
 void DeviceFactory::createDevices(void) {
     CoachSpec coach;
     std::vector<DeviceConfig> devices;
-    bool loaded = false;
-
-    loaded = loadCoachSpec("/coach.json", coach);
-    if (loaded) {
-        loaded = loadDeviceConfigs("/devices.json", devices);
-    }
-    if (loaded && !devices.empty()) {
+    SpanView::prepHomeSpan();
+    bool coachLoaded = loadCoachSpec("/coach.json", coach);
+    bool devicesLoaded = coachLoaded && loadDeviceConfigs("/devices.json", devices);
+    do {
         registerCreators();
         if (!assignStableAids(devices, coach.chassisAid)) {
-            RV_PRINTF("DeviceFactory: accessory AID overlap; refusing to create HomeKit accessories\n");
-            return;
+            Serial.println("DeviceFactory: invalid or unpersisted AID reservations; accessories withheld");
+            break;
+        }
+        if (coachLoaded && !saveChassisAid("/coach.json", coach.chassisAid)) {
+            Serial.println("DeviceFactory: failed to persist chassis AID; accessories withheld");
+            break;
+        }
+        if (devicesLoaded && !saveDeviceMetadata("/devices.json", devices)) {
+            Serial.println("DeviceFactory: failed to persist device AIDs; accessories withheld");
+            break;
         }
         chassisAccessoryAid = coach.chassisAid;
-        if (!saveDeviceMetadata("/devices.json", devices)) {
-            RV_PRINTF("DeviceFactory: failed to persist device AIDs and rooms\n");
-        }
-        if (!saveChassisAid("/coach.json", chassisAccessoryAid)) {
-            RV_PRINTF("DeviceFactory: failed to persist chassis AID\n");
-        }
-        createFromDeviceConfig(devices, coach);
-    }
+        if (devicesLoaded) createFromDeviceConfig(devices, coach);
+    } while (false);
 }

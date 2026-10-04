@@ -39,6 +39,7 @@ struct LearnRecord {
 };
 
 class LearnTable {
+    friend class LearnMode;
 public:
     static constexpr size_t MAX_RECORDS     = 192;
     static constexpr size_t RESERVED_KNOWN  = 64;   // slots unknown DGNs may not consume
@@ -52,21 +53,22 @@ public:
 
     void   observe(RVC_DGN dgn, uint8_t instance, uint8_t sourceAddress, const uint8_t* data, uint32_t nowSec);
     void   reset();
-    size_t count() const { return count_; }
-    const LearnRecord& row(size_t i) const { return rows_[i]; }
-
-    // persistence: raw rows only, the owner writes its own header
-    size_t       byteSize() const { return count_ * sizeof(LearnRecord); }
-    const void*  bytes() const { return rows_; }
     bool         load(const void* src, size_t rowCount);
 
     static LearnedKind classify(RVC_DGN dgn);
+    static const char* relatedFamily(RVC_DGN dgn);
+    static const char* dgnName(RVC_DGN dgn);
     static const char* typeName(const LearnRecord& r);   // devices.json "type"
     static const char* label(LearnedKind kind);           // default device name
 
 private:
     LearnRecord rows_[MAX_RECORDS];
     size_t      count_;
+
+    size_t count() const { return count_; }
+    const LearnRecord& row(size_t index) const { return rows_[index]; }
+    size_t byteSize() const { return count_ * sizeof(LearnRecord); }
+    const void* bytes() const { return rows_; }
 
     LearnRecord* findOrAlloc(RVC_DGN dgn, LearnedKind kind, uint8_t instance, uint8_t sourceAddress);
 };

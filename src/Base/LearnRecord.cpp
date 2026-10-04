@@ -40,6 +40,58 @@ LearnedKind LearnTable::classify(RVC_DGN dgn) {
     return kind;
 }
 
+namespace {
+    struct RelatedDgn {
+        RVC_DGN dgn;
+        const char* name;
+        const char* family;
+    };
+
+    constexpr RelatedDgn relatedDgns[] = {
+        {ATS_STATUS, "ATS_STATUS", "ATS"},
+        {ATS_COMMAND, "ATS_COMMAND", "ATS"},
+        {ATS_AC_STATUS_1, "ATS_AC_STATUS_1", "ATS"},
+        {ATS_AC_STATUS_2, "ATS_AC_STATUS_2", "ATS"},
+        {ATS_AC_STATUS_3, "ATS_AC_STATUS_3", "ATS"},
+        {ATS_AC_STATUS_4, "ATS_AC_STATUS_4", "ATS"},
+        {ATS_ACFAULT_CONFIGURATION_STATUS_1, "ATS_ACFAULT_CONFIGURATION_STATUS_1", "ATS"},
+        {ATS_ACFAULT_CONFIGURATION_STATUS_2, "ATS_ACFAULT_CONFIGURATION_STATUS_2", "ATS"},
+        {ATS_ACFAULT_CONFIGURATION_COMMAND_1, "ATS_ACFAULT_CONFIGURATION_COMMAND_1", "ATS"},
+        {ATS_ACFAULT_CONFIGURATION_COMMAND_2, "ATS_ACFAULT_CONFIGURATION_COMMAND_2", "ATS"},
+        {THERMOSTAT_AMBIENT_STATUS, "THERMOSTAT_AMBIENT_STATUS", "Thermostat"},
+        {THERMOSTAT_STATUS_1, "THERMOSTAT_STATUS_1", "Thermostat"},
+        {THERMOSTAT_STATUS_2, "THERMOSTAT_STATUS_2", "Thermostat"},
+        {THERMOSTAT_COMMAND_1, "THERMOSTAT_COMMAND_1", "Thermostat"},
+        {THERMOSTAT_COMMAND_2, "THERMOSTAT_COMMAND_2", "Thermostat"},
+        {THERMOSTAT_SCHEDULE_STATUS_1, "THERMOSTAT_SCHEDULE_STATUS_1 / THERMOSTAT_SCHEDULE_STATUS_2", "Thermostat"},
+        {THERMOSTAT_SCHEDULE_COMMAND_1, "THERMOSTAT_SCHEDULE_COMMAND_1", "Thermostat"},
+        {THERMOSTAT_SCHEDULE_COMMAND_2, "THERMOSTAT_SCHEDULE_COMMAND_2", "Thermostat"}
+    };
+}
+
+const char* LearnTable::relatedFamily(RVC_DGN dgn) {
+    LearnedKind kind = classify(dgn);
+    const char* family = kind == LearnedKind::Unknown ? "Unknown" : label(kind);
+    for (const RelatedDgn& entry : relatedDgns) {
+        if (entry.dgn == dgn) {
+            family = entry.family;
+            break;
+        }
+    }
+    return family;
+}
+
+const char* LearnTable::dgnName(RVC_DGN dgn) {
+    const char* name = "";
+    for (const RelatedDgn& entry : relatedDgns) {
+        if (entry.dgn == dgn) {
+            name = entry.name;
+            break;
+        }
+    }
+    return name;
+}
+
 const char* LearnTable::typeName(const LearnRecord& r) {
     const char* name = "";
     switch (r.kind) {

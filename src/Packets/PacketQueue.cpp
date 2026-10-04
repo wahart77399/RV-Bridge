@@ -1,6 +1,9 @@
 
 #include "PacketQueue.h"
 #include "Packet.h"
+#ifdef FUTURE
+#include "BridgeDiagnostics.h"
+#endif
 
 // -----------------------------------------------------------------------------
 // Static storage (attributes live here; access only via private mediators)
@@ -157,6 +160,9 @@ bool PacketQueue::receiveFrame(CAN_frame_t& outPacket) {
         }
 
         canFrameFromTwai(msg, outPacket);
+    #ifdef FUTURE
+        BridgeDiagnostics::observeFrame(outPacket);
+    #endif
         timeSinceLastRecv() = 0;
         ok = true;
     } while (false);
@@ -176,6 +182,9 @@ bool PacketQueue::transmitFrame(const CAN_frame_t& frame) {
 
         twaiFromCanFrame(frame, msg);
         err = twai_transmit(&msg, pdMS_TO_TICKS(kTwaiTxTimeoutMs));
+    #ifdef FUTURE
+        BridgeDiagnostics::observeTransmit(err == ESP_OK);
+    #endif
         if (err != ESP_OK) {
             break;
         }
@@ -299,6 +308,9 @@ bool PacketQueue::queuePacket(const CAN_frame_t& frame) {
 
     do {
         ok = pushSendQueue(frame);
+#ifdef FUTURE
+        if (!ok) BridgeDiagnostics::observeQueueDrop();
+#endif
     } while (false);
 
     return ok;

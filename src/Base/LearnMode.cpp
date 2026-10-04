@@ -2,10 +2,12 @@
 #include <LittleFS.h>
 #include <ArduinoJson.h>
 #include <memory>
-#include <vector>
 #include "ConfigTypes.h"
 #include "DeviceFactory.h"
 #include "Packet.h"
+#ifdef FUTURE
+#include "EmailReports.h"
+#endif
 
 LearnTable       LearnMode::table_;
 LearnMode::State LearnMode::state_        = LearnMode::State::Idle;
@@ -13,6 +15,7 @@ uint32_t         LearnMode::elapsedSec_   = 0;
 uint32_t         LearnMode::durationSec_  = LearnMode::DEFAULT_DURATION_SEC;
 uint32_t         LearnMode::lastSavedSec_ = 0;
 uint32_t         LearnMode::lastTickMs_   = 0;
+uint32_t         LearnMode::lastFinishAttemptMs_ = 0;
 
 namespace {
     bool isLightType(const char* type) {
@@ -30,32 +33,16 @@ namespace {
         return same;
     }
 
-    int findProfileMatch(JsonArrayConst rows, const std::vector<bool>& used, const LearnRecord& r) {
+    int findMatchingDevice(JsonArrayConst rows, const char* type, uint8_t instance) {
         int match = -1;
-        const char* learnedType = LearnTable::typeName(r);
-        int i = 0;
+        int index = 0;
         for (JsonObjectConst row : rows) {
-            if ((match < 0) && !used[i] &&
-                ((row["rvcIndex"] | -1) == static_cast<int>(r.instance)) &&
-                typesCompatible(row["type"] | "", learnedType)) {
-                match = i;
+            if ((match < 0) &&
+                ((row["rvcIndex"] | -1) == static_cast<int>(instance)) &&
+                typesCompatible(row["type"] | "", type)) {
+                match = index;
             }
-            i = i + 1;
-        }
-        return match;
-    }
-
-    int findPreviousMatch(JsonArrayConst rows, const std::vector<bool>& used, const LearnRecord& r) {
-        int match = -1;
-        const char* learnedType = LearnTable::typeName(r);
-        int i = 0;
-        for (JsonObjectConst row : rows) {
-            if ((match < 0) && !used[i] &&
-                ((row["rvcIndex"] | -1) == static_cast<int>(r.instance)) &&
-                typesCompatible(row["type"] | "", learnedType)) {
-                match = i;
-            }
-            i = i + 1;
+            ++index;
         }
         return match;
     }
@@ -89,6 +76,7 @@ void LearnMode::begin() {
         Serial.println("LearnMode: filesystem not mounted, learning disabled");
     }
     lastTickMs_ = millis();
+    lastFinishAttemptMs_ = lastTickMs_ - FINISH_RETRY_MS;
     if (isLearning()) {
         printStatus();
     }
@@ -106,7 +94,7 @@ void LearnMode::poll() {
         if ((elapsedSec_ - lastSavedSec_) >= SAVE_INTERVAL_SEC) {
             save();
         }
-        if (elapsedSec_ >= durationSec_) {
+        if (elapsedSec_ >= durationSec_ && now - lastFinishAttemptMs_ >= FINISH_RETRY_MS) {
             finish();
         }
     }
@@ -129,39 +117,65 @@ void LearnMode::start(uint32_t durationSec) {
     durationSec_  = (durationSec > 0) ? durationSec : DEFAULT_DURATION_SEC;
     lastSavedSec_ = 0;
     lastTickMs_   = millis();
+    lastFinishAttemptMs_ = lastTickMs_ - FINISH_RETRY_MS;
     save();
     Serial.printf("LearnMode: learning started for %lu hours\n",
                   static_cast<unsigned long>(durationSec_ / 3600UL));
 }
 
 void LearnMode::cancel() {
-    state_ = State::Idle;
-    LittleFS.remove(LEARN_FILE);
-    if (!LittleFS.exists(DEVICES_FILE) && LittleFS.exists(DEVICES_BACKUP)) {
-        LittleFS.rename(DEVICES_BACKUP, DEVICES_FILE);
+    if (isLearning()) {
+        bool restored = true;
+        if (LittleFS.exists(DEVICES_BACKUP)) {
+            restored = LittleFS.rename(DEVICES_BACKUP, DEVICES_FILE);
+        }
+        if (restored) {
+            state_ = State::Idle;
+            LittleFS.remove(LEARN_FILE);
+            Serial.println("LearnMode: learning cancelled; previous configuration restored when available");
+        } else {
+            Serial.println("LearnMode: cancel failed to restore configuration; learning retained");
+        }
+    } else {
+        Serial.println("LearnMode: not learning; configuration left unchanged");
     }
-    Serial.println("LearnMode: learning cancelled");
 }
 
 void LearnMode::finish() {
     CoachSpec coach;
     bool      profileFound = false;
-
-    DeviceFactory::loadCoachSpec(COACH_FILE, coach);
-    String profile = profilePath(coach);
-
-    bool written = writeDevicesJson(profile, profileFound);
-    writeReport(coach, profile, profileFound);
-    state_ = State::Complete;
-    save();
-
-    if (written) {
+    bool complete = false;
+    String profile;
+    lastFinishAttemptMs_ = millis();
+    do {
+        if (!DeviceFactory::loadCoachSpec(COACH_FILE, coach)) break;
+        profile = profilePath(coach);
+        if (!writeDevicesJson(profile, profileFound)) break;
+        if (!writeReport(coach, profile, profileFound)) break;
+        if (!replaceFile(DEVICES_TMP, DEVICES_FILE)) break;
+        state_ = State::Complete;
+        if (!save()) {
+            state_ = State::Learning;
+            break;
+        }
+        complete = true;
+    } while (false);
+#ifdef FUTURE
+    if (complete) {
+        EmailReports::Result staged = EmailReports::stageDiscoveryReport();
+        Serial.printf("EmailReports: discovery staging result=%u; delivery disabled\n",
+                      static_cast<unsigned int>(staged));
+    }
+#endif
+    if (complete) {
         Serial.printf("LearnMode: wrote %s (profile %s %s), rebooting\n",
                       DEVICES_FILE, profile.c_str(), profileFound ? "matched" : "not found");
         Serial.flush();
         ESP.restart();
     } else {
-        Serial.printf("LearnMode: could not write %s; learning will restart on next boot\n", DEVICES_FILE);
+        LittleFS.remove(DEVICES_TMP);
+        save();
+        Serial.println("LearnMode: completion failed; learning retained, automatic retry in one minute");
     }
 }
 
@@ -209,12 +223,14 @@ bool LearnMode::save() {
         h.state       = state_;
         bool wrote = (f.write(reinterpret_cast<const uint8_t*>(&h), sizeof(h)) == sizeof(h)) &&
                      (f.write(static_cast<const uint8_t*>(table_.bytes()), table_.byteSize()) == table_.byteSize());
+        f.flush();
         f.close();
         ok = wrote && replaceFile(LEARN_TMP, LEARN_FILE);
     }
     if (ok) {
         lastSavedSec_ = elapsedSec_;
     } else {
+        LittleFS.remove(LEARN_TMP);
         Serial.println("LearnMode: failed to save learn state");
     }
     return ok;
@@ -222,10 +238,6 @@ bool LearnMode::save() {
 
 bool LearnMode::replaceFile(const char* tmpPath, const char* destPath) {
     bool ok = LittleFS.rename(tmpPath, destPath);
-    if (!ok) {
-        LittleFS.remove(destPath);
-        ok = LittleFS.rename(tmpPath, destPath);
-    }
     return ok;
 }
 
@@ -253,74 +265,91 @@ String LearnMode::profilePath(const CoachSpec& coach) {
 }
 
 bool LearnMode::writeDevicesJson(const String& profile, bool& profileFound) {
-    JsonDocument profileDoc;
-    File pf = LittleFS.open(profile, "r");
-    if (pf) {
-        profileFound = !deserializeJson(profileDoc, pf) && profileDoc.is<JsonArray>();
-        pf.close();
-    }
-    JsonArrayConst    profileRows = profileDoc.as<JsonArrayConst>();
-    std::vector<bool> used(profileRows.size(), false);
-
-    JsonDocument previousDoc;
-    File previousFile = LittleFS.open(DEVICES_BACKUP, "r");
-    if (previousFile) {
-        deserializeJson(previousDoc, previousFile);
-        previousFile.close();
-    }
-    JsonArrayConst previousRows = previousDoc.as<JsonArrayConst>();
-    std::vector<bool> previousUsed(previousRows.size(), false);
-
-    JsonDocument out;
-    JsonArray    rows = out.to<JsonArray>();
-
-    for (size_t i = 0; i < table_.count(); ++i) {
-        const LearnRecord& r = table_.row(i);
-        if ((r.kind != LearnedKind::Unknown) && (r.hitCount >= MIN_HITS)) {
-            JsonObject o     = rows.add<JsonObject>();
-            int        match = profileFound ? findProfileMatch(profileRows, used, r) : -1;
-            if (match >= 0) {
-                o.set(profileRows[match].as<JsonObjectConst>());
-                o["enabled"] = true;
-                used[match]  = true;
-            } else {
-                int previous = findPreviousMatch(previousRows, previousUsed, r);
-                if (previous >= 0) {
-                    o.set(previousRows[previous].as<JsonObjectConst>());
-                    previousUsed[previous] = true;
-                    o["type"] = LearnTable::typeName(r);
-                    o["rvcIndex"] = r.instance;
-                } else {
-                    o["enabled"]  = false;
-                    o["type"]     = LearnTable::typeName(r);
-                    o["rvcIndex"] = r.instance;
-                    o["name"]     = String(LearnTable::label(r.kind)) + " " + String(r.instance);
-                    o["order"]    = 100;
-                    o["room"]     = "";
-                }
-            }
-            o["sourceAddress"] = r.sourceAddress;
-            o["learned"]       = true;
-        }
-    }
-
-    // trust the profile for devices that stayed quiet (e.g. shades never moved)
-    for (size_t i = 0; i < used.size(); ++i) {
-        if (!used[i]) {
-            JsonObject o = rows.add<JsonObject>();
-            o.set(profileRows[i].as<JsonObjectConst>());
-            o["enabled"] = true;
-            o["learned"] = false;
-        }
-    }
-
     bool ok = false;
-    File f  = LittleFS.open(DEVICES_TMP, "w");
-    if (f) {
-        size_t n = serializeJsonPretty(out, f);
-        f.close();
-        ok = (n > 0) && replaceFile(DEVICES_TMP, DEVICES_FILE);
-    }
+    profileFound = false;
+    do {
+        JsonDocument profileDoc;
+        File profileFile = LittleFS.open(profile, "r");
+        if (profileFile) {
+            DeserializationError error = deserializeJson(profileDoc, profileFile);
+            profileFile.close();
+            if (error || !profileDoc.is<JsonArray>()) break;
+            profileFound = true;
+        } else if (LittleFS.exists(profile)) {
+            break;
+        }
+        JsonArrayConst profileRows = profileDoc.as<JsonArrayConst>();
+
+        JsonDocument previousDoc;
+        File previousFile = LittleFS.open(DEVICES_BACKUP, "r");
+        if (previousFile) {
+            DeserializationError error = deserializeJson(previousDoc, previousFile);
+            previousFile.close();
+            if (error || !previousDoc.is<JsonArray>()) break;
+        } else if (LittleFS.exists(DEVICES_BACKUP)) {
+            break;
+        }
+        JsonArrayConst previousRows = previousDoc.as<JsonArrayConst>();
+
+        JsonDocument out;
+        JsonArray rows = out.to<JsonArray>();
+        for (JsonObjectConst previous : previousRows) {
+            JsonObject retained = rows.add<JsonObject>();
+            retained.set(previous);
+            retained["learned"] = false;
+        }
+
+        for (size_t index = 0; index < table_.count(); ++index) {
+            const LearnRecord& record = table_.row(index);
+            if ((record.kind != LearnedKind::Unknown) && (record.hitCount >= MIN_HITS)) {
+                const char* type = LearnTable::typeName(record);
+                int previous = findMatchingDevice(rows, type, record.instance);
+                JsonObject device;
+                if (previous >= 0) {
+                    device = rows[previous].as<JsonObject>();
+                } else {
+                    device = rows.add<JsonObject>();
+                    int match = findMatchingDevice(profileRows, type, record.instance);
+                    if (match >= 0) {
+                        device.set(profileRows[match].as<JsonObjectConst>());
+                        device.remove("aid");
+                        device["enabled"] = true;
+                    } else {
+                        device["enabled"] = false;
+                        device["type"] = type;
+                        device["rvcIndex"] = record.instance;
+                        device["name"] = String(LearnTable::label(record.kind)) + " " + String(record.instance);
+                        device["order"] = 100;
+                        device["room"] = "";
+                    }
+                }
+                device["sourceAddress"] = record.sourceAddress;
+                device["learned"] = true;
+            }
+        }
+
+        for (JsonObjectConst defaults : profileRows) {
+            const char* type = defaults["type"] | "";
+            uint8_t instance = defaults["rvcIndex"] | 0;
+            if (findMatchingDevice(rows, type, instance) < 0) {
+                JsonObject device = rows.add<JsonObject>();
+                device.set(defaults);
+                device.remove("aid");
+                device["enabled"] = true;
+                device["learned"] = false;
+            }
+        }
+
+        if (out.overflowed()) break;
+        File output = LittleFS.open(DEVICES_TMP, "w");
+        if (!output) break;
+        size_t expected = measureJsonPretty(out);
+        size_t written = serializeJsonPretty(out, output);
+        output.flush();
+        output.close();
+        ok = written == expected;
+    } while (false);
+    if (!ok) LittleFS.remove(DEVICES_TMP);
     return ok;
 }
 
@@ -349,8 +378,21 @@ bool LearnMode::writeReport(const CoachSpec& coach, const String& profile, bool 
         if (r.kind != LearnedKind::Unknown) {
             o["type"]     = LearnTable::typeName(r);
             o["rvcIndex"] = r.instance;
+            o["rvcIndexVerified"] = true;
+            o["rvcIndexSource"] = "decodedInstance";
+        } else {
+            if (r.flags & LearnRecord::FLAG_HAS_SAMPLE) {
+                o["rvcIndex"] = r.sample[0];
+            } else {
+                o["rvcIndex"] = nullptr;
+            }
+            o["rvcIndexVerified"] = false;
+            o["rvcIndexSource"] = "payloadByte0Candidate";
         }
         o["dgn"]           = dgnText;
+        o["dgnName"]       = LearnTable::dgnName(static_cast<RVC_DGN>(r.dgn));
+        o["relatedFamily"] = LearnTable::relatedFamily(static_cast<RVC_DGN>(r.dgn));
+        o["discoveryDecoded"] = r.kind != LearnedKind::Unknown;
         o["sourceAddress"] = r.sourceAddress;
         o["hits"]          = r.hitCount;
         o["firstSeenSec"]  = r.firstSeenSec;
@@ -359,11 +401,17 @@ bool LearnMode::writeReport(const CoachSpec& coach, const String& profile, bool 
     }
 
     bool ok = false;
-    File f  = LittleFS.open(REPORT_FILE, "w");
-    if (f) {
-        ok = serializeJson(doc, f) > 0;
-        f.close();
+    if (!doc.overflowed()) {
+        File output = LittleFS.open("/learn_report.tmp", "w");
+        if (output) {
+            size_t expected = measureJson(doc);
+            size_t written = serializeJson(doc, output);
+            output.flush();
+            output.close();
+            ok = written == expected && replaceFile("/learn_report.tmp", REPORT_FILE);
+        }
     }
+    if (!ok) LittleFS.remove("/learn_report.tmp");
     return ok;
 }
 
@@ -390,11 +438,16 @@ void LearnMode::handleCommand(const String& args) {
 
     if (cmd.startsWith("start")) {
         long hours = cmd.substring(5).toInt();
-        if (LittleFS.exists(DEVICES_FILE)) {
-            LittleFS.remove(DEVICES_BACKUP);
-            LittleFS.rename(DEVICES_FILE, DEVICES_BACKUP);
+        bool ready = !isLearning();
+        if (!ready) {
+            Serial.println("LearnMode: already learning; finish or cancel before starting another run");
+        } else if (LittleFS.exists(DEVICES_FILE)) {
+            ready = LittleFS.rename(DEVICES_FILE, DEVICES_BACKUP);
+            if (!ready) Serial.println("LearnMode: backup failed; existing configuration left unchanged");
         }
-        start((hours > 0) ? static_cast<uint32_t>(hours) * 3600UL : DEFAULT_DURATION_SEC);
+        if (ready) {
+            start((hours > 0) ? static_cast<uint32_t>(hours) * 3600UL : DEFAULT_DURATION_SEC);
+        }
     } else if (cmd == "finish") {
         if (isLearning()) {
             finish();
