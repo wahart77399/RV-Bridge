@@ -61,6 +61,7 @@ private:
     uint16_t      m_port;
     WebServer     m_server;
     bool          m_running;
+    bool          m_restartRequired = false;
 
     // -----------------------------------------------------------------
     // Private behaviours
@@ -75,6 +76,7 @@ private:
     void handleRoot();
     void handleStatus();
     void handleRenameDevice();
+    void handleReviewDevice();
     void handleCoachUpdate();
     void handleWifiReset();
     void handleReboot();

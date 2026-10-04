@@ -47,8 +47,15 @@
           <div class="toolbar-heading"><span class="section-kicker">Your coach</span><h2>Discovered devices <span id="visible-count">06</span></h2></div>
           <label class="search-field"><span aria-hidden="true">⌕</span><input id="device-search" type="search" placeholder="Search devices" autocomplete="off" /></label>
         </div>
+        <div class="device-scope" role="group" aria-label="Device visibility">
+          <button type="button" data-scope="Enabled" aria-pressed="true">Enabled <span id="enabled-count">0</span></button>
+          <button type="button" data-scope="Pending" aria-pressed="false">Pending <span id="pending-count">0</span></button>
+          <button type="button" data-scope="Ignored" aria-pressed="false">Ignored <span id="ignored-count">0</span></button>
+        </div>
+        <div class="restart-notice" id="restart-notice" hidden><span>Device approvals saved. Restart pending.</span><button type="button" id="restart-approved">Restart SmartCoach</button></div>
         <div class="device-grid" id="device-list"></div>
         <div class="empty-state" id="empty-state" hidden><span>⌕</span><strong>No matching devices</strong><p>Try another name, room, or device type.</p></div>
+        <details class="unhandled-traffic"><summary>Unhandled RV-C traffic <span id="unhandled-count">0</span></summary><div id="unhandled-list"></div></details>
       </section>
 
       <footer class="footer">
@@ -92,6 +99,7 @@
           <option value="Living Room"></option><option value="Kitchen"></option><option value="Bedroom"></option>
           <option value="Bathroom"></option><option value="Utility Bay"></option><option value="Exterior"></option>
         </datalist>
+        <label class="approval-confirmation" id="approval-confirmation" hidden><input id="confirm-device" type="checkbox" /> I have identified this device</label>
         <p class="rename-error" id="rename-error" role="alert"></p>
         <div class="rename-actions"><button id="rename-cancel" type="button">Cancel</button><button class="rename-save" id="rename-save" type="submit">Save device</button></div>
       </form>
@@ -139,6 +147,8 @@
       const roomInput = document.querySelector("#rename-room");
       const renameError = document.querySelector("#rename-error");
       const renameSave = document.querySelector("#rename-save");
+      const approvalConfirmation = document.querySelector("#approval-confirmation");
+      const confirmDevice = document.querySelector("#confirm-device");
       const privacyDialog = document.querySelector("#privacy-dialog");
       const categoryOrder = ["Switches", "HVAC", "Monitoring"];
       let devices = [...sampleDevices];
@@ -146,6 +156,31 @@
       let coachData = null;
       let isEditingCoach = false;
       let pendingRenameId = null;
+      let pendingAction = "rename";
+      let viewScope = "Enabled";
+
+      function escapeHtml(value) {
+        const entities = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+        return String(value ?? "").replace(/[&<>"']/g, (character) => entities[character]);
+      }
+
+      async function reviewDevice(device, action, details = {}) {
+        const response = await fetch("/devices/review", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: device.type, sourceAddress: device.sourceAddress, rvcIndex: device.rvcIndex, action, ...details })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Device review failed");
+        document.querySelector("#restart-notice").hidden = !result.restartRequired;
+        return result;
+      }
+
+      function renderUnhandled(records) {
+        const unknown = records.filter((record) => record.discoveryDecoded === false);
+        document.querySelector("#unhandled-count").textContent = unknown.length;
+        document.querySelector("#unhandled-list").innerHTML = unknown.length ? `<table><thead><tr><th>DGN / family</th><th>Source</th><th>Index candidate</th><th>Hits</th><th>Latest payload</th></tr></thead><tbody>${unknown.map((record) => `<tr><td>${escapeHtml(record.dgnName || `0x${Number(record.dgn).toString(16).toUpperCase()}`)}<small>${escapeHtml(record.relatedFamily)}</small></td><td>${escapeHtml(record.sourceAddress)}</td><td title="Unverified payload byte 0">${escapeHtml(record.rvcIndex)}</td><td>${escapeHtml(record.hits)}</td><td><code>${escapeHtml(record.sample)}</code></td></tr>`).join("")}</tbody></table>` : "<p>No unhandled frames captured.</p>";
+      }
 
       function formatDetailLabel(value) {
         return value.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/[_-]/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase());
@@ -401,9 +436,11 @@
       }
 
       async function loadRuntimeConfig() {
-        const [config, coach] = await Promise.all([
+        const [config, coach, discovery, status] = await Promise.all([
           fetchRuntimeJson(["/devices.json", "../devices.json"]),
-          fetchRuntimeJson(["/coach.json", "../coach.json"])
+          fetchRuntimeJson(["/coach.json", "../coach.json"]),
+          fetchRuntimeJson(["/discovery"]),
+          fetchRuntimeJson(["/status"])
         ]);
 
         if (coach && typeof coach === "object" && !Array.isArray(coach)) {
@@ -414,11 +451,9 @@
 
         if (!Array.isArray(config)) {
           if (!hasRuntimeDevices) syncStatus.textContent = "Bridge data unavailable";
-          return;
-        }
-
-        const configuredDevices = config.filter((item) => item.enabled !== false);
-        devices = configuredDevices.map((item) => {
+        } else {
+        const records = Array.isArray(discovery?.records) ? discovery.records : [];
+        devices = config.map((item) => {
           const sample = sampleDevices.find((candidate) => candidate.type === item.type) || {};
           const category = item.type === "Thermostat" || item.type === "FloorHeat" ? "HVAC" : ["DC_DimmableSwitch", "DC_Switch", "WaterPump", "Shades", "DoorLock"].includes(item.type) ? "Switches" : "Monitoring";
           return {
@@ -430,32 +465,39 @@
             type: item.type,
             category,
             room: item.room || "Unassigned",
-            status: "Online",
+            rawRoom: item.room || "",
+            aid: item.aid,
+            status: item.enabled !== false ? "Enabled" : item.ignored === true ? "Ignored" : "Pending",
+            accent: sample.accent || "teal",
+            icon: sample.icon || "◒",
             sourceLabel: `SA 0x${Number(item.sourceAddress).toString(16).toUpperCase()} · RVC ${item.rvcIndex}`,
-            dgns: sample.dgns || []
+            dgns: [...new Set(records.filter((record) => record.discoveryDecoded && record.rvcIndex === item.rvcIndex && record.sourceAddress === item.sourceAddress && (record.type === item.type || ["DC_Switch", "DC_DimmableSwitch"].includes(record.type) && ["DC_Switch", "DC_DimmableSwitch"].includes(item.type))).map((record) => record.dgnName || `0x${Number(record.dgn).toString(16).toUpperCase()}`))]
           };
         });
         hasRuntimeDevices = true;
+        if (status) document.querySelector("#restart-notice").hidden = !status.restart_required;
+        renderUnhandled(records);
         renderDevices();
-        syncStatus.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+        syncStatus.textContent = discovery?.learning ? "Learning in progress" : `Updated ${new Date().toLocaleTimeString()}`;
+        }
       }
 
       function renderDevices() {
         const query = search.value.trim().toLowerCase();
-        const filtered = devices.filter((device) => [device.name, device.type, device.room, device.id].join(" ").toLowerCase().includes(query));
+        const filtered = devices.filter((device) => device.status === viewScope && [device.name, device.type, device.room, device.id].join(" ").toLowerCase().includes(query));
+        for (const scope of ["Enabled", "Pending", "Ignored"]) document.querySelector(`#${scope.toLowerCase()}-count`).textContent = devices.filter((device) => device.status === scope).length;
         document.querySelector("#discovery-count").textContent = `${devices.length} devices found`;
         const renderCard = (device) => `
-          <article class="device-card ${device.accent}" data-id="${device.id}">
-            <div class="device-card-top"><span class="device-icon">${device.icon}</span><span class="device-status ${device.status === "Standby" ? "standby" : ""}"><i></i>${device.status}</span></div>
-            <div class="device-info"><p>${device.type} <span>·</span> ${device.room}${device.type === "DC_DimmableSwitch" ? `<b class="capability is-dimmable">Dimmable</b>` : ""}</p><h3>${device.name}</h3><span class="device-id">${device.sourceLabel || `Discovered as ${device.id}`}</span></div>
-            <div class="device-actions"><button class="dgn-button" type="button" data-dgn="${device.id}" aria-expanded="false">View DGNs <span>${device.dgns.length}</span></button><button class="rename-button" type="button" data-rename="${device.id}">Rename <span>→</span></button></div>
-            <div class="dgn-list" data-dgn-list="${device.id}" hidden><p>Referenced DGNs</p>${device.dgns.map((dgn) => `<code>${dgn}</code>`).join("")}</div>
+          <article class="device-card ${escapeHtml(device.accent)}" data-id="${escapeHtml(device.id)}">
+            <div class="device-card-top"><span class="device-icon">${escapeHtml(device.icon)}</span><span class="device-status ${device.status !== "Enabled" ? "standby" : ""}"><i></i>${device.status}</span></div>
+            <div class="device-info"><p>${escapeHtml(device.type)} <span>·</span> ${escapeHtml(device.room)}${device.type === "DC_DimmableSwitch" ? `<b class="capability is-dimmable">Dimmable</b>` : ""}</p><h3>${escapeHtml(device.name)}</h3><span class="device-id">${escapeHtml(device.sourceLabel || device.id)}${device.aid ? ` · AID ${Number(device.aid)}` : ""}</span></div>
+            <div class="device-actions"><button class="dgn-button" type="button" data-dgn="${escapeHtml(device.id)}" aria-expanded="false">DGNs <span>${device.dgns.length}</span></button>${device.status === "Ignored" ? `<button class="rename-button" type="button" data-review="reopen" data-device="${escapeHtml(device.id)}">Review</button>` : `<button class="rename-button" type="button" data-rename="${escapeHtml(device.id)}">${device.status === "Pending" ? "Approve" : "Edit"} <span>→</span></button>`}${device.status === "Pending" ? `<button class="rename-button" type="button" data-review="ignore" data-device="${escapeHtml(device.id)}">Ignore</button>` : ""}</div>
+            <div class="dgn-list" data-dgn-list="${escapeHtml(device.id)}" hidden>${device.dgns.length ? device.dgns.map((dgn) => `<code>${escapeHtml(dgn)}</code>`).join("") : "<p>No matching frames captured.</p>"}</div>
           </article>`;
         list.innerHTML = categoryOrder.map((category) => {
           const categoryDevices = filtered.filter((device) => device.category === category);
-          if (!categoryDevices.length) return "";
           const parent = category === "Switches" || category === "HVAC" ? "Controllable /" : "Discovered /";
-          return `<section class="category-section"><div class="category-heading"><span>${parent}</span><h3>${category}</h3><b>${String(categoryDevices.length).padStart(2, "0")}</b></div><div class="device-grid">${categoryDevices.map(renderCard).join("")}</div></section>`;
+          return categoryDevices.length ? `<section class="category-section"><div class="category-heading"><span>${parent}</span><h3>${category}</h3><b>${String(categoryDevices.length).padStart(2, "0")}</b></div><div class="device-grid">${categoryDevices.map(renderCard).join("")}</div></section>` : "";
         }).join("");
         visibleCount.textContent = String(filtered.length).padStart(2, "0");
         emptyState.hidden = filtered.length !== 0;
@@ -468,29 +510,54 @@
         window.setTimeout(() => toast.classList.remove("show"), 2600);
       }
 
-      list.addEventListener("click", (event) => {
+      document.querySelector(".device-scope").addEventListener("click", (event) => {
+        const button = event.target.closest("[data-scope]");
+        if (button) {
+          viewScope = button.dataset.scope;
+          document.querySelectorAll("[data-scope]").forEach((item) => item.setAttribute("aria-pressed", String(item === button)));
+          renderDevices();
+        }
+      });
+      document.querySelector("#restart-approved").addEventListener("click", () => document.querySelector("#device-reboot-button").click());
+
+      list.addEventListener("click", async (event) => {
         const dgnButton = event.target.closest("[data-dgn]");
+        const review = event.target.closest("[data-review]");
+        const button = event.target.closest("[data-rename]");
         if (dgnButton) {
           const dgnList = list.querySelector(`[data-dgn-list="${dgnButton.dataset.dgn}"]`);
           const isOpen = !dgnList.hidden;
           dgnList.hidden = isOpen;
           dgnButton.setAttribute("aria-expanded", String(!isOpen));
           dgnButton.classList.toggle("open", !isOpen);
-          return;
-        }
-        const button = event.target.closest("[data-rename]");
-        if (!button) return;
+        } else if (review) {
+          const device = devices.find((item) => item.id === review.dataset.device);
+          review.disabled = true;
+          try {
+            if (!device) throw new Error("Device unavailable");
+            await reviewDevice(device, review.dataset.review);
+            await loadRuntimeConfig();
+          } catch (error) { showToast(error.message); }
+          finally { review.disabled = false; }
+        } else if (button) {
         const device = devices.find((item) => item.id === button.dataset.rename);
         if (!Number.isInteger(device?.sourceAddress) || !Number.isInteger(device?.rvcIndex)) {
-          showToast("Load this device from the bridge before renaming it");
-          return;
-        }
+          showToast("Bridge device data unavailable");
+        } else {
         pendingRenameId = device.id;
+        pendingAction = device.status === "Pending" ? "approve" : "rename";
+        document.querySelector("#rename-dialog-title").textContent = pendingAction === "approve" ? "Approve device" : "Edit device";
+        renameSave.textContent = pendingAction === "approve" ? "Approve" : "Save device";
+        approvalConfirmation.hidden = pendingAction !== "approve";
+        confirmDevice.checked = false;
+        confirmDevice.required = pendingAction === "approve";
         renameInput.value = device.name;
-        roomInput.value = device.room || "";
+        roomInput.value = device.rawRoom || "";
         renameError.textContent = "";
         renameDialog.showModal();
         renameInput.select();
+        }
+        }
       });
 
       renameForm.addEventListener("submit", async (event) => {
@@ -500,26 +567,29 @@
         const room = roomInput.value.trim();
         if (!device || !name) {
           renameError.textContent = "Enter a device name.";
-          return;
-        }
+        } else {
         renameSave.disabled = true;
         renameError.textContent = "";
         try {
+          if (pendingAction === "approve") {
+            await reviewDevice(device, "approve", { name, room, confirmed: confirmDevice.checked });
+          } else {
           const response = await fetch("/devices/rename", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ type: device.type, sourceAddress: device.sourceAddress, rvcIndex: device.rvcIndex, name, room })
           });
-          if (!response.ok) throw new Error("The bridge rejected the rename");
-          device.name = name;
-          device.room = room || `RVC index ${device.rvcIndex}`;
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error || "Could not save device");
+          }
           renameDialog.close();
-          renderDevices();
-          showToast(`${device.id} is now “${device.name}”`);
+          await loadRuntimeConfig();
+          showToast(pendingAction === "approve" ? "Approval saved" : "Device saved");
         } catch (error) {
-          renameError.textContent = "Could not save the new name to the bridge.";
+          renameError.textContent = error.message;
         } finally {
           renameSave.disabled = false;
+        }
         }
       });
       document.querySelector("#rename-close").addEventListener("click", () => renameDialog.close());

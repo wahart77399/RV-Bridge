@@ -2,6 +2,7 @@
 #include "LittleFS.h"
 #include <ArduinoJson.h>
 #include "LearnMode.h"
+#include "Preferences.h"
 #include <functional>
 #include <iostream>
 #include <stdexcept>
@@ -18,13 +19,14 @@ namespace {
 
     void fixture() {
         LittleFS = FakeFilesystem{};
+        preferencesStore = FakePreferencesStore{};
         LearnMode::handleCommand("start 1");
         LearnMode::handleCommand("cancel");
         LittleFS = FakeFilesystem{};
         Serial.log.clear();
         ESP.restarts = 0;
         fakeMillis = 1000;
-        LittleFS.put("/coach.json", R"({"year":2022,"make":"Test","model":"Coach","floorplan":"1","coachId":"test"})");
+        LittleFS.put("/coach.json", R"({"year":2022,"make":"Test","model":"Coach","floorplan":"1","coachId":"test","chassisAid":61})");
         LittleFS.put("/devices.json", previousConfig);
         LittleFS.put(profilePath, profileConfig);
     }
@@ -162,6 +164,66 @@ int main() {
             LearnMode::handleCommand("cancel");
             require(LittleFS.content("/devices.json") == previousConfig, "idle cancellation replaced live config");
             require(LittleFS.content("/devices.prev.json") == "stale-backup", "idle cancellation consumed backup");
+        }},
+        {"late discovery is pending with an AID and preserved owner metadata", [] {
+            fixture(); startAndObserve(); finish();
+            uint8_t payload[8] = {2};
+            for (unsigned hit = 0; hit < 3; ++hit) LearnMode::observe(CHARGER_STATUS, 250, payload);
+            fakeMillis += 60001; LearnMode::poll();
+            JsonDocument config = deviceConfig();
+            require(config.size() == 4, "late discovery not appended");
+            require(config[3]["type"] == "Charger" && config[3]["enabled"] == false && config[3]["aid"].as<unsigned>() >= 2, "late device enabled or lacks reserved AID");
+            require(config[0]["aid"] == 43 && config[0]["room"] == "Owner Room", "late discovery changed existing identity");
+            require(ESP.restarts == 1, "late discovery triggered an automatic restart");
+        }},
+        {"unhandled traffic is report-only with an unverified index", [] {
+            fixture(); startAndObserve(); finish();
+            const auto original = LittleFS.content("/devices.json");
+            uint8_t payload[8] = {9};
+            for (unsigned hit = 0; hit < 3; ++hit) LearnMode::observe(ATS_STATUS, 79, payload);
+            fakeMillis += 60001; LearnMode::poll();
+            require(LittleFS.content("/devices.json") == original, "unhandled traffic became a device");
+            JsonDocument discovery;
+            require(!deserializeJson(discovery, LearnMode::discoveryJson().c_str()), "invalid discovery snapshot");
+            require(discovery["records"][1]["rvcIndex"] == 9 && discovery["records"][1]["rvcIndexVerified"] == false, "unhandled index not marked as candidate");
+        }},
+        {"ignored late discovery is not offered again", [] {
+            fixture(); startAndObserve(); finish();
+            JsonDocument config = deviceConfig();
+            JsonObject ignored = config.as<JsonArray>().add<JsonObject>();
+            ignored["type"] = "Charger"; ignored["rvcIndex"] = 2; ignored["sourceAddress"] = 250;
+            ignored["enabled"] = false; ignored["ignored"] = true; ignored["name"] = "Ignored"; ignored["aid"] = 120;
+            std::string original; serializeJson(config, original); LittleFS.put("/devices.json", original);
+            uint8_t payload[8] = {2};
+            for (unsigned hit = 0; hit < 3; ++hit) LearnMode::observe(CHARGER_STATUS, 250, payload);
+            fakeMillis += 60001; LearnMode::poll();
+            require(LittleFS.content("/devices.json") == original, "ignored discovery overwritten or duplicated");
+        }},
+        {"short late-discovery write preserves live config", [] {
+            fixture(); startAndObserve(); finish();
+            const auto original = LittleFS.content("/devices.json");
+            uint8_t payload[8] = {2};
+            for (unsigned hit = 0; hit < 3; ++hit) LearnMode::observe(CHARGER_STATUS, 250, payload);
+            LittleFS.writeLimits["/devices.discovery.tmp"] = 1; fakeMillis += 60001; LearnMode::poll();
+            require(LittleFS.content("/devices.json") == original, "partial discovery replaced live config");
+            LittleFS.writeLimits.clear(); fakeMillis += 60001; LearnMode::poll();
+            require(deviceConfig().size() == 4, "late discovery retry failed");
+        }},
+        {"late discovery rename failure preserves live config", [] {
+            fixture(); startAndObserve(); finish();
+            const auto original = LittleFS.content("/devices.json");
+            uint8_t payload[8] = {2};
+            for (unsigned hit = 0; hit < 3; ++hit) LearnMode::observe(CHARGER_STATUS, 250, payload);
+            LittleFS.failRename.insert("/devices.discovery.tmp"); fakeMillis += 60001; LearnMode::poll();
+            require(LittleFS.content("/devices.json") == original, "failed discovery rename changed live config");
+        }},
+        {"late discovery cannot save without durable AID reservations", [] {
+            fixture(); startAndObserve(); finish();
+            const auto original = LittleFS.content("/devices.json");
+            uint8_t payload[8] = {2};
+            for (unsigned hit = 0; hit < 3; ++hit) LearnMode::observe(CHARGER_STATUS, 250, payload);
+            preferencesStore.available = false; fakeMillis += 60001; LearnMode::poll();
+            require(LittleFS.content("/devices.json") == original, "unpersisted AID published");
         }}
     };
     unsigned failures = 0;

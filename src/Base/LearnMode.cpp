@@ -16,6 +16,7 @@ uint32_t         LearnMode::durationSec_  = LearnMode::DEFAULT_DURATION_SEC;
 uint32_t         LearnMode::lastSavedSec_ = 0;
 uint32_t         LearnMode::lastTickMs_   = 0;
 uint32_t         LearnMode::lastFinishAttemptMs_ = 0;
+uint32_t         LearnMode::lastDiscoveryScanMs_ = 0;
 
 namespace {
     bool isLightType(const char* type) {
@@ -63,6 +64,35 @@ bool LearnMode::isLearning() {
     return state_ == State::Learning;
 }
 
+String LearnMode::discoveryJson() {
+    JsonDocument document;
+    document["learning"] = isLearning();
+    document["elapsedSec"] = elapsedSec_;
+    document["durationSec"] = durationSec_;
+    document["recordCapacity"] = LearnTable::MAX_RECORDS;
+    document["recordCount"] = table_.count();
+    JsonArray records = document["records"].to<JsonArray>();
+    for (size_t index = 0; index < table_.count(); ++index) {
+        const LearnRecord& record = table_.row(index);
+        JsonObject row = records.add<JsonObject>();
+        bool decoded = record.kind != LearnedKind::Unknown;
+        row["dgn"] = record.dgn;
+        row["dgnName"] = LearnTable::dgnName(static_cast<RVC_DGN>(record.dgn));
+        row["relatedFamily"] = LearnTable::relatedFamily(static_cast<RVC_DGN>(record.dgn));
+        row["discoveryDecoded"] = decoded;
+        if (decoded) row["type"] = LearnTable::typeName(record);
+        row["rvcIndexVerified"] = decoded;
+        row["rvcIndexSource"] = decoded ? "decodedInstance" : "payloadByte0Candidate";
+        row["rvcIndex"] = decoded ? record.instance : record.sample[0];
+        row["sourceAddress"] = record.sourceAddress;
+        row["hits"] = record.hitCount;
+        row["sample"] = hexBytes(record.sample, sizeof(record.sample));
+    }
+    String json;
+    if (!document.overflowed()) serializeJson(document, json);
+    return json;
+}
+
 void LearnMode::begin() {
     if (LittleFS.begin(false)) {
         if (load()) {
@@ -77,6 +107,7 @@ void LearnMode::begin() {
     }
     lastTickMs_ = millis();
     lastFinishAttemptMs_ = lastTickMs_ - FINISH_RETRY_MS;
+    lastDiscoveryScanMs_ = lastTickMs_;
     if (isLearning()) {
         printStatus();
     }
@@ -97,15 +128,19 @@ void LearnMode::poll() {
         if (elapsedSec_ >= durationSec_ && now - lastFinishAttemptMs_ >= FINISH_RETRY_MS) {
             finish();
         }
+    } else if (millis() - lastDiscoveryScanMs_ >= DISCOVERY_SCAN_MS && LittleFS.exists(DEVICES_FILE)) {
+        lastDiscoveryScanMs_ = millis();
+        if (!stagePendingDevices()) Serial.println("LearnMode: pending discoveries could not be saved; retrying later");
     }
 }
 
 void LearnMode::observe(RVC_DGN dgn, uint8_t sourceAddress, uint8_t* data) {
-    if (isLearning() && (data != nullptr) && (sourceAddress != SOURCE_ADDRESS)) {
+    if ((data != nullptr) && (sourceAddress != SOURCE_ADDRESS)) {
         uint8_t instance = 0xFF;
         bool    haveInstance = DeviceFactory::instanceFromData(dgn, data, instance);
         if (haveInstance || (LearnTable::classify(dgn) == LearnedKind::Unknown)) {
-            table_.observe(dgn, instance, sourceAddress, data, elapsedSec_);
+            uint32_t observedSec = isLearning() ? elapsedSec_ : millis() / 1000;
+            table_.observe(dgn, instance, sourceAddress, data, observedSec);
         }
     }
 }
@@ -413,6 +448,52 @@ bool LearnMode::writeReport(const CoachSpec& coach, const String& profile, bool 
     }
     if (!ok) LittleFS.remove("/learn_report.tmp");
     return ok;
+}
+
+bool LearnMode::stagePendingDevices() {
+    bool saved = false;
+    do {
+        File input = LittleFS.open(DEVICES_FILE, "r");
+        if (!input) break;
+        JsonDocument document;
+        DeserializationError error = deserializeJson(document, input);
+        input.close();
+        JsonArray devices = document.as<JsonArray>();
+        if (error || devices.isNull()) break;
+        bool changed = false;
+        for (size_t index = 0; index < table_.count(); ++index) {
+            const LearnRecord& record = table_.row(index);
+            if (record.kind != LearnedKind::Unknown && record.hitCount >= MIN_HITS &&
+                findMatchingDevice(devices, LearnTable::typeName(record), record.instance) < 0) {
+                JsonObject device = devices.add<JsonObject>();
+                device["enabled"] = false;
+                device["ignored"] = false;
+                device["type"] = LearnTable::typeName(record);
+                device["rvcIndex"] = record.instance;
+                device["sourceAddress"] = record.sourceAddress;
+                device["name"] = String(LearnTable::label(record.kind)) + " " + String(record.instance);
+                device["room"] = "";
+                device["order"] = 100;
+                device["learned"] = true;
+                device["discoveredAtUptimeMs"] = millis();
+                changed = true;
+            }
+        }
+        if (!changed) {
+            saved = true;
+            break;
+        }
+        if (document.overflowed() || !DeviceFactory::validateAndReserveConfiguration(document)) break;
+        File output = LittleFS.open("/devices.discovery.tmp", "w");
+        if (!output) break;
+        size_t expected = measureJson(document);
+        size_t written = serializeJson(document, output);
+        output.flush();
+        output.close();
+        saved = written == expected && replaceFile("/devices.discovery.tmp", DEVICES_FILE);
+    } while (false);
+    if (!saved) LittleFS.remove("/devices.discovery.tmp");
+    return saved;
 }
 
 void LearnMode::printStatus() {

@@ -1,5 +1,7 @@
 #include "SmartCoachWeb.h"
 #include "WifiCredentials.h"
+#include "DeviceFactory.h"
+#include "LearnMode.h"
 #include <ArduinoJson.h>
 #include <cstring>
 #ifdef FUTURE
@@ -187,7 +189,15 @@ void SmartCoachWebServer::registerAdditionalRoutes()
     serveStaticFile("/smartcoach-mark.svg", "/SmartCoachDevicePortal/smartcoach-mark.svg", "image/svg+xml");
     serveStaticFile("/devices.json", "/devices.json", "application/json");
     serveStaticFile("/coach.json", "/coach.json", "application/json");
+    serveStaticFile("/learn_report.json", "/learn_report.json", "application/json");
     m_server.on("/devices/rename", HTTP_POST, [this]() { handleRenameDevice(); });
+    m_server.on("/devices/review", HTTP_POST, [this]() { handleReviewDevice(); });
+    m_server.on("/discovery", HTTP_GET, [this]() {
+        String report = LearnMode::discoveryJson();
+        m_server.sendHeader("Cache-Control", "no-store");
+        if (report.isEmpty()) m_server.send(503, "application/json", "{\"error\":\"Discovery unavailable\"}");
+        else m_server.send(200, "application/json", report);
+    });
     m_server.on("/coach/update", HTTP_POST, [this]() { handleCoachUpdate(); });
     m_server.on("/wifi/reset", HTTP_POST, [this]() { handleWifiReset(); });
     m_server.on("/reboot", HTTP_POST, [this]() { handleReboot(); });
@@ -270,6 +280,89 @@ void SmartCoachWebServer::handleWifiReset()
         delay(500);
         ESP.restart();
     }
+}
+
+void SmartCoachWebServer::handleReviewDevice()
+{
+    int code = 400;
+    const char* error = "Invalid review request";
+    do {
+        if (LearnMode::isLearning()) {
+            code = 409;
+            error = "Finish or cancel learning before reviewing devices";
+            break;
+        }
+        JsonDocument request;
+        if (deserializeJson(request, m_server.arg("plain"))) break;
+        const char* action = request["action"] | "";
+        bool approve = std::strcmp(action, "approve") == 0;
+        bool ignore = std::strcmp(action, "ignore") == 0;
+        bool reopen = std::strcmp(action, "reopen") == 0;
+        const char* type = request["type"] | "";
+        int index = request["rvcIndex"] | -1;
+        int address = request["sourceAddress"] | -1;
+        if ((!approve && !ignore && !reopen) || type[0] == '\0' || index < 0 || index > 255 || address < 0 || address > 255) break;
+        if (approve && !(request["confirmed"].is<bool>() && request["confirmed"].as<bool>())) {
+            error = "Confirm the device identity before approval";
+            break;
+        }
+        if ((!request["name"].isNull() && !request["name"].is<const char*>()) ||
+            (!request["room"].isNull() && !request["room"].is<const char*>())) break;
+
+        File input = LittleFS.open("/devices.json", "r");
+        code = 404;
+        error = "Device configuration not found";
+        if (!input) break;
+        JsonDocument document;
+        DeserializationError readError = deserializeJson(document, input);
+        input.close();
+        JsonArray devices = document.as<JsonArray>();
+        code = 500;
+        error = "Could not read device configuration";
+        if (readError || devices.isNull()) break;
+        JsonObject target;
+        for (JsonObject device : devices) {
+            if (device["type"] == type && device["rvcIndex"].as<int>() == index && device["sourceAddress"].as<int>() == address) {
+                target = device;
+                break;
+            }
+        }
+        code = 404;
+        error = "Device not found";
+        if (target.isNull()) break;
+        bool wasEnabled = target["enabled"] | false;
+        if (wasEnabled && !approve) {
+            code = 409;
+            error = "Review actions cannot disable an enabled HomeKit device";
+            break;
+        }
+        const char* name = request["name"] | (target["name"] | "");
+        const char* room = request["room"] | (target["room"] | "");
+        code = 400;
+        error = "Invalid device name or room";
+        if (name[0] == '\0' || std::strlen(name) > 64 || std::strlen(room) > 64) break;
+        target["name"] = name;
+        target["room"] = room;
+        target["enabled"] = approve;
+        target["ignored"] = ignore;
+        code = 409;
+        error = "Cannot reserve configuration: unsupported identity, AID conflict, accessory limit or storage failure";
+        if (!DeviceFactory::validateAndReserveConfiguration(document)) break;
+        code = 500;
+        error = persistConfiguration("/devices.json", document);
+        if (error != nullptr) break;
+        if (approve && !wasEnabled) m_restartRequired = true;
+        code = 200;
+    } while (false);
+    JsonDocument response;
+    if (error != nullptr) response["error"] = error;
+    else {
+        response["saved"] = true;
+        response["restartRequired"] = m_restartRequired;
+    }
+    String body;
+    serializeJson(response, body);
+    m_server.send(code, "application/json", body);
 }
 
 void SmartCoachWebServer::handleCoachUpdate()
@@ -384,6 +477,8 @@ void SmartCoachWebServer::handleStatus()
     json += ESP.getFreeHeap();
     json += ",\"uptime_ms\":";
     json += millis();
+    json += ",\"restart_required\":";
+    json += m_restartRequired ? "true" : "false";
     json += '}';
     m_server.send(200, "application/json", json);
 }

@@ -613,6 +613,54 @@ bool DeviceFactory::saveDeviceMetadata(const char* path, const std::vector<Devic
     return ok;
 }
 
+bool DeviceFactory::validateAndReserveConfiguration(JsonDocument& document) {
+    bool valid = false;
+    do {
+        JsonArray rows = document.as<JsonArray>();
+        if (rows.isNull() || document.overflowed()) break;
+        if (creators.empty()) registerCreators();
+        std::vector<DeviceConfig> devices;
+        bool rowsValid = true;
+        for (JsonObject row : rows) {
+            if (row.isNull() || !row["type"].is<const char*>() || !row["enabled"].is<bool>() ||
+                !row["rvcIndex"].is<int>() || !row["sourceAddress"].is<int>() ||
+                (!row["aid"].isNull() && !row["aid"].is<uint32_t>())) {
+                rowsValid = false;
+                break;
+            }
+            int index = row["rvcIndex"].as<int>();
+            int address = row["sourceAddress"].as<int>();
+            const char* type = row["type"].as<const char*>();
+            if (index < 0 || index > 255 || address < 0 || address > 255 || creators.find(type) == creators.end()) {
+                rowsValid = false;
+                break;
+            }
+            DeviceConfig device;
+            device.enabled = row["enabled"].as<bool>();
+            device.type = type;
+            device.rvcIndex = static_cast<uint8_t>(index);
+            device.sourceAddress = static_cast<uint8_t>(address);
+            device.aid = row["aid"] | 0U;
+            for (const DeviceConfig& previous : devices) {
+                if (previous.type == device.type && previous.rvcIndex == device.rvcIndex) rowsValid = false;
+                bool previousLight = previous.type == "DC_Switch" || previous.type == "DC_DimmableSwitch";
+                bool currentLight = device.type == "DC_Switch" || device.type == "DC_DimmableSwitch";
+                if (previousLight && currentLight && previous.rvcIndex == device.rvcIndex) rowsValid = false;
+            }
+            if (!rowsValid) break;
+            devices.push_back(device);
+        }
+        if (!rowsValid) break;
+        CoachSpec coach;
+        if (!loadCoachSpec("/coach.json", coach)) break;
+        if (!assignStableAids(devices, coach.chassisAid)) break;
+        if (!saveChassisAid("/coach.json", coach.chassisAid)) break;
+        for (size_t index = 0; index < devices.size(); ++index) rows[index]["aid"] = devices[index].aid;
+        valid = !document.overflowed();
+    } while (false);
+    return valid;
+}
+
 bool DeviceFactory::saveChassisAid(const char* path, uint32_t aid) {
     bool ok = false;
     File input = LittleFS.open(path, "r");

@@ -25,6 +25,7 @@ public:
     static void observe(RVC_DGN dgn, uint8_t sourceAddress, uint8_t* data);
     static bool isLearning();
     static void handleCommand(const String& args);   // "status" | "start [hours]" | "finish" | "cancel"
+    static String discoveryJson();
 
 private:
     enum class State : uint8_t { Idle = 0, Learning = 1, Complete = 2 };
@@ -44,6 +45,7 @@ private:
     static constexpr uint32_t    DEFAULT_DURATION_SEC = 72UL * 3600UL;
     static constexpr uint32_t    SAVE_INTERVAL_SEC    = 300;
     static constexpr uint32_t    FINISH_RETRY_MS      = 60000;
+    static constexpr uint32_t    DISCOVERY_SCAN_MS    = 60000;
     static constexpr uint32_t    MIN_HITS             = 3;            // ignore one-off frames
     static constexpr const char* LEARN_FILE           = "/learn.bin";
     static constexpr const char* LEARN_TMP            = "/learn.tmp";
@@ -60,6 +62,7 @@ private:
     static uint32_t   lastSavedSec_;
     static uint32_t   lastTickMs_;
     static uint32_t   lastFinishAttemptMs_;
+    static uint32_t   lastDiscoveryScanMs_;
 
     static void   start(uint32_t durationSec);
     static void   finish();
@@ -67,6 +70,7 @@ private:
     static bool   load();
     static bool   save();
     static bool   writeDevicesJson(const String& profile, bool& profileFound);
+    static bool   stagePendingDevices();
     static bool   writeReport(const CoachSpec& coach, const String& profile, bool profileFound);
     static bool   replaceFile(const char* tmpPath, const char* destPath);
     static String profilePath(const CoachSpec& coach);

@@ -31,11 +31,14 @@ public:
     bool concat(const char* value) { value_ += value; return true; }
     char operator[](size_t index) const { return value_[index]; }
     String& operator+=(char value) { value_ += value; return *this; }
+    template <typename Number, typename = std::enable_if_t<std::is_integral<Number>::value>>
+    String& operator+=(Number value) { value_ += std::to_string(value); return *this; }
     String& operator+=(const String& value) { value_ += value.value_; return *this; }
     String operator+(const String& value) const { return String(value_ + value.value_); }
     bool operator==(const char* value) const { return value_ == value; }
     bool operator!=(const char* value) const { return value_ != value; }
     bool operator==(const String& value) const { return value_ == value.value_; }
+    bool operator<(const String& value) const { return value_ < value.value_; }
     bool startsWith(const char* prefix) const { return value_.rfind(prefix, 0) == 0; }
     bool endsWith(const char* suffix) const {
         std::string ending(suffix);
@@ -58,11 +61,13 @@ private:
 
 inline uint32_t fakeMillis = 1000;
 inline uint32_t millis() { return fakeMillis; }
+inline void delay(uint32_t duration) { fakeMillis += duration; }
 
 struct RestartRequested {};
 struct FakeEsp {
     unsigned restarts = 0;
     void restart() { ++restarts; throw RestartRequested{}; }
+    uint32_t getFreeHeap() const { return 120000; }
 };
 inline FakeEsp ESP;
 

@@ -12,6 +12,7 @@
 #include "DGN.h"
 #include "GenericDevice.h"
 #include "ConfigTypes.h"
+#include <ArduinoJson.h>
 #include "debug.h"
 
 class DeviceFactory {
@@ -50,5 +51,6 @@ class DeviceFactory {
 
         static bool instanceFromData(RVC_DGN dgn, uint8_t* data, uint8_t& index);
         static bool loadCoachSpec(const char* path, CoachSpec& out);
+        static bool validateAndReserveConfiguration(JsonDocument& document);
 };
 #endif
