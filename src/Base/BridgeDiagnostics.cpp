@@ -1,6 +1,5 @@
 #include "BridgeDiagnostics.h"
 
-#ifdef FUTURE_DIAGNOSTICS
 #include <ArduinoJson.h>
 #include <WiFi.h>
 #include <driver/twai.h>
@@ -154,4 +153,3 @@ String BridgeDiagnostics::reportJson() {
     if (!document.overflowed()) serializeJson(document, json);
     return json;
 }
-#endif

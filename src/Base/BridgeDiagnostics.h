@@ -1,6 +1,5 @@
 #pragma once
 
-#ifdef FUTURE_DIAGNOSTICS
 #include <Arduino.h>
 #include "CanFrameTypes.h"
 #include "DGN.h"
@@ -56,4 +55,3 @@ private:
     static uint64_t nowMs();
     DeviceActivity* findActivity(const GenericDevice* device);
 };
-#endif

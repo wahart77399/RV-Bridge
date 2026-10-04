@@ -29,8 +29,13 @@ public:
     bool isEmpty() const { return value_.empty(); }
     bool reserve(size_t capacity) { value_.reserve(capacity); return true; }
     bool concat(const char* value) { value_ += value; return true; }
+    bool concat(const char* value, size_t count) { value_.append(value, count); return true; }
     char operator[](size_t index) const { return value_[index]; }
     int indexOf(char value) const {
+        size_t position = value_.find(value);
+        return position == std::string::npos ? -1 : static_cast<int>(position);
+    }
+    int indexOf(const char* value) const {
         size_t position = value_.find(value);
         return position == std::string::npos ? -1 : static_cast<int>(position);
     }
@@ -57,6 +62,7 @@ public:
             position += value.length();
         }
     }
+    void replace(const char* search, const String& replacement) { replace(search, replacement.c_str()); }
     void remove(size_t index) { value_.erase(index); }
     String substring(size_t index) const { return String(value_.substr(std::min(index, value_.size()))); }
     long toInt() const { return std::strtol(value_.c_str(), nullptr, 10); }
@@ -81,6 +87,7 @@ struct FakeEsp {
     unsigned restarts = 0;
     void restart() { ++restarts; throw RestartRequested{}; }
     uint32_t getFreeHeap() const { return 120000; }
+    uint32_t getMinFreeHeap() const { return 90000; }
 };
 inline FakeEsp ESP;
 

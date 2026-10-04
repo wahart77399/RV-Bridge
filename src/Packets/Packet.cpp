@@ -128,9 +128,7 @@ void Packet::displayPacket(CAN_frame_t* packet, PacketPrint printPacket) {
 
 #include "ChassisMobility.h"
 #include "LearnMode.h"
-#ifdef FUTURE_DIAGNOSTICS
 #include "BridgeDiagnostics.h"
-#endif
 void Packet::processPacket(CAN_frame_t *packet) 
 {
 	if ((packet != nullptr) && (!isRemoteTransmissionRequest(packet))) {
@@ -143,12 +141,8 @@ void Packet::processPacket(CAN_frame_t *packet)
 			if (factory != nullptr) {
 				GenericDevice* device = factory->getDeviceByData(dgn, rawData);
 				if (device != nullptr) {
-#ifdef FUTURE_DIAGNOSTICS
 					bool handled = device->executeCommand(dgn, rawData, getSourceAddress(packet));
 					BridgeDiagnostics::observeDevice(device, dgn, getSourceAddress(packet), handled);
-#else
-					device->executeCommand(dgn, rawData, getSourceAddress(packet));
-#endif
 					
 				}
 				

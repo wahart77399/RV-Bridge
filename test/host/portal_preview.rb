@@ -14,7 +14,7 @@ server = WEBrick::HTTPServer.new(
 )
 server.mount('/images', WEBrick::HTTPServlet::FileHandler, images)
 server.mount('/gmail-relay', WEBrick::HTTPServlet::FileHandler, relay)
-['/devices.json', '/coach.json', '/discovery', '/status', '/devices/review', '/devices/rename', '/coach', '/reboot', '/email', '/email/settings', '/email/stage', '/email/send'].each do |path|
+['/devices.json', '/coach.json', '/discovery', '/status', '/diagnostics', '/devices/review', '/devices/rename', '/coach', '/reboot', '/email', '/email/settings', '/email/stage', '/email/send'].each do |path|
   server.mount_proc(path) do |request, response|
     lock.synchronize do
       input.puts(JSON.generate(path: path, method: request.request_method, body: request.body || ''))

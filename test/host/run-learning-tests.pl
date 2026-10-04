@@ -61,6 +61,19 @@ if ($result == 0) {
     }
 }
 if ($result == 0) {
+    my @diagnosticsCommand = (
+        'clang++', '-arch', 'x86_64', '-std=c++17', '-Wall', '-Wextra', '-DFUTURE_DIAGNOSTICS',
+        '-I', 'test/host/mocks', '-I', $temporary, '-I', 'src/Base',
+        '-I', '.pio/libdeps/Release/ArduinoJson/src',
+        'src/Base/BridgeDiagnostics.cpp', 'test/host/diagnostics_reports.cpp',
+        '-o', "$temporary/diagnostics-reports"
+    );
+    $result = system(@diagnosticsCommand);
+    if ($result == 0) {
+        $result = system("$temporary/diagnostics-reports");
+    }
+}
+if ($result == 0) {
     my @aidCommand = (
         'clang++', '-arch', 'x86_64', '-std=c++17', '-Wall', '-Wextra',
         '-I', 'test/host/mocks', '-I', $temporary,
@@ -75,10 +88,10 @@ if ($result == 0) {
 }
 if ($result == 0) {
     my @webCommand = (
-        'clang++', '-arch', 'x86_64', '-std=c++17', '-Wall', '-Wextra',
+        'clang++', '-arch', 'x86_64', '-std=c++17', '-Wall', '-Wextra', '-DFUTURE_DIAGNOSTICS',
         '-I', 'test/host/mocks', '-I', $temporary, '-I', 'src/Base',
         '-I', '.pio/libdeps/Release/ArduinoJson/src',
-        'src/Base/SmartCoachWeb.cpp', 'src/Base/EmailReports.cpp', 'src/Base/LearnMode.cpp', 'src/Base/LearnRecord.cpp',
+        'src/Base/SmartCoachWeb.cpp', 'src/Base/EmailReports.cpp', 'src/Base/BridgeDiagnostics.cpp', 'src/Base/LearnMode.cpp', 'src/Base/LearnRecord.cpp',
         "$temporary/aid-production.cpp", 'test/host/web_review_failures.cpp',
         '-o', "$temporary/web-review"
     );

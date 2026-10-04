@@ -9,6 +9,7 @@
 struct FakeFileData {
     std::string bytes;
     size_t writeLimit = std::numeric_limits<size_t>::max();
+    bool availableAtEof = false;
 };
 
 class File {
@@ -22,6 +23,7 @@ public:
     ~File() = default;
     explicit operator bool() const { return data_ != nullptr; }
     size_t size() const { return data_ != nullptr ? data_->bytes.size() : 0; }
+    int available() const { return data_ != nullptr && (position_ < data_->bytes.size() || data_->availableAtEof); }
     size_t write(const uint8_t* bytes, size_t count) {
         size_t written = 0;
         if (data_ != nullptr && position_ < data_->writeLimit) {
@@ -48,6 +50,7 @@ public:
         return result;
     }
     size_t readBytes(char* bytes, size_t count) { return read(reinterpret_cast<uint8_t*>(bytes), count); }
+    bool seek(size_t position) { position_ = position; return data_ != nullptr && position <= data_->bytes.size(); }
     void flush() {}
     void close() { data_.reset(); }
 private:

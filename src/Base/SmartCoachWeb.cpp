@@ -4,9 +4,8 @@
 #include "LearnMode.h"
 #include <ArduinoJson.h>
 #include <cstring>
-#ifdef FUTURE_DIAGNOSTICS
 #include "BridgeDiagnostics.h"
-#endif
+#include "DiagnosticsPortal.h"
 #include "EmailReports.h"
 
 SmartCoachWebServer* SmartCoachWebServer::s_instance = nullptr;
@@ -191,7 +190,10 @@ bool SmartCoachWebServer::isRunning() const
 // -----------------------------------------------------------------
 void SmartCoachWebServer::registerAdditionalRoutes()
 {
-#ifdef FUTURE_DIAGNOSTICS
+    m_server.on("/diagnostics-page", HTTP_GET, [this]() {
+        m_server.sendHeader("Cache-Control", "no-store");
+        m_server.send(200, "text/html", SMARTCOACH_DIAGNOSTICS_PAGE);
+    });
     m_server.on("/diagnostics", HTTP_GET, [this]() {
         String report = BridgeDiagnostics::reportJson();
         if (report.isEmpty()) {
@@ -202,7 +204,6 @@ void SmartCoachWebServer::registerAdditionalRoutes()
             m_server.send(200, "application/json", report);
         }
     });
-#endif
     serveStaticFile("/style.css", "/SmartCoachDevicePortal/style.css", "text/css");
     serveStaticFile("/smartcoach-mark.svg", "/SmartCoachDevicePortal/smartcoach-mark.svg", "image/svg+xml");
     serveStaticFile("/devices.json", "/devices.json", "application/json");
@@ -603,7 +604,41 @@ void SmartCoachWebServer::handleRoot()
     String indexPath = String(PORTAL_DIR) + "/index.html";
     if (LittleFS.exists(indexPath)) {
         File f = LittleFS.open(indexPath, "r");
+#ifdef FUTURE_DIAGNOSTICS
+        constexpr size_t MAX_PORTAL_HTML_BYTES = 65536;
+        constexpr const char* DIAGNOSTICS_LINK = "<a class=\"footer-legal-link\" href=\"/diagnostics-page\">Diagnostics</a>";
+        constexpr const char* EMAIL_LINK = "<a class=\"footer-legal-link\" href=\"/email\">Email reports</a>";
+        size_t fileSize = f.size();
+        bool served = false;
+        if (fileSize <= MAX_PORTAL_HTML_BYTES) {
+            String html;
+            bool complete = html.reserve(fileSize + std::strlen(DIAGNOSTICS_LINK) + std::strlen(EMAIL_LINK) + 2);
+            char buffer[512];
+            while (complete && f.available()) {
+                size_t count = f.readBytes(buffer, sizeof(buffer));
+                if (count == 0) break;
+                complete = html.concat(buffer, count);
+            }
+            complete = complete && html.length() == fileSize;
+            if (complete) {
+                String links;
+                if (html.indexOf("id=\"diagnostics-open\"") < 0 && html.indexOf("href=\"/diagnostics-page\"") < 0) links += DIAGNOSTICS_LINK;
+                if (html.indexOf("href=\"/email\"") < 0) links += EMAIL_LINK;
+                if (!links.isEmpty()) {
+                    if (html.indexOf("</footer>") >= 0) html.replace("</footer>", links + "</footer>");
+                    else if (html.indexOf("</body>") >= 0) html.replace("</body>", links + "</body>");
+                }
+                m_server.send(200, "text/html", html);
+                served = true;
+            }
+        }
+        if (!served) {
+            f.seek(0);
+            m_server.streamFile(f, "text/html");
+        }
+#else
         m_server.streamFile(f, "text/html");
+#endif
         f.close();
     } else {
         m_server.send(200, "text/html",
@@ -628,12 +663,7 @@ void SmartCoachWebServer::handleStatus()
     json += millis();
     json += ",\"restart_required\":";
     json += m_restartRequired ? "true" : "false";
-#ifdef FUTURE_DIAGNOSTICS
     json += ",\"diagnostics_available\":true";
-#else
-    json += ",\"diagnostics_available\":false";
-#endif
-#ifdef FUTURE_EMAIL_REPORTS
     bool learningReportAvailable = LittleFS.exists("/learn_report.json");
     bool currentInventoryAvailable = LittleFS.exists("/devices.json");
     bool reportAvailable = !LearnMode::isLearning() && (learningReportAvailable || currentInventoryAvailable);
@@ -645,9 +675,6 @@ void SmartCoachWebServer::handleStatus()
     json += reportAvailable ? "true" : "false";
     json += ",\"email_learning_report_available\":";
     json += (!LearnMode::isLearning() && learningReportAvailable) ? "true" : "false";
-#else
-    json += ",\"email_reports_available\":false,\"email_relay_configured\":false,\"email_report_pending\":false,\"email_report_available\":false,\"email_learning_report_available\":false";
-#endif
     json += '}';
     m_server.send(200, "application/json", json);
 }

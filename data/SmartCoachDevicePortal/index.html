@@ -17,7 +17,7 @@
         <div class="topbar-status"><span class="status-dot"></span> Coach bridge online</div>
       </header>
 
-      <section class="intro" id="devices">
+      <section class="intro" id="portal-intro">
         <div>
           <p class="eyebrow">Vehicle network / discovery</p>
           <h1>Make every device<br /><em>easy to find.</em></h1>
@@ -30,7 +30,7 @@
         </div>
       </section>
 
-      <section class="workspace" aria-label="Discovered devices">
+      <section class="workspace" id="device-workspace" aria-label="Discovered devices">
         <section class="coach-summary" aria-label="Coach information">
           <div class="coach-summary-title">
             <span class="section-kicker">Coach profile</span>
@@ -58,12 +58,27 @@
         <details class="unhandled-traffic"><summary>Unhandled RV-C traffic <span id="unhandled-count">0</span></summary><div id="unhandled-list"></div></details>
       </section>
 
+      <section class="diagnostics-view" id="diagnostics-view" hidden aria-labelledby="diagnostics-title">
+        <header class="diagnostics-header">
+          <div><span class="section-kicker">Passive bridge status</span><h2 id="diagnostics-title">Diagnostics</h2></div>
+          <div class="diagnostics-actions"><button id="diagnostics-back" type="button">Back to devices</button><button id="diagnostics-refresh" type="button">Refresh snapshot</button><a id="diagnostics-download" href="/diagnostics" download="smartcoach-diagnostics.json">Download JSON</a></div>
+        </header>
+        <p id="diagnostics-status" role="status" aria-live="polite">Waiting for diagnostics</p>
+        <div class="diagnostics-metrics" id="diagnostics-metrics"></div>
+        <section class="diagnostics-devices" aria-labelledby="diagnostics-devices-title">
+          <h3 id="diagnostics-devices-title">Configured devices</h3>
+          <div class="diagnostics-table-wrap"><table><thead><tr><th>Name</th><th>Type</th><th>Index</th><th>Source</th><th>Observed</th><th>Last DGN</th><th>Last frame age</th><th>Handled / received</th></tr></thead><tbody id="diagnostics-device-rows"></tbody></table></div>
+        </section>
+        <p class="diagnostics-note" id="diagnostics-meaning"></p>
+      </section>
+
       <footer class="footer">
         <span>SmartCoachDevicePortal V0.1.1</span>
         <div class="footer-actions">
           <span class="footer-sync"><span class="footer-dot"></span> Synced with coach bridge</span>
-          <a class="footer-legal-link" id="diagnostics-download" href="/diagnostics" download="smartcoach-diagnostics.json" hidden>Download diagnostics</a>
+          <button class="footer-legal-link" id="diagnostics-open" type="button" hidden>Diagnostics</button>
           <button class="footer-legal-link" id="email-open" type="button" hidden>Email reports</button>
+           <a class="footer-legal-link" id="email-page-link" href="/email" hidden>Email setup page</a>
           <button class="footer-legal-link" id="privacy-open" type="button">Privacy notice <span>(draft)</span></button>
           <button class="wifi-reset-button" id="wifi-reset-button" type="button">Reset Wi-Fi</button>
           <button class="device-reboot-button" id="device-reboot-button" type="button">Reboot SmartCoach</button>
@@ -168,6 +183,13 @@
       const emptyState = document.querySelector("#empty-state");
       const toast = document.querySelector("#toast");
       const syncStatus = document.querySelector("#sync-status");
+      const portalIntro = document.querySelector("#portal-intro");
+      const deviceWorkspace = document.querySelector("#device-workspace");
+      const diagnosticsView = document.querySelector("#diagnostics-view");
+      const diagnosticsStatus = document.querySelector("#diagnostics-status");
+      const diagnosticsMetrics = document.querySelector("#diagnostics-metrics");
+      const diagnosticsDeviceRows = document.querySelector("#diagnostics-device-rows");
+      const diagnosticsMeaning = document.querySelector("#diagnostics-meaning");
       const coachDialog = document.querySelector("#coach-dialog");
       const coachDetailContent = document.querySelector("#coach-detail-content");
       const coachEditButton = document.querySelector("#coach-edit-button");
@@ -196,6 +218,7 @@
       let pendingRenameId = null;
       let pendingAction = "rename";
       let viewScope = "Enabled";
+      let currentView = "devices";
 
       function escapeHtml(value) {
         const entities = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
@@ -473,6 +496,74 @@
         return null;
       }
 
+      function appendDiagnosticMetric(label, value) {
+        const metric = document.createElement("div");
+        metric.className = "diagnostics-metric";
+        const heading = document.createElement("span");
+        const amount = document.createElement("strong");
+        heading.textContent = label;
+        amount.textContent = value === null || value === undefined ? "Unavailable" : String(value);
+        metric.append(heading, amount);
+        diagnosticsMetrics.append(metric);
+      }
+
+      function appendDiagnosticCell(row, value) {
+        const cell = document.createElement("td");
+        cell.textContent = value === null || value === undefined ? "Not observed" : String(value);
+        row.append(cell);
+      }
+
+      async function loadDiagnostics() {
+        const refresh = document.querySelector("#diagnostics-refresh");
+        refresh.disabled = true;
+        diagnosticsStatus.dataset.error = "false";
+        diagnosticsStatus.textContent = "Loading diagnostics snapshot";
+        try {
+          const response = await fetch("/diagnostics", { cache: "no-store" });
+          if (!response.ok) throw new Error(`Diagnostics unavailable (HTTP ${response.status})`);
+          const report = await response.json();
+          const bus = report.bus || {};
+          diagnosticsMetrics.replaceChildren();
+          diagnosticsDeviceRows.replaceChildren();
+          appendDiagnosticMetric("Uptime", `${report.uptimeMs} ms`);
+          appendDiagnosticMetric("Wi-Fi", report.wifiConnected ? "Connected" : "Disconnected");
+          appendDiagnosticMetric("RSSI", report.wifiRssiDbm == null ? null : `${report.wifiRssiDbm} dBm`);
+          appendDiagnosticMetric("Free heap", `${report.freeHeapBytes} bytes`);
+          appendDiagnosticMetric("Minimum heap", `${report.minimumFreeHeapBytes} bytes`);
+          appendDiagnosticMetric("Received frames", bus.receivedFrames);
+          appendDiagnosticMetric("Bus off", bus.busOff == null ? (bus.driverStatusAvailable ? "No" : "Unavailable") : (bus.busOff ? "Yes" : "No"));
+          appendDiagnosticMetric("Bus errors", bus.busErrorCount);
+          for (const device of report.configuredDevices || []) {
+            const row = document.createElement("tr");
+            appendDiagnosticCell(row, device.name);
+            appendDiagnosticCell(row, device.type);
+            appendDiagnosticCell(row, device.rvcIndex);
+            appendDiagnosticCell(row, device.sourceAddress);
+            appendDiagnosticCell(row, device.observed ? "Yes" : "No");
+            appendDiagnosticCell(row, device.lastDgn == null ? null : `0x${Number(device.lastDgn).toString(16).toUpperCase()}`);
+            appendDiagnosticCell(row, device.lastFrameAgeMs == null ? null : `${device.lastFrameAgeMs} ms`);
+            appendDiagnosticCell(row, `${device.handledFrames} / ${device.receivedFrames}`);
+            diagnosticsDeviceRows.append(row);
+          }
+          diagnosticsMeaning.textContent = report.handledFramesMeaning || "Handled counts report whether a handler returned true.";
+          diagnosticsStatus.textContent = `Snapshot updated ${new Date().toLocaleTimeString()}`;
+        } catch (error) {
+          diagnosticsStatus.dataset.error = "true";
+          diagnosticsStatus.textContent = error.message;
+        } finally {
+          refresh.disabled = false;
+        }
+      }
+
+      function showPortalView(view) {
+        const showingDiagnostics = view === "diagnostics";
+        currentView = showingDiagnostics ? "diagnostics" : "devices";
+        portalIntro.hidden = showingDiagnostics;
+        deviceWorkspace.hidden = showingDiagnostics;
+        diagnosticsView.hidden = !showingDiagnostics;
+        if (showingDiagnostics) loadDiagnostics();
+      }
+
       async function loadRuntimeConfig() {
         const [config, coach, discovery, status] = await Promise.all([
           fetchRuntimeJson(["/devices.json", "../devices.json"]),
@@ -515,8 +606,10 @@
         hasRuntimeDevices = true;
         if (status) {
           document.querySelector("#restart-notice").hidden = !status.restart_required;
-          document.querySelector("#diagnostics-download").hidden = status.diagnostics_available !== true;
+          document.querySelector("#diagnostics-open").hidden = status.diagnostics_available !== true;
+          if (status.diagnostics_available !== true && currentView === "diagnostics") showPortalView("devices");
           document.querySelector("#email-open").hidden = status.email_reports_available !== true;
+          document.querySelector("#email-page-link").hidden = status.email_reports_available !== true;
           emailSendButton.hidden = !(status.email_relay_configured && status.email_report_pending);
           emailStageButton.hidden = !(status.email_report_available && coachData?.emailReports && !status.email_report_pending);
           emailStageButton.textContent = status.email_learning_report_available ? "Stage completed learning report" : "Stage current inventory report";
@@ -733,6 +826,9 @@
           emailSendButton.disabled = false;
         }
       });
+      document.querySelector("#diagnostics-open").addEventListener("click", () => showPortalView("diagnostics"));
+      document.querySelector("#diagnostics-back").addEventListener("click", () => showPortalView("devices"));
+      document.querySelector("#diagnostics-refresh").addEventListener("click", loadDiagnostics);
       privacyDialog.addEventListener("click", (event) => {
         if (event.target === privacyDialog) privacyDialog.close();
       });

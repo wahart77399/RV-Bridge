@@ -2,7 +2,10 @@
 #include "WifiCredentials.h"
 #include "LearnMode.h"
 #include "EmailReports.h"
+#include "BridgeDiagnostics.h"
 #include "Preferences.h"
+#include <driver/twai.h>
+#include <esp_timer.h>
 #include <ArduinoJson.h>
 #include <functional>
 #include <iostream>
@@ -154,6 +157,46 @@ int main(int argc, char** argv) {
                 JsonDocument report; deserializeJson(report, LittleFS.content("/email_outbox.json"));
                 require(WebServer::active->responseCode == 200 && report["reportKind"] == "currentInventory", "inventory fallback was not staged");
                 require(report["report"]["devices"][0]["name"] == "Galley Light", "inventory snapshot content missing");
+            }},
+            {"diagnostics route returns passive downloadable report", [] {
+                fixture();
+                fakeEspTimerMicros = 1000000;
+                fakeTwaiStatusReads = 0;
+                WebServer::active->request("/diagnostics", HTTP_GET);
+                JsonDocument report; deserializeJson(report, WebServer::active->responseBody.c_str());
+                require(WebServer::active->responseCode == 200, "diagnostics route failed");
+                require(WebServer::active->responseHeaders["Cache-Control"] == "no-store", "diagnostics response can be cached");
+                require(WebServer::active->responseHeaders["Content-Disposition"].find("attachment") != std::string::npos, "diagnostics response is not a download");
+                require(report["bus"]["receivedFrames"] == 0 && report["configuredDevices"].size() == 0, "unexpected diagnostics data");
+                require(fakeTwaiStatusReads == 1, "diagnostics request made an unexpected number of driver reads");
+            }},
+            {"root injects diagnostics link without changing filesystem", [] {
+                fixture();
+                const std::string original = "<html><body><footer class=\"footer\"><span>SmartCoach</span></footer></body></html>";
+                LittleFS.put("/SmartCoachDevicePortal/index.html", original);
+                LittleFS.files["/SmartCoachDevicePortal/index.html"]->availableAtEof = true;
+                WebServer::active->request("/", HTTP_GET);
+                const std::string response = WebServer::active->responseBody.c_str();
+                size_t linkPosition = response.find("href=\"/diagnostics-page\"");
+                require(WebServer::active->responseCode == 200 && response.find("</html>") != std::string::npos, "root portal response was incomplete");
+                require(response.find("<span>SmartCoach</span>") != std::string::npos && linkPosition != std::string::npos, "existing portal or diagnostics link missing");
+                require(response.find("href=\"/email\">Email reports</a>") != std::string::npos, "email setup link missing");
+                require(response.find("href=\"/diagnostics-page\"", linkPosition + 1) == std::string::npos, "diagnostics link duplicated");
+                require(LittleFS.content("/SmartCoachDevicePortal/index.html") == original, "portal filesystem was modified");
+            }},
+            {"root does not duplicate existing diagnostics link", [] {
+                fixture();
+                const std::string original = "<html><body><footer><button id=\"diagnostics-open\">Diagnostics</button></footer></body></html>";
+                LittleFS.put("/SmartCoachDevicePortal/index.html", original);
+                WebServer::active->request("/", HTTP_GET);
+                const std::string response = WebServer::active->responseBody.c_str();
+                require(response.find("href=\"/diagnostics-page\"") == std::string::npos, "existing portal got a duplicate link");
+                require(LittleFS.content("/SmartCoachDevicePortal/index.html") == original, "existing portal was modified");
+            }},
+            {"firmware diagnostics page route is available", [] {
+                fixture();
+                WebServer::active->request("/diagnostics-page", HTTP_GET);
+                require(WebServer::active->responseCode == 200 && WebServer::active->responseBody.indexOf("SmartCoach Diagnostics") >= 0, "firmware diagnostics page was unavailable");
             }}
         };
         unsigned failures = 0;

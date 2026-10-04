@@ -128,7 +128,7 @@ h1 { font-size: clamp(42px, 5.5vw, 78px); line-height: .98; letter-spacing: -.07
 .footer-legal-link span { color: #aab79f; }
 .footer-legal-link:focus-visible { outline: 2px solid #d7ef79; outline-offset: 3px; }
 #diagnostics-download[hidden] { display: none; }
-#email-open[hidden], #email-stage[hidden], #email-send[hidden] { display: none; }
+#email-open[hidden], #email-page-link[hidden], #email-stage[hidden], #email-send[hidden] { display: none; }
 .email-settings-form { color: #29473b; }
 .email-settings-content { display: grid; gap: 12px; max-height: min(62vh, 560px); overflow: auto; padding: 18px 24px 4px; }
 .email-settings-content > p { color: #708177; font-size: 12px; line-height: 1.5; margin: 0; overflow-wrap: anywhere; }
@@ -141,6 +141,27 @@ h1 { font-size: clamp(42px, 5.5vw, 78px); line-height: .98; letter-spacing: -.07
 .email-settings-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; padding: 12px 24px 20px; }
 .email-settings-actions button { border: 1px solid #cad4c7; border-radius: 4px; background: transparent; color: #365a43; cursor: pointer; padding: 9px 12px; }
 .email-settings-actions #email-save, .email-settings-actions #email-stage, .email-settings-actions #email-send { border-color: #365a43; background: #365a43; color: #fff; }
+.diagnostics-view { background: var(--paper); color: #172c28; min-height: 450px; padding: 42px clamp(24px, 6vw, 92px) 72px; }
+.diagnostics-header { align-items: flex-end; display: flex; flex-wrap: wrap; gap: 18px; justify-content: space-between; margin: 0 auto 18px; max-width: 1106px; }
+.diagnostics-header h2 { color: #19342d; font-size: 26px; margin: 8px 0 0; }
+.diagnostics-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.diagnostics-actions button, .diagnostics-actions a { align-items: center; background: #365a43; border: 1px solid #365a43; border-radius: 4px; color: #fff; display: inline-flex; font-size: 11px; font-weight: 700; justify-content: center; min-height: 36px; padding: 8px 11px; text-decoration: none; }
+.diagnostics-actions a { background: transparent; color: #365a43; }
+.diagnostics-actions button:disabled { cursor: wait; opacity: .6; }
+#diagnostics-status { color: #708177; font-size: 12px; margin: 0 auto 12px; max-width: 1106px; min-height: 18px; }
+#diagnostics-status[data-error="true"] { color: #a4493d; }
+.diagnostics-metrics { display: grid; gap: 9px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin: 0 auto 26px; max-width: 1106px; }
+.diagnostics-metric { background: #fff; border: 1px solid rgba(25, 51, 44, .1); border-radius: 4px; min-width: 0; padding: 12px 14px; }
+.diagnostics-metric span { color: #87938b; display: block; font-family: 'DM Mono', monospace; font-size: 9px; text-transform: uppercase; }
+.diagnostics-metric strong { color: #19342d; display: block; font-size: 16px; margin-top: 5px; overflow-wrap: anywhere; }
+.diagnostics-devices { margin: 0 auto; max-width: 1106px; }
+.diagnostics-devices h3 { color: #19342d; font-size: 16px; margin: 0 0 10px; }
+.diagnostics-table-wrap { background: #fff; border: 1px solid rgba(25, 51, 44, .1); overflow-x: auto; }
+.diagnostics-table-wrap table { border-collapse: collapse; font-size: 11px; min-width: 780px; width: 100%; }
+.diagnostics-table-wrap th, .diagnostics-table-wrap td { border-bottom: 1px solid #e3e8e0; overflow-wrap: anywhere; padding: 9px 10px; text-align: left; vertical-align: top; }
+.diagnostics-table-wrap th { color: #708177; font-family: 'DM Mono', monospace; font-size: 9px; font-weight: 500; text-transform: uppercase; }
+.diagnostics-note { color: #708177; font-size: 11px; line-height: 1.55; margin: 14px auto 0; max-width: 1106px; }
+@media (max-width: 600px) { .diagnostics-view { padding: 32px 20px 50px; }.diagnostics-header { align-items: flex-start; flex-direction: column; }.diagnostics-actions { width: 100%; }.diagnostics-actions button, .diagnostics-actions a { flex: 1; } }
 .privacy-dialog { background: #f8f8f2; border: 1px solid #cdd7ca; box-shadow: 0 24px 80px rgba(6, 25, 20, .3); color: #19342d; max-height: calc(100vh - 32px); max-width: 720px; padding: 0; width: calc(100% - 32px); }
 .privacy-dialog::backdrop { backdrop-filter: blur(3px); background: rgba(8, 25, 22, .68); }
 .privacy-content { max-height: calc(100vh - 145px); overflow: auto; padding: 4px 26px 26px; }

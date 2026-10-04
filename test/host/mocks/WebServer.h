@@ -10,6 +10,8 @@ public:
     inline static WebServer* active = nullptr;
     int responseCode = 0;
     String responseBody;
+    std::map<std::string, std::string> responseHeaders;
+    bool chunkedResponseEnded = false;
     explicit WebServer(uint16_t) { active = this; }
     WebServer(const WebServer&) = delete;
     WebServer& operator=(const WebServer&) = delete;
@@ -25,7 +27,10 @@ public:
     void onNotFound(std::function<void()> callback) { missing_ = std::move(callback); }
     String arg(const char*) const { return requestBody_; }
     void send(int code, const char*, const String& body) { responseCode = code; responseBody = body; }
-    void sendHeader(const char*, const char*) {}
+    void sendHeader(const char* name, const char* value) { responseHeaders[name] = value; }
+    void chunkResponseBegin(const char*) { responseCode = 200; responseBody = ""; chunkedResponseEnded = false; }
+    void chunkWrite(const char* content, size_t length) { responseBody += String(std::string(content, length)); }
+    void chunkResponseEnd() { chunkedResponseEnded = true; }
     void streamFile(File& file, const char* contentType) {
         std::string body;
         int byte = file.read();
@@ -36,6 +41,8 @@ public:
         requestBody_ = body;
         responseCode = 0;
         responseBody = "";
+        responseHeaders.clear();
+        chunkedResponseEnded = false;
         auto callback = routes_.find(std::to_string(method) + route);
         if (callback != routes_.end()) callback->second();
         else if (missing_) missing_();
