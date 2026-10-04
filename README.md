@@ -7,7 +7,7 @@ The RV-Bridge was originally developed by Randy Ubillos, you may find the origin
 https://github.com/wahart77399/RV-Bridge
 
 ## Development and Hardware
-Originally, I use Randy’s original hardware and 3D casing. Unfortunately, the ESP32 board he used did not allow me to build all the devices I wanted. So, I researched and found a different board, the ESP32-S3 with CAN and LIN bus connections from SKPang. You can find the board [here](https://copperhilltech.com/esp32s3-can-lin-bus-board/). Once I made that decision, I decided to add more capability, including:
+Originally, I used Randy’s original hardware and 3D casing. Unfortunately, the ESP32 board he used did not allow me to build all the devices I wanted. So, I researched and found a different board, the ESP32-S3 with CAN and LIN bus connections from SKPang. You can find the board [here](https://copperhilltech.com/esp32s3-can-lin-bus-board/). Once I made that decision, I decided to add more capability, including:
 * Captive Portal for setting up Wifi Credentials
 * Device Creation from JSON file
 * Coach Specication Creation from JSON file
