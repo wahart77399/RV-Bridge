@@ -4,9 +4,10 @@
 #include "LearnMode.h"
 #include <ArduinoJson.h>
 #include <cstring>
-#ifdef FUTURE
+#ifdef FUTURE_DIAGNOSTICS
 #include "BridgeDiagnostics.h"
 #endif
+#include "EmailReports.h"
 
 SmartCoachWebServer* SmartCoachWebServer::s_instance = nullptr;
 
@@ -17,8 +18,25 @@ static bool isValidCoachText(JsonVariant value, size_t maxLength)
     return valid;
 }
 
+static bool isValidOwnerEmail(const char* address)
+{
+    bool valid = address != nullptr;
+    if (valid) {
+        size_t length = std::strlen(address);
+        const char* at = std::strchr(address, '@');
+        valid = length > 3 && length <= 254 && at != nullptr && at != address &&
+                std::strchr(at + 1, '@') == nullptr && std::strchr(at + 2, '.') != nullptr;
+        for (size_t index = 0; valid && index < length; ++index) {
+            unsigned char character = static_cast<unsigned char>(address[index]);
+            if (character <= 32 || character == ',' || character == ';' || character == '<' || character == '>') valid = false;
+        }
+    }
+    return valid;
+}
+
 namespace {
     constexpr const char* PORTAL_DIR = "/SmartCoachDevicePortal";
+    constexpr const char* EMAIL_PORTAL_HTML = R"HTML(<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SmartCoach Email Reports</title><style>body{margin:0;background:#eef2eb;color:#18392f;font:16px system-ui,sans-serif}main{max-width:620px;margin:5vh auto;padding:24px;background:#fff;border:1px solid #cbd7ca;border-radius:6px}h1{font-size:24px;margin:0 0 20px}h2{font-size:16px;margin:24px 0 12px}label{display:flex;align-items:center;gap:10px;margin:14px 0}input:not([type=checkbox]){box-sizing:border-box;width:100%;padding:11px;border:1px solid #9bac9e;border-radius:4px;font:inherit}input[type=checkbox]{width:18px;height:18px}button{padding:10px 14px;margin:8px 8px 0 0;border:1px solid #315e4b;border-radius:4px;background:#315e4b;color:#fff;font:inherit;cursor:pointer}button:disabled{opacity:.6}p{line-height:1.5;color:#52675c;overflow-wrap:anywhere}#message{min-height:1.5em;color:#315e4b}#error{color:#a4493d}</style></head><body><main><h1>Email reports</h1><p>Recipients: <span id="recipients">Loading</span></p><form id="settings"><label><input id="ownerConsent" type="checkbox"> Email me the discovery report when learning completes</label><label><input id="diagnosticConsent" type="checkbox"> Email diagnostic reports to owner addresses</label><label><input id="supportConsent" type="checkbox"> Allow opted-in reports to be copied to support</label><h2>Gmail relay</h2><label for="endpoint">Google Apps Script web app URL</label><input id="endpoint" type="url" maxlength="256" placeholder="https://script.google.com/macros/s/.../exec"><label for="token">Per-coach relay token (64 hexadecimal characters)</label><input id="token" type="password" maxlength="64" pattern="[0-9a-fA-F]{64}" autocomplete="new-password"><p>This is not your Gmail password. Use this page on trusted coach Wi-Fi; the relay token is stored on the bridge in NVS.</p><button id="save" type="submit">Save settings</button></form><button id="stage" type="button" hidden>Stage latest discovery report</button><button id="send" type="button" hidden>Send pending report</button><p id="message" role="status"></p><p id="error" role="alert"></p></main><script>const byId=id=>document.getElementById(id);async function refresh(){try{const responses=await Promise.all([fetch('/coach.json',{cache:'no-store'}),fetch('/status',{cache:'no-store'})]);if(!responses[0].ok||!responses[1].ok)throw new Error('Bridge status unavailable');const coach=await responses[0].json();const status=await responses[1].json();byId('recipients').textContent=Array.isArray(coach.ownerEmails)?coach.ownerEmails.join(', '):'No owner addresses configured';byId('ownerConsent').checked=Boolean(coach.emailReports);byId('diagnosticConsent').checked=Boolean(coach.diagnosticEmails);byId('supportConsent').checked=Boolean(coach.shareWithSupport);byId('message').textContent=status.email_relay_configured?'Relay configured':'Relay not configured';byId('stage').hidden=!(status.email_report_available&&coach.emailReports&&!status.email_report_pending);byId('send').hidden=!(status.email_relay_configured&&status.email_report_pending)}catch(error){byId('error').textContent=error.message}}byId('settings').addEventListener('submit',async event=>{event.preventDefault();const endpoint=byId('endpoint').value.trim();const token=byId('token').value.trim();if(Boolean(endpoint)!==Boolean(token)){byId('error').textContent='Enter both relay fields, or leave both blank.'}else{byId('save').disabled=true;byId('error').textContent='';try{const response=await fetch('/email/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({emailReports:byId('ownerConsent').checked,diagnosticEmails:byId('diagnosticConsent').checked,shareWithSupport:byId('supportConsent').checked,endpoint,token})});const result=await response.json();if(!response.ok)throw new Error(result.error||'Could not save settings');byId('token').value='';byId('message').textContent='Settings saved';await refresh()}catch(error){byId('error').textContent=error.message}finally{byId('save').disabled=false}}});byId('stage').addEventListener('click',async()=>{byId('stage').disabled=true;try{const response=await fetch('/email/stage',{method:'POST'});const result=await response.json();if(!response.ok)throw new Error(result.result||'Could not stage report');byId('message').textContent='Report staged';await refresh()}catch(error){byId('error').textContent=error.message}finally{byId('stage').disabled=false}});byId('send').addEventListener('click',async()=>{if(confirm('Send the pending report to the listed owner addresses?')){byId('send').disabled=true;try{const response=await fetch('/email/send',{method:'POST'});const result=await response.json();if(!response.ok)throw new Error(result.result==='delivery_uncertain'?'Delivery is uncertain. Check Gmail before retrying.':result.result||'Delivery failed');byId('message').textContent='Report sent';await refresh()}catch(error){byId('error').textContent=error.message}finally{byId('send').disabled=false}}});refresh();</script></body></html>)HTML";
 
     const char* validateCoach(JsonObject coach) {
         const char* error = nullptr;
@@ -173,7 +191,7 @@ bool SmartCoachWebServer::isRunning() const
 // -----------------------------------------------------------------
 void SmartCoachWebServer::registerAdditionalRoutes()
 {
-#ifdef FUTURE
+#ifdef FUTURE_DIAGNOSTICS
     m_server.on("/diagnostics", HTTP_GET, [this]() {
         String report = BridgeDiagnostics::reportJson();
         if (report.isEmpty()) {
@@ -201,6 +219,10 @@ void SmartCoachWebServer::registerAdditionalRoutes()
     m_server.on("/coach/update", HTTP_POST, [this]() { handleCoachUpdate(); });
     m_server.on("/wifi/reset", HTTP_POST, [this]() { handleWifiReset(); });
     m_server.on("/reboot", HTTP_POST, [this]() { handleReboot(); });
+    m_server.on("/email/settings", HTTP_POST, [this]() { handleEmailSettings(); });
+    m_server.on("/email", HTTP_GET, [this]() { handleEmailPortal(); });
+    m_server.on("/email/stage", HTTP_POST, [this]() { handleEmailStage(); });
+    m_server.on("/email/send", HTTP_POST, [this]() { handleEmailSend(); });
 }
 
 void SmartCoachWebServer::serveStaticFile(const char* uri,
@@ -400,6 +422,133 @@ void SmartCoachWebServer::handleCoachUpdate()
     m_server.send(code, "application/json", body);
 }
 
+void SmartCoachWebServer::handleEmailSettings()
+{
+    int code = 400;
+    const char* error = "Invalid email settings";
+    bool saved = false;
+    do {
+        JsonDocument request;
+        if (deserializeJson(request, m_server.arg("plain")) || !request.is<JsonObject>() ||
+            !request["emailReports"].is<bool>() || !request["diagnosticEmails"].is<bool>() ||
+            !request["shareWithSupport"].is<bool>() || !request["endpoint"].is<const char*>() ||
+            !request["token"].is<const char*>() || !request["ownerEmails"].is<JsonArray>()) break;
+        JsonArrayConst ownerEmails = request["ownerEmails"].as<JsonArrayConst>();
+        code = 400;
+        error = "Enter 1 to 5 valid owner email addresses";
+        if (ownerEmails.isNull() || ownerEmails.size() == 0 || ownerEmails.size() > 5) break;
+        bool addressesValid = true;
+        for (JsonVariantConst address : ownerEmails) {
+            if (!address.is<const char*>() || !isValidOwnerEmail(address.as<const char*>())) {
+                addressesValid = false;
+                break;
+            }
+        }
+        if (!addressesValid) break;
+        String endpoint = request["endpoint"].as<String>();
+        String token = request["token"].as<String>();
+        if (endpoint.isEmpty() != token.isEmpty()) {
+            error = "Enter both the Apps Script URL and relay token";
+            break;
+        }
+        File input = LittleFS.open("/coach.json", "r");
+        code = 404;
+        error = "Coach configuration not found";
+        if (!input) break;
+        JsonDocument coach;
+        DeserializationError readError = deserializeJson(coach, input);
+        input.close();
+        code = 500;
+        error = "Could not read coach configuration";
+        if (readError || !coach.is<JsonObject>()) break;
+        if (!endpoint.isEmpty() && !EmailReports::configureRelay(endpoint, token)) {
+            code = 400;
+            error = "Invalid relay URL or 64-character hexadecimal token";
+            break;
+        }
+        coach["emailReports"] = request["emailReports"].as<bool>();
+        coach["diagnosticEmails"] = request["diagnosticEmails"].as<bool>();
+        coach["shareWithSupport"] = request["shareWithSupport"].as<bool>();
+        JsonArray storedOwners = coach["ownerEmails"].to<JsonArray>();
+        for (JsonVariantConst address : ownerEmails) storedOwners.add(address.as<const char*>());
+        error = persistConfiguration("/coach.json", coach);
+        if (error != nullptr) break;
+        code = 200;
+        error = nullptr;
+        saved = true;
+    } while (false);
+    JsonDocument response;
+    if (!saved) response["error"] = error;
+    else {
+        response["saved"] = true;
+        response["relayConfigured"] = EmailReports::relayConfigured();
+    }
+    String body;
+    serializeJson(response, body);
+    m_server.send(code, "application/json", body);
+}
+
+void SmartCoachWebServer::handleEmailPortal()
+{
+    String html = EMAIL_PORTAL_HTML;
+    html.replace("<p>Recipients: <span id=\"recipients\">Loading</span></p>", "<label for=\"ownerEmails\">Owner email addresses (comma-separated)</label><input id=\"ownerEmails\" type=\"text\" maxlength=\"1024\" placeholder=\"owner@example.com\">");
+    html.replace("byId('recipients').textContent=Array.isArray(coach.ownerEmails)?coach.ownerEmails.join(', '):'No owner addresses configured';", "byId('ownerEmails').value=Array.isArray(coach.ownerEmails)?coach.ownerEmails.join(', '):'';");
+    html.replace("shareWithSupport:byId('supportConsent').checked,endpoint", "ownerEmails:byId('ownerEmails').value.split(',').map(function(address){return address.trim()}).filter(function(address){return address.length>0}),shareWithSupport:byId('supportConsent').checked,endpoint");
+    if (!LittleFS.exists("/learn_report.json")) html.replace("Stage latest discovery report", "Stage current inventory report");
+    m_server.send(200, "text/html", html);
+}
+
+void SmartCoachWebServer::handleEmailSend()
+{
+    EmailReports::Result result = EmailReports::sendPendingReport();
+    int code = 500;
+    const char* label = "storage_error";
+    bool retryable = false;
+    switch (result) {
+        case EmailReports::Result::Delivered: code = 200; label = "sent"; break;
+        case EmailReports::Result::NoPendingReport: code = 409; label = "no_pending_report"; break;
+        case EmailReports::Result::NotConfigured: code = 409; label = "relay_not_configured"; break;
+        case EmailReports::Result::RetryableFailure: code = 503; label = "retryable_failure"; retryable = true; break;
+        case EmailReports::Result::DeliveryUncertain: code = 409; label = "delivery_uncertain"; break;
+        case EmailReports::Result::Rejected: code = 422; label = "relay_rejected"; break;
+        case EmailReports::Result::InvalidReport: code = 422; label = "invalid_report"; break;
+        case EmailReports::Result::StorageError: code = 500; label = "storage_error"; break;
+        case EmailReports::Result::Staged: code = 409; label = "not_sent"; break;
+        case EmailReports::Result::PendingReportExists: code = 409; label = "not_sent"; break;
+    }
+    JsonDocument response;
+    response["sent"] = result == EmailReports::Result::Delivered;
+    response["result"] = label;
+    response["retryable"] = retryable;
+    String body;
+    serializeJson(response, body);
+    m_server.send(code, "application/json", body);
+}
+
+void SmartCoachWebServer::handleEmailStage()
+{
+    int code = 200;
+    const char* result = "staged";
+    if (LearnMode::isLearning()) {
+        code = 409;
+        result = "learning_active";
+    } else {
+        EmailReports::Result staged = LittleFS.exists("/learn_report.json")
+            ? EmailReports::stageDiscoveryReport()
+            : EmailReports::stageCurrentInventoryReport();
+        if (staged != EmailReports::Result::Staged) {
+            code = staged == EmailReports::Result::StorageError ? 500 : 409;
+            result = staged == EmailReports::Result::PendingReportExists ? "pending_report_exists" : "report_not_staged";
+        }
+    }
+    JsonDocument response;
+    response["staged"] = code == 200;
+    response["result"] = result;
+    String body;
+    serializeJson(response, body);
+    m_server.send(code, "application/json", body);
+}
+
 void SmartCoachWebServer::handleReboot()
 {
     m_server.send(200, "application/json", "{\"rebooting\":true}");
@@ -479,6 +628,26 @@ void SmartCoachWebServer::handleStatus()
     json += millis();
     json += ",\"restart_required\":";
     json += m_restartRequired ? "true" : "false";
+#ifdef FUTURE_DIAGNOSTICS
+    json += ",\"diagnostics_available\":true";
+#else
+    json += ",\"diagnostics_available\":false";
+#endif
+#ifdef FUTURE_EMAIL_REPORTS
+    bool learningReportAvailable = LittleFS.exists("/learn_report.json");
+    bool currentInventoryAvailable = LittleFS.exists("/devices.json");
+    bool reportAvailable = !LearnMode::isLearning() && (learningReportAvailable || currentInventoryAvailable);
+    json += ",\"email_reports_available\":true,\"email_relay_configured\":";
+    json += EmailReports::relayConfigured() ? "true" : "false";
+    json += ",\"email_report_pending\":";
+    json += LittleFS.exists("/email_outbox.json") ? "true" : "false";
+    json += ",\"email_report_available\":";
+    json += reportAvailable ? "true" : "false";
+    json += ",\"email_learning_report_available\":";
+    json += (!LearnMode::isLearning() && learningReportAvailable) ? "true" : "false";
+#else
+    json += ",\"email_reports_available\":false,\"email_relay_configured\":false,\"email_report_pending\":false,\"email_report_available\":false,\"email_learning_report_available\":false";
+#endif
     json += '}';
     m_server.send(200, "application/json", json);
 }

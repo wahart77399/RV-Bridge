@@ -1,6 +1,6 @@
 #include "BridgeDiagnostics.h"
 
-#ifdef FUTURE
+#ifdef FUTURE_DIAGNOSTICS
 #include <ArduinoJson.h>
 #include <WiFi.h>
 #include <driver/twai.h>

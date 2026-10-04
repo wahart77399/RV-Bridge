@@ -5,9 +5,7 @@
 #include "ConfigTypes.h"
 #include "DeviceFactory.h"
 #include "Packet.h"
-#ifdef FUTURE
 #include "EmailReports.h"
-#endif
 
 LearnTable       LearnMode::table_;
 LearnMode::State LearnMode::state_        = LearnMode::State::Idle;
@@ -195,13 +193,16 @@ void LearnMode::finish() {
         }
         complete = true;
     } while (false);
-#ifdef FUTURE
     if (complete) {
         EmailReports::Result staged = EmailReports::stageDiscoveryReport();
-        Serial.printf("EmailReports: discovery staging result=%u; delivery disabled\n",
+        Serial.printf("EmailReports: discovery staging result=%u\n",
                       static_cast<unsigned int>(staged));
+        if (staged == EmailReports::Result::Staged && EmailReports::relayConfigured()) {
+            EmailReports::Result delivered = EmailReports::sendPendingReport();
+            Serial.printf("EmailReports: discovery delivery result=%u\n",
+                          static_cast<unsigned int>(delivered));
+        }
     }
-#endif
     if (complete) {
         Serial.printf("LearnMode: wrote %s (profile %s %s), rebooting\n",
                       DEVICES_FILE, profile.c_str(), profileFound ? "matched" : "not found");

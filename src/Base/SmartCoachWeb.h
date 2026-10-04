@@ -80,6 +80,10 @@ private:
     void handleCoachUpdate();
     void handleWifiReset();
     void handleReboot();
+    void handleEmailSettings();
+    void handleEmailPortal();
+    void handleEmailStage();
+    void handleEmailSend();
     void handleNotFound();
 
     // The single instance

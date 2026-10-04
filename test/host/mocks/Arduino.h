@@ -30,6 +30,10 @@ public:
     bool reserve(size_t capacity) { value_.reserve(capacity); return true; }
     bool concat(const char* value) { value_ += value; return true; }
     char operator[](size_t index) const { return value_[index]; }
+    int indexOf(char value) const {
+        size_t position = value_.find(value);
+        return position == std::string::npos ? -1 : static_cast<int>(position);
+    }
     String& operator+=(char value) { value_ += value; return *this; }
     template <typename Number, typename = std::enable_if_t<std::is_integral<Number>::value>>
     String& operator+=(Number value) { value_ += std::to_string(value); return *this; }
@@ -43,6 +47,15 @@ public:
     bool endsWith(const char* suffix) const {
         std::string ending(suffix);
         return value_.size() >= ending.size() && value_.compare(value_.size() - ending.size(), ending.size(), ending) == 0;
+    }
+    void replace(const char* search, const char* replacement) {
+        std::string needle(search);
+        std::string value(replacement);
+        size_t position = 0;
+        while ((position = value_.find(needle, position)) != std::string::npos) {
+            value_.replace(position, needle.length(), value);
+            position += value.length();
+        }
     }
     void remove(size_t index) { value_.erase(index); }
     String substring(size_t index) const { return String(value_.substr(std::min(index, value_.size()))); }

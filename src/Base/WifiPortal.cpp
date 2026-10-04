@@ -50,6 +50,7 @@ bool WifiPortal::saveCoachDetails() {
         start = comma + 1;
     }
     if (recipients.size() == 0) return false;
+    document["emailReports"] = request->hasArg("reports");
     document["shareWithSupport"] = request->hasArg("support");
     document["diagnosticEmails"] = request->hasArg("diagnostics");
     File output = LittleFS.open("/coach.setup.tmp", "w");
@@ -394,13 +395,16 @@ String WifiPortal::pageHtml() const {
     html += "<h2>Reports</h2><label for='emails'>Owner email addresses</label>";
     html += "<input id='emails' name='emails' type='email' multiple maxlength='1024' required value='";
     html += escape(emailList) + "'>";
+    html += "<label><input type='checkbox' name='reports'";
+    if (coach["emailReports"] | false) html += " checked";
+    html += ">Email me the discovery report when learning completes</label>";
     html += "<label><input type='checkbox' name='support'";
     if (coach["shareWithSupport"] | false) html += " checked";
     html += ">Share the discovery report with SmartCoach support</label>";
     html += "<label><input type='checkbox' name='diagnostics'";
     if (coach["diagnosticEmails"] | false) html += " checked";
     html += ">Email status and diagnostic reports</label>";
-    html += "<p>Email preferences are saved locally. Email delivery is not connected in this firmware.</p>";
+    html += "<p>Email preferences are saved locally. Delivery remains disabled until a relay is configured.</p>";
     html += "<h2>Apple Home</h2>";
     if (setupCode.length() == 8) {
         html += "<p>Pairing code: <strong>" + setupCode.substring(0, 3) + "-";

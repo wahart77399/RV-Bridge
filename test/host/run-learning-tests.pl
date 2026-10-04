@@ -40,12 +40,25 @@ my @command = (
     'clang++', '-arch', 'x86_64', '-std=c++17', '-Wall', '-Wextra',
     '-I', 'test/host/mocks', '-I', $temporary, '-I', 'src/Base',
     '-I', '.pio/libdeps/Release/ArduinoJson/src',
-    'src/Base/LearnMode.cpp', 'src/Base/LearnRecord.cpp', "$temporary/aid-production.cpp",
+    'src/Base/LearnMode.cpp', 'src/Base/LearnRecord.cpp', 'src/Base/EmailReports.cpp', "$temporary/aid-production.cpp",
     'test/host/learning_failures.cpp', '-o', "$temporary/learning-failures"
 );
 my $result = system(@command);
 if ($result == 0) {
     $result = system("$temporary/learning-failures");
+}
+if ($result == 0) {
+    my @emailCommand = (
+        'clang++', '-arch', 'x86_64', '-std=c++17', '-Wall', '-Wextra',
+        '-I', 'test/host/mocks', '-I', 'src/Base',
+        '-I', '.pio/libdeps/Release/ArduinoJson/src',
+        'src/Base/EmailReports.cpp', 'test/host/email_reports.cpp',
+        '-o', "$temporary/email-reports"
+    );
+    $result = system(@emailCommand);
+    if ($result == 0) {
+        $result = system("$temporary/email-reports");
+    }
 }
 if ($result == 0) {
     my @aidCommand = (
@@ -65,7 +78,7 @@ if ($result == 0) {
         'clang++', '-arch', 'x86_64', '-std=c++17', '-Wall', '-Wextra',
         '-I', 'test/host/mocks', '-I', $temporary, '-I', 'src/Base',
         '-I', '.pio/libdeps/Release/ArduinoJson/src',
-        'src/Base/SmartCoachWeb.cpp', 'src/Base/LearnMode.cpp', 'src/Base/LearnRecord.cpp',
+        'src/Base/SmartCoachWeb.cpp', 'src/Base/EmailReports.cpp', 'src/Base/LearnMode.cpp', 'src/Base/LearnRecord.cpp',
         "$temporary/aid-production.cpp", 'test/host/web_review_failures.cpp',
         '-o', "$temporary/web-review"
     );

@@ -8,7 +8,7 @@
 #include "LittleFS.h"
 #include <Preferences.h>
 #include "debug.h"
-#ifdef FUTURE
+#ifdef FUTURE_DIAGNOSTICS
 #include "BridgeDiagnostics.h"
 #endif
 
@@ -98,7 +98,7 @@ DeviceFactory* DeviceFactory::getInstance() {
             instance->DGN2DeviceMap[CHASSIS_MOBILITY_STATUS_2][defaultChassisIndex] = chassis;
             SpanView::setNextAccessoryAid(chassisAccessoryAid);
             ChassisMobilityView::createChassisMobilityView((GenericDevice* )chassis, "Chassis Mobility Sensor");
-#ifdef FUTURE
+#ifdef FUTURE_DIAGNOSTICS
             BridgeDiagnostics::registerDevice(chassis, "ChassisMobility", "Chassis Mobility Sensor", defaultChassisIndex, 0);
 #endif
         }
@@ -690,7 +690,7 @@ void DeviceFactory::createFromDeviceConfig(const std::vector<DeviceConfig>& devi
                 SpanView::setNextAccessoryAid(dev.aid);
                 GenericDevice* device = it->second(dev, coach);
                 if (device != nullptr) {
-#ifdef FUTURE
+#ifdef FUTURE_DIAGNOSTICS
                     BridgeDiagnostics::registerDevice(device, dev.type.c_str(), dev.name.c_str(), dev.rvcIndex, dev.sourceAddress);
 #endif
                     RV_PRINTF("Created %s (%s) idx=%u\n", dev.name.c_str(), dev.type.c_str(), dev.rvcIndex);

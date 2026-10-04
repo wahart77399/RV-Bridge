@@ -62,6 +62,8 @@
         <span>SmartCoachDevicePortal V0.1.1</span>
         <div class="footer-actions">
           <span class="footer-sync"><span class="footer-dot"></span> Synced with coach bridge</span>
+          <a class="footer-legal-link" id="diagnostics-download" href="/diagnostics" download="smartcoach-diagnostics.json" hidden>Download diagnostics</a>
+          <button class="footer-legal-link" id="email-open" type="button" hidden>Email reports</button>
           <button class="footer-legal-link" id="privacy-open" type="button">Privacy notice <span>(draft)</span></button>
           <button class="wifi-reset-button" id="wifi-reset-button" type="button">Reset Wi-Fi</button>
           <button class="device-reboot-button" id="device-reboot-button" type="button">Reboot SmartCoach</button>
@@ -102,6 +104,34 @@
         <label class="approval-confirmation" id="approval-confirmation" hidden><input id="confirm-device" type="checkbox" /> I have identified this device</label>
         <p class="rename-error" id="rename-error" role="alert"></p>
         <div class="rename-actions"><button id="rename-cancel" type="button">Cancel</button><button class="rename-save" id="rename-save" type="submit">Save device</button></div>
+      </form>
+    </dialog>
+    <dialog class="coach-dialog" id="email-dialog" aria-labelledby="email-dialog-title">
+      <header class="coach-dialog-header">
+        <div><span class="section-kicker">Report delivery</span><h2 id="email-dialog-title">Email reports</h2></div>
+        <button class="coach-dialog-close" id="email-close" type="button" aria-label="Close email settings" title="Close">×</button>
+      </header>
+      <form class="email-settings-form" id="email-settings-form">
+        <div class="email-settings-content">
+          <label for="email-recipients">Owner email addresses (comma-separated)</label>
+          <input id="email-recipients" type="text" maxlength="1024" autocomplete="email" placeholder="owner@example.com" />
+          <label><input id="email-owner-consent" type="checkbox" /> Email me the discovery report when learning completes</label>
+          <label><input id="email-diagnostic-consent" type="checkbox" /> Email diagnostic reports to the owner addresses</label>
+          <label><input id="email-support-consent" type="checkbox" /> Allow an opted-in report to be copied to SmartCoach support</label>
+          <label for="email-endpoint">Google Apps Script web app URL</label>
+          <input id="email-endpoint" type="url" maxlength="256" autocomplete="url" placeholder="https://script.google.com/macros/s/.../exec" />
+          <label for="email-token">Per-coach relay token (64 hexadecimal characters)</label>
+          <input id="email-token" type="password" maxlength="64" autocomplete="new-password" inputmode="text" />
+          <p>This is not your Gmail password. Use a unique token registered for this coach.</p>
+          <p class="email-relay-state" id="email-relay-state">Relay not configured</p>
+          <p class="email-error" id="email-error" role="alert"></p>
+        </div>
+        <div class="email-settings-actions">
+          <button type="button" id="email-cancel">Cancel</button>
+          <button type="submit" id="email-save">Save settings</button>
+          <button type="button" id="email-stage" hidden>Stage latest discovery report</button>
+          <button type="button" id="email-send" hidden>Send pending report</button>
+        </div>
       </form>
     </dialog>
     <dialog class="privacy-dialog" id="privacy-dialog" aria-labelledby="privacy-dialog-title">
@@ -150,6 +180,14 @@
       const approvalConfirmation = document.querySelector("#approval-confirmation");
       const confirmDevice = document.querySelector("#confirm-device");
       const privacyDialog = document.querySelector("#privacy-dialog");
+      const emailDialog = document.querySelector("#email-dialog");
+      const emailSettingsForm = document.querySelector("#email-settings-form");
+      const emailRecipients = document.querySelector("#email-recipients");
+      const emailEndpoint = document.querySelector("#email-endpoint");
+      const emailToken = document.querySelector("#email-token");
+      const emailError = document.querySelector("#email-error");
+      const emailStageButton = document.querySelector("#email-stage");
+      const emailSendButton = document.querySelector("#email-send");
       const categoryOrder = ["Switches", "HVAC", "Monitoring"];
       let devices = [...sampleDevices];
       let hasRuntimeDevices = false;
@@ -475,7 +513,15 @@
           };
         });
         hasRuntimeDevices = true;
-        if (status) document.querySelector("#restart-notice").hidden = !status.restart_required;
+        if (status) {
+          document.querySelector("#restart-notice").hidden = !status.restart_required;
+          document.querySelector("#diagnostics-download").hidden = status.diagnostics_available !== true;
+          document.querySelector("#email-open").hidden = status.email_reports_available !== true;
+          emailSendButton.hidden = !(status.email_relay_configured && status.email_report_pending);
+          emailStageButton.hidden = !(status.email_report_available && coachData?.emailReports && !status.email_report_pending);
+          emailStageButton.textContent = status.email_learning_report_available ? "Stage completed learning report" : "Stage current inventory report";
+          document.querySelector("#email-relay-state").textContent = status.email_relay_configured ? "Relay configured" : "Relay not configured";
+        }
         renderUnhandled(records);
         renderDevices();
         syncStatus.textContent = discovery?.learning ? "Learning in progress" : `Updated ${new Date().toLocaleTimeString()}`;
@@ -599,6 +645,94 @@
       });
       document.querySelector("#privacy-open").addEventListener("click", () => privacyDialog.showModal());
       document.querySelector("#privacy-close").addEventListener("click", () => privacyDialog.close());
+      document.querySelector("#email-open").addEventListener("click", () => {
+        document.querySelector("#email-owner-consent").checked = Boolean(coachData?.emailReports);
+        document.querySelector("#email-diagnostic-consent").checked = Boolean(coachData?.diagnosticEmails);
+        document.querySelector("#email-support-consent").checked = Boolean(coachData?.shareWithSupport);
+        emailRecipients.value = Array.isArray(coachData?.ownerEmails) ? coachData.ownerEmails.join(", ") : "";
+        emailEndpoint.value = "";
+        emailToken.value = "";
+        emailError.textContent = "";
+        emailDialog.showModal();
+      });
+      document.querySelector("#email-close").addEventListener("click", () => emailDialog.close());
+      document.querySelector("#email-cancel").addEventListener("click", () => emailDialog.close());
+      emailStageButton.addEventListener("click", async () => {
+        emailStageButton.disabled = true;
+        emailError.textContent = "";
+        try {
+          const response = await fetch("/email/stage", { method: "POST" });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.result || "Could not stage the discovery report");
+          showToast("Discovery report staged");
+          await loadRuntimeConfig();
+        } catch (error) {
+          emailError.textContent = error.message;
+        } finally {
+          emailStageButton.disabled = false;
+        }
+      });
+      emailDialog.addEventListener("click", (event) => {
+        if (event.target === emailDialog) emailDialog.close();
+      });
+      emailSettingsForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const endpoint = emailEndpoint.value.trim();
+        const token = emailToken.value.trim();
+        if (Boolean(endpoint) !== Boolean(token)) {
+          emailError.textContent = "Enter both the Apps Script URL and relay token, or leave both blank.";
+        } else {
+          const save = document.querySelector("#email-save");
+          save.disabled = true;
+          emailError.textContent = "";
+          try {
+            const response = await fetch("/email/settings", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                emailReports: document.querySelector("#email-owner-consent").checked,
+                diagnosticEmails: document.querySelector("#email-diagnostic-consent").checked,
+                shareWithSupport: document.querySelector("#email-support-consent").checked,
+                ownerEmails: emailRecipients.value.split(",").map((address) => address.trim()).filter(Boolean),
+                endpoint,
+                token
+              })
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || "Could not save email settings");
+            if (coachData) {
+              coachData.emailReports = document.querySelector("#email-owner-consent").checked;
+              coachData.diagnosticEmails = document.querySelector("#email-diagnostic-consent").checked;
+              coachData.shareWithSupport = document.querySelector("#email-support-consent").checked;
+              coachData.ownerEmails = emailRecipients.value.split(",").map((address) => address.trim()).filter(Boolean);
+            }
+            emailToken.value = "";
+            emailDialog.close();
+            showToast("Email preferences saved");
+            await loadRuntimeConfig();
+          } catch (error) {
+            emailError.textContent = error.message;
+          } finally {
+            save.disabled = false;
+          }
+        }
+      });
+      emailSendButton.addEventListener("click", async () => {
+        const recipients = Array.isArray(coachData?.ownerEmails) ? coachData.ownerEmails.join(", ") : "configured owners";
+        if (!window.confirm(`Send the pending report to ${recipients}?`)) return;
+        emailSendButton.disabled = true;
+        try {
+          const response = await fetch("/email/send", { method: "POST" });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.result === "delivery_uncertain" ? "Delivery is uncertain. Check Gmail before retrying." : result.result || "Email delivery failed");
+          showToast("Report sent");
+          await loadRuntimeConfig();
+        } catch (error) {
+          showToast(error.message);
+        } finally {
+          emailSendButton.disabled = false;
+        }
+      });
       privacyDialog.addEventListener("click", (event) => {
         if (event.target === privacyDialog) privacyDialog.close();
       });

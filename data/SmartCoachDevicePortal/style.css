@@ -127,6 +127,20 @@ h1 { font-size: clamp(42px, 5.5vw, 78px); line-height: .98; letter-spacing: -.07
 .footer-legal-link { background: transparent; border: 0; color: #d7ef79; font-family: 'DM Mono', monospace; font-size: 9px; padding: 8px 0; text-decoration: underline; text-underline-offset: 3px; }
 .footer-legal-link span { color: #aab79f; }
 .footer-legal-link:focus-visible { outline: 2px solid #d7ef79; outline-offset: 3px; }
+#diagnostics-download[hidden] { display: none; }
+#email-open[hidden], #email-stage[hidden], #email-send[hidden] { display: none; }
+.email-settings-form { color: #29473b; }
+.email-settings-content { display: grid; gap: 12px; max-height: min(62vh, 560px); overflow: auto; padding: 18px 24px 4px; }
+.email-settings-content > p { color: #708177; font-size: 12px; line-height: 1.5; margin: 0; overflow-wrap: anywhere; }
+.email-settings-content label { align-items: center; display: flex; gap: 9px; font-size: 13px; }
+.email-settings-content label[for] { display: block; margin: 5px 0 -7px; }
+.email-settings-content input:not([type="checkbox"]) { box-sizing: border-box; min-width: 0; width: 100%; border: 1px solid #cad4c7; border-radius: 4px; padding: 10px; color: #29473b; background: #fff; }
+.email-settings-content input[type="checkbox"] { flex: 0 0 18px; height: 18px; margin: 0; }
+.email-settings-content .email-relay-state { color: #365a43; font-weight: 700; }
+.email-settings-content .email-error { color: #a4493d; min-height: 16px; }
+.email-settings-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; padding: 12px 24px 20px; }
+.email-settings-actions button { border: 1px solid #cad4c7; border-radius: 4px; background: transparent; color: #365a43; cursor: pointer; padding: 9px 12px; }
+.email-settings-actions #email-save, .email-settings-actions #email-stage, .email-settings-actions #email-send { border-color: #365a43; background: #365a43; color: #fff; }
 .privacy-dialog { background: #f8f8f2; border: 1px solid #cdd7ca; box-shadow: 0 24px 80px rgba(6, 25, 20, .3); color: #19342d; max-height: calc(100vh - 32px); max-width: 720px; padding: 0; width: calc(100% - 32px); }
 .privacy-dialog::backdrop { backdrop-filter: blur(3px); background: rgba(8, 25, 22, .68); }
 .privacy-content { max-height: calc(100vh - 145px); overflow: auto; padding: 4px 26px 26px; }

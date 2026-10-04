@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef FUTURE
+#ifdef FUTURE_DIAGNOSTICS
 #include <Arduino.h>
 #include "CanFrameTypes.h"
 #include "DGN.h"

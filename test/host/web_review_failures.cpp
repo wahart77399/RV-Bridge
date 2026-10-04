@@ -1,6 +1,7 @@
 #include "SmartCoachWeb.h"
 #include "WifiCredentials.h"
 #include "LearnMode.h"
+#include "EmailReports.h"
 #include "Preferences.h"
 #include <ArduinoJson.h>
 #include <functional>
@@ -18,7 +19,7 @@ namespace {
         preferencesStore = FakePreferencesStore{};
         ESP.restarts = 0;
         fakeMillis = 1000;
-        LittleFS.put("/coach.json", R"({"year":2022,"make":"Test","model":"Coach","floorplan":"1","coachId":"test","chassisAid":61,"ownerEmails":["owner@example.com"],"shareWithSupport":true,"tanks":[],"coverTimes":{},"batteries":[]})");
+        LittleFS.put("/coach.json", R"({"year":2022,"make":"Test","model":"Coach","floorplan":"1","coachId":"test","chassisAid":61,"ownerEmails":["owner@example.com"],"emailReports":true,"diagnosticEmails":false,"shareWithSupport":false,"tanks":[],"coverTimes":{},"batteries":[]})");
         LittleFS.put("/devices.json", initial);
     }
     JsonDocument config() {
@@ -32,6 +33,17 @@ namespace {
         request["rvcIndex"] = index; request["sourceAddress"] = address;
         String body; serializeJson(request, body);
         WebServer::active->request("/devices/review", HTTP_POST, body);
+    }
+    void saveEmailSettings(const char* address, const char* endpoint = "", const char* token = "") {
+        JsonDocument request;
+        request["emailReports"] = true;
+        request["diagnosticEmails"] = false;
+        request["shareWithSupport"] = false;
+        request["endpoint"] = endpoint;
+        request["token"] = token;
+        request["ownerEmails"].to<JsonArray>().add(address);
+        String body; serializeJson(request, body);
+        WebServer::active->request("/email/settings", HTTP_POST, body);
     }
 }
 
@@ -119,6 +131,29 @@ int main(int argc, char** argv) {
                 fixture(); LearnMode::handleCommand("start 1"); review("approve");
                 require(WebServer::active->responseCode == 409 && LearnMode::isLearning(), "review interfered with learning");
                 LearnMode::handleCommand("cancel");
+            }},
+            {"email settings save validated owner and preserve relay token", [] {
+                fixture();
+                require(EmailReports::configureRelay("https://script.google.com/macros/s/AKfycb1234567890abcdef/exec", String(std::string(64, 'a'))), "test relay setup failed");
+                saveEmailSettings("owner@example.com");
+                JsonDocument coach; deserializeJson(coach, LittleFS.content("/coach.json"));
+                require(WebServer::active->responseCode == 200 && coach["ownerEmails"][0] == "owner@example.com", "owner recipient was not saved");
+                require(coach["shareWithSupport"] == false && coach["emailReports"] == true, "email consent preferences were not saved");
+                require(EmailReports::relayConfigured(), "saving owner address lost the relay token");
+            }},
+            {"invalid owner address cannot be saved", [] {
+                fixture();
+                saveEmailSettings("not-an-email");
+                JsonDocument coach; deserializeJson(coach, LittleFS.content("/coach.json"));
+                require(WebServer::active->responseCode == 400 && coach["ownerEmails"][0] == "owner@example.com", "invalid recipient changed coach configuration");
+            }},
+            {"email stage falls back to explicitly labeled current inventory", [] {
+                fixture();
+                LittleFS.put("/devices.json", R"([{"type":"DC_Switch","rvcIndex":81,"sourceAddress":141,"name":"Galley Light","enabled":true,"aid":76}])");
+                WebServer::active->request("/email/stage", HTTP_POST);
+                JsonDocument report; deserializeJson(report, LittleFS.content("/email_outbox.json"));
+                require(WebServer::active->responseCode == 200 && report["reportKind"] == "currentInventory", "inventory fallback was not staged");
+                require(report["report"]["devices"][0]["name"] == "Galley Light", "inventory snapshot content missing");
             }}
         };
         unsigned failures = 0;
