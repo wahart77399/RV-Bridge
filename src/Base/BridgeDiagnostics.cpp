@@ -7,9 +7,32 @@
 #include <esp_timer.h>
 #include <cstring>
 
+#include "LearnRecord.h"
+
 namespace {
     constexpr size_t MAX_DIAGNOSTICS_JSON_BYTES = 32768;
     constexpr uint32_t MIN_FREE_HEAP_FOR_JSON = 24576;
+
+    void appendPayloadHex(char* out, size_t outSize, const uint8_t* data, uint8_t length) {
+        static const char digits[] = "0123456789ABCDEF";
+        size_t written = 0;
+        if (out != nullptr && outSize > 0) {
+            out[0] = '\0';
+            for (uint8_t index = 0; data != nullptr && index < length && written + 2 < outSize; ++index) {
+                out[written++] = digits[data[index] >> 4];
+                out[written++] = digits[data[index] & 0x0F];
+            }
+            out[written] = '\0';
+        }
+    }
+
+    bool payloadAllFf(const uint8_t* data, uint8_t length) {
+        bool allFf = data != nullptr && length > 0;
+        for (uint8_t index = 0; allFf && index < length; ++index) {
+            if (data[index] != 0xFF) allFf = false;
+        }
+        return allFf;
+    }
 }
 
 BridgeDiagnostics& BridgeDiagnostics::instance() {
@@ -29,6 +52,21 @@ BridgeDiagnostics::DeviceActivity* BridgeDiagnostics::findActivity(const Generic
                 activity = &devices_[index];
                 break;
             }
+        }
+    }
+    return activity;
+}
+
+BridgeDiagnostics::UnmappedActivity* BridgeDiagnostics::findUnmapped(uint32_t dgn,
+                                                                     uint8_t sourceAddress,
+                                                                     uint8_t instanceIndex) {
+    UnmappedActivity* activity = nullptr;
+    for (size_t index = 0; index < unmappedCount_; ++index) {
+        if (unmapped_[index].dgn == dgn &&
+            unmapped_[index].sourceAddress == sourceAddress &&
+            unmapped_[index].instanceIndex == instanceIndex) {
+            activity = &unmapped_[index];
+            break;
         }
     }
     return activity;
@@ -83,6 +121,35 @@ void BridgeDiagnostics::observeDevice(const GenericDevice* device, RVC_DGN dgn, 
     }
 }
 
+void BridgeDiagnostics::observeUnmapped(RVC_DGN dgn, uint8_t sourceAddress, uint8_t instanceIndex,
+                                        bool instanceVerified, const uint8_t* data, uint8_t dataLength) {
+    BridgeDiagnostics& diagnostics = instance();
+    do {
+        uint32_t key = static_cast<uint32_t>(dgn);
+        UnmappedActivity* activity = diagnostics.findUnmapped(key, sourceAddress, instanceIndex);
+        if (activity == nullptr) {
+            if (diagnostics.unmappedCount_ >= MAX_UNMAPPED) {
+                if (diagnostics.unmappedOverflow_ < UINT32_MAX) ++diagnostics.unmappedOverflow_;
+                break;
+            }
+            activity = &diagnostics.unmapped_[diagnostics.unmappedCount_++];
+            activity->dgn = key;
+            activity->sourceAddress = sourceAddress;
+            activity->instanceIndex = instanceIndex;
+        }
+
+        activity->instanceVerified = instanceVerified;
+        activity->lastSeenMs = nowMs();
+        uint8_t sampleLength = data == nullptr ? 0 : (dataLength > 8 ? 8 : dataLength);
+        activity->sampleLength = sampleLength;
+        for (uint8_t index = 0; index < 8; ++index) {
+            activity->sample[index] = index < sampleLength ? data[index] : 0;
+        }
+        activity->lastSampleAllFf = payloadAllFf(activity->sample, activity->sampleLength);
+        if (activity->hitCount < UINT32_MAX) ++activity->hitCount;
+    } while (false);
+}
+
 void BridgeDiagnostics::observeTransmit(bool accepted) {
     BridgeDiagnostics& diagnostics = instance();
     if (accepted) ++diagnostics.transmitAccepted_;
@@ -116,7 +183,10 @@ String BridgeDiagnostics::reportJson() {
     bus["softwareTransmitQueueDrops"] = diagnostics.queueDrops_;
     bus["untrackedDeviceFrames"] = diagnostics.untrackedDeviceFrames_;
     bus["untrackedConfiguredDevices"] = diagnostics.untrackedConfiguredDevices_;
+    bus["unmappedOverflowHits"] = diagnostics.unmappedOverflow_;
     document["handledFramesMeaning"] = "Handler returned true; not proof of valid status data or hardware acknowledgement";
+    document["unmappedTrafficMeaning"] = "Bus DGNs with no configured HomeKit device; not enabled accessories";
+    document["payloadAllFfMeaning"] = "All sampled data bytes are 0xFF; often unavailable or not reporting";
     twai_status_info_t status = {};
     bool available = twai_get_status_info(&status) == ESP_OK;
     bus["driverStatusAvailable"] = available;
@@ -142,17 +212,37 @@ String BridgeDiagnostics::reportJson() {
         row["observed"] = activity.receivedCount > 0;
         if (activity.receivedCount > 0) {
             row["lastSourceAddress"] = activity.lastSourceAddress;
-            row["lastDgn"] = static_cast<uint32_t>(activity.lastDgn);
+            row["lastDgnName"] = LearnTable::dgnName(activity.lastDgn);
             row["lastFrameAgeMs"] = now - activity.lastSeenMs;
         } else {
             row["lastSourceAddress"] = nullptr;
-            row["lastDgn"] = nullptr;
             row["lastFrameAgeMs"] = nullptr;
         }
         row["receivedFrames"] = activity.receivedCount;
         row["handledFrames"] = activity.handledCount;
         if (activity.handledCount > 0) row["lastHandledFrameAgeMs"] = now - activity.lastHandledMs;
         else row["lastHandledFrameAgeMs"] = nullptr;
+    }
+    JsonArray unmapped = document["unmappedTraffic"].to<JsonArray>();
+    for (size_t index = 0; index < diagnostics.unmappedCount_; ++index) {
+        const UnmappedActivity& activity = diagnostics.unmapped_[index];
+        RVC_DGN dgn = static_cast<RVC_DGN>(activity.dgn);
+        JsonObject row = unmapped.add<JsonObject>();
+        row["dgnName"] = LearnTable::dgnName(dgn);
+        row["family"] = LearnTable::relatedFamily(dgn);
+        row["rvcIndex"] = activity.instanceIndex;
+        row["instanceVerified"] = activity.instanceVerified;
+        row["sourceAddress"] = activity.sourceAddress;
+        char payloadHex[17];
+        appendPayloadHex(payloadHex, sizeof(payloadHex), activity.sample, activity.sampleLength);
+        row["payloadHex"] = payloadHex;
+        row["payloadAllFf"] = activity.lastSampleAllFf;
+        row["hits"] = activity.hitCount;
+        row["lastFrameAgeMs"] = now - activity.lastSeenMs;
+        row["inReview"] = false;
+        row["note"] = activity.lastSampleAllFf
+            ? "Seen on bus; payload is all 0xFF, often unavailable or not reporting"
+            : "Seen on bus; no configured device for this DGN/index";
     }
     String json;
     size_t expected = 0;

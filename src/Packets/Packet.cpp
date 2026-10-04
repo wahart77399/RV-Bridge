@@ -129,6 +129,8 @@ void Packet::displayPacket(CAN_frame_t* packet, PacketPrint printPacket) {
 #include "ChassisMobility.h"
 #include "LearnMode.h"
 #include "BridgeDiagnostics.h"
+#include "LearnRecord.h"
+#include <cstring>
 void Packet::processPacket(CAN_frame_t *packet) 
 {
 	if ((packet != nullptr) && (!isRemoteTransmissionRequest(packet))) {
@@ -136,18 +138,27 @@ void Packet::processPacket(CAN_frame_t *packet)
 		RVC_DGN dgn = DGN::getDGN(packet);
 		uint8_t* rawData = getData(packet);
 		if (rawData != nullptr) {
-			LearnMode::observe(dgn, getSourceAddress(packet), rawData);
+			uint8_t sourceAddress = getSourceAddress(packet);
+			LearnMode::observe(dgn, sourceAddress, rawData);
 			DeviceFactory* factory = DeviceFactory::getInstance();
 			if (factory != nullptr) {
 				GenericDevice* device = factory->getDeviceByData(dgn, rawData);
 				if (device != nullptr) {
-					bool handled = device->executeCommand(dgn, rawData, getSourceAddress(packet));
-					BridgeDiagnostics::observeDevice(device, dgn, getSourceAddress(packet), handled);
-					
+					bool handled = device->executeCommand(dgn, rawData, sourceAddress);
+					BridgeDiagnostics::observeDevice(device, dgn, sourceAddress, handled);
+				} else {
+					uint8_t instanceIndex = rawData[0];
+					bool instanceVerified = false;
+					const char* dgnName = LearnTable::dgnName(dgn);
+					if (dgnName != nullptr && std::strcmp(dgnName, "UNKNOWN_DGN") != 0) {
+						uint8_t decodedIndex = instanceIndex;
+						instanceVerified = DeviceFactory::instanceFromData(dgn, rawData, decodedIndex);
+						if (instanceVerified) instanceIndex = decodedIndex;
+					}
+					uint8_t dataLength = packet->FIR.B.DLC > 8 ? 8 : packet->FIR.B.DLC;
+					BridgeDiagnostics::observeUnmapped(dgn, sourceAddress, instanceIndex,
+					                                   instanceVerified, rawData, dataLength);
 				}
-				
-			} else { 
-				;	
 			}
 		}
 	}

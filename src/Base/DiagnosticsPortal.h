@@ -46,12 +46,17 @@ inline constexpr char SMARTCOACH_DIAGNOSTICS_PAGE[] = R"HTML(<!doctype html>
       <h2 id="device-heading">Configured devices</h2>
       <div class="table-wrap"><table><thead><tr><th>Name</th><th>Type</th><th>Index</th><th>Source</th><th>Observed</th><th>Last DGN</th><th>Last frame age</th><th>Handled / received</th></tr></thead><tbody id="devices"></tbody></table></div>
     </section>
+    <section aria-labelledby="unmapped-heading">
+      <h2 id="unmapped-heading">Unmapped RV-C traffic</h2>
+      <div class="table-wrap"><table><thead><tr><th>DGN</th><th>Family</th><th>Source</th><th>Index</th><th>Hits</th><th>Last frame age</th><th>Payload</th><th>Review status</th></tr></thead><tbody id="unmapped"></tbody></table></div>
+    </section>
     <p id="meaning" class="note"></p>
   </main>
   <script>
     const state = document.querySelector("#state");
     const metrics = document.querySelector("#metrics");
     const devices = document.querySelector("#devices");
+    const unmapped = document.querySelector("#unmapped");
     const meaning = document.querySelector("#meaning");
     function metric(label, value) {
       const item = document.createElement("div");
@@ -80,6 +85,7 @@ inline constexpr char SMARTCOACH_DIAGNOSTICS_PAGE[] = R"HTML(<!doctype html>
         const bus = report.bus || {};
         metrics.replaceChildren();
         devices.replaceChildren();
+        unmapped.replaceChildren();
         metric("Uptime", report.uptimeMs == null ? null : report.uptimeMs + " ms");
         metric("Wi-Fi", report.wifiConnected ? "Connected" : "Disconnected");
         metric("RSSI", report.wifiRssiDbm == null ? null : report.wifiRssiDbm + " dBm");
@@ -88,6 +94,7 @@ inline constexpr char SMARTCOACH_DIAGNOSTICS_PAGE[] = R"HTML(<!doctype html>
         metric("Received frames", bus.receivedFrames);
         metric("Bus off", bus.busOff == null ? (bus.driverStatusAvailable ? "No" : "Unavailable") : (bus.busOff ? "Yes" : "No"));
         metric("Bus errors", bus.busErrorCount);
+        metric("Unmapped overflow", bus.unmappedOverflowHits || 0);
         for (const device of report.configuredDevices || []) {
           const row = document.createElement("tr");
           addCell(row, device.name);
@@ -95,12 +102,33 @@ inline constexpr char SMARTCOACH_DIAGNOSTICS_PAGE[] = R"HTML(<!doctype html>
           addCell(row, device.rvcIndex);
           addCell(row, device.sourceAddress);
           addCell(row, device.observed ? "Yes" : "No");
-          addCell(row, device.lastDgn == null ? null : "0x" + Number(device.lastDgn).toString(16).toUpperCase());
+          addCell(row, device.lastDgnName);
           addCell(row, device.lastFrameAgeMs == null ? null : device.lastFrameAgeMs + " ms");
           addCell(row, device.handledFrames + " / " + device.receivedFrames);
           devices.append(row);
         }
-        meaning.textContent = report.handledFramesMeaning || "Handled counts report whether a handler returned true.";
+        const unmappedRows = report.unmappedTraffic || [];
+        for (const activity of unmappedRows) {
+          const row = document.createElement("tr");
+          addCell(row, activity.dgnName || "UNKNOWN_DGN");
+          addCell(row, activity.family);
+          addCell(row, activity.sourceAddress);
+          addCell(row, activity.rvcIndex + " (" + (activity.instanceVerified ? "verified" : "candidate") + ")");
+          addCell(row, activity.hits);
+          addCell(row, activity.lastFrameAgeMs == null ? null : activity.lastFrameAgeMs + " ms");
+          addCell(row, activity.payloadHex);
+          addCell(row, (activity.inReview ? "In review" : "Not in review") + (activity.payloadAllFf ? " - all 0xFF" : ""));
+          unmapped.append(row);
+        }
+        if (unmappedRows.length === 0) {
+          const row = document.createElement("tr");
+          const cell = document.createElement("td");
+          cell.colSpan = 8;
+          cell.textContent = "No unmapped RV-C traffic observed";
+          row.append(cell);
+          unmapped.append(row);
+        }
+        meaning.textContent = [report.handledFramesMeaning, report.unmappedTrafficMeaning, report.payloadAllFfMeaning].filter(Boolean).join(" ");
         state.textContent = "Snapshot updated " + new Date().toLocaleTimeString();
       } catch (error) {
         state.dataset.error = "true";

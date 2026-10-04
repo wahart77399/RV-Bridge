@@ -210,6 +210,7 @@ int main(int argc, char** argv) {
                 fixture();
                 WebServer::active->request("/diagnostics-page", HTTP_GET);
                 require(WebServer::active->responseCode == 200 && WebServer::active->responseBody.indexOf("SmartCoach Diagnostics") >= 0, "firmware diagnostics page was unavailable");
+                require(WebServer::active->responseBody.indexOf("Unmapped RV-C traffic") >= 0 && WebServer::active->responseBody.indexOf("Review status") >= 0, "unmapped DGN table was unavailable");
             }}
         };
         unsigned failures = 0;

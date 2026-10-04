@@ -65,12 +65,18 @@ if ($result == 0) {
         'clang++', '-arch', 'x86_64', '-std=c++17', '-Wall', '-Wextra',
         '-I', 'test/host/mocks', '-I', $temporary, '-I', 'src/Base',
         '-I', '.pio/libdeps/Release/ArduinoJson/src',
-        'src/Base/BridgeDiagnostics.cpp', 'test/host/diagnostics_reports.cpp',
+        'src/Base/BridgeDiagnostics.cpp', 'src/Base/LearnRecord.cpp', 'test/host/diagnostics_reports.cpp',
         '-o', "$temporary/diagnostics-reports"
     );
     $result = system(@diagnosticsCommand);
     if ($result == 0) {
         $result = system("$temporary/diagnostics-reports");
+    }
+    if ($result == 0) {
+        $result = system("$temporary/diagnostics-reports", '--unmapped');
+    }
+    if ($result == 0) {
+        $result = system("$temporary/diagnostics-reports", '--unmapped-overflow');
     }
 }
 if ($result == 0) {

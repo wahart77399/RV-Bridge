@@ -69,6 +69,10 @@
           <h3 id="diagnostics-devices-title">Configured devices</h3>
           <div class="diagnostics-table-wrap"><table><thead><tr><th>Name</th><th>Type</th><th>Index</th><th>Source</th><th>Observed</th><th>Last DGN</th><th>Last frame age</th><th>Handled / received</th></tr></thead><tbody id="diagnostics-device-rows"></tbody></table></div>
         </section>
+        <section class="diagnostics-devices" aria-labelledby="diagnostics-unmapped-title">
+          <h3 id="diagnostics-unmapped-title">Unmapped RV-C traffic</h3>
+          <div class="diagnostics-table-wrap"><table><thead><tr><th>DGN</th><th>Family</th><th>Source</th><th>Index</th><th>Hits</th><th>Last frame age</th><th>Payload</th><th>Review status</th></tr></thead><tbody id="diagnostics-unmapped-rows"></tbody></table></div>
+        </section>
         <p class="diagnostics-note" id="diagnostics-meaning"></p>
       </section>
 
@@ -189,6 +193,7 @@
       const diagnosticsStatus = document.querySelector("#diagnostics-status");
       const diagnosticsMetrics = document.querySelector("#diagnostics-metrics");
       const diagnosticsDeviceRows = document.querySelector("#diagnostics-device-rows");
+      const diagnosticsUnmappedRows = document.querySelector("#diagnostics-unmapped-rows");
       const diagnosticsMeaning = document.querySelector("#diagnostics-meaning");
       const coachDialog = document.querySelector("#coach-dialog");
       const coachDetailContent = document.querySelector("#coach-detail-content");
@@ -525,6 +530,7 @@
           const bus = report.bus || {};
           diagnosticsMetrics.replaceChildren();
           diagnosticsDeviceRows.replaceChildren();
+          diagnosticsUnmappedRows.replaceChildren();
           appendDiagnosticMetric("Uptime", `${report.uptimeMs} ms`);
           appendDiagnosticMetric("Wi-Fi", report.wifiConnected ? "Connected" : "Disconnected");
           appendDiagnosticMetric("RSSI", report.wifiRssiDbm == null ? null : `${report.wifiRssiDbm} dBm`);
@@ -533,6 +539,7 @@
           appendDiagnosticMetric("Received frames", bus.receivedFrames);
           appendDiagnosticMetric("Bus off", bus.busOff == null ? (bus.driverStatusAvailable ? "No" : "Unavailable") : (bus.busOff ? "Yes" : "No"));
           appendDiagnosticMetric("Bus errors", bus.busErrorCount);
+          appendDiagnosticMetric("Unmapped overflow", bus.unmappedOverflowHits || 0);
           for (const device of report.configuredDevices || []) {
             const row = document.createElement("tr");
             appendDiagnosticCell(row, device.name);
@@ -540,12 +547,33 @@
             appendDiagnosticCell(row, device.rvcIndex);
             appendDiagnosticCell(row, device.sourceAddress);
             appendDiagnosticCell(row, device.observed ? "Yes" : "No");
-            appendDiagnosticCell(row, device.lastDgn == null ? null : `0x${Number(device.lastDgn).toString(16).toUpperCase()}`);
+            appendDiagnosticCell(row, device.lastDgnName);
             appendDiagnosticCell(row, device.lastFrameAgeMs == null ? null : `${device.lastFrameAgeMs} ms`);
             appendDiagnosticCell(row, `${device.handledFrames} / ${device.receivedFrames}`);
             diagnosticsDeviceRows.append(row);
           }
-          diagnosticsMeaning.textContent = report.handledFramesMeaning || "Handled counts report whether a handler returned true.";
+          const unmappedRows = report.unmappedTraffic || [];
+          for (const activity of unmappedRows) {
+            const row = document.createElement("tr");
+            appendDiagnosticCell(row, activity.dgnName || "UNKNOWN_DGN");
+            appendDiagnosticCell(row, activity.family);
+            appendDiagnosticCell(row, activity.sourceAddress);
+            appendDiagnosticCell(row, `${activity.rvcIndex} (${activity.instanceVerified ? "verified" : "candidate"})`);
+            appendDiagnosticCell(row, activity.hits);
+            appendDiagnosticCell(row, activity.lastFrameAgeMs == null ? null : `${activity.lastFrameAgeMs} ms`);
+            appendDiagnosticCell(row, activity.payloadHex);
+            appendDiagnosticCell(row, `${activity.inReview ? "In review" : "Not in review"}${activity.payloadAllFf ? " · all 0xFF" : ""}`);
+            diagnosticsUnmappedRows.append(row);
+          }
+          if (unmappedRows.length === 0) {
+            const row = document.createElement("tr");
+            const cell = document.createElement("td");
+            cell.colSpan = 8;
+            cell.textContent = "No unmapped RV-C traffic observed";
+            row.append(cell);
+            diagnosticsUnmappedRows.append(row);
+          }
+          diagnosticsMeaning.textContent = [report.handledFramesMeaning, report.unmappedTrafficMeaning, report.payloadAllFfMeaning].filter(Boolean).join(" ");
           diagnosticsStatus.textContent = `Snapshot updated ${new Date().toLocaleTimeString()}`;
         } catch (error) {
           diagnosticsStatus.dataset.error = "true";
