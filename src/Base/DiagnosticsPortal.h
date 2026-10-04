@@ -47,7 +47,7 @@ inline constexpr char SMARTCOACH_DIAGNOSTICS_PAGE[] = R"HTML(<!doctype html>
       <div class="table-wrap"><table><thead><tr><th>Name</th><th>Type</th><th>Index</th><th>Source</th><th>Observed</th><th>Last DGN</th><th>Last frame age</th><th>Handled / received</th></tr></thead><tbody id="devices"></tbody></table></div>
     </section>
     <section aria-labelledby="unmapped-heading">
-      <h2 id="unmapped-heading">Unmapped RV-C traffic</h2>
+      <h2 id="unmapped-heading">Unmapped CAN traffic</h2>
       <div class="table-wrap"><table><thead><tr><th>DGN</th><th>Family</th><th>Source</th><th>Index</th><th>Hits</th><th>Last frame age</th><th>Payload</th><th>Review status</th></tr></thead><tbody id="unmapped"></tbody></table></div>
     </section>
     <p id="meaning" class="note"></p>
@@ -72,6 +72,13 @@ inline constexpr char SMARTCOACH_DIAGNOSTICS_PAGE[] = R"HTML(<!doctype html>
       const cell = document.createElement("td");
       cell.textContent = value == null ? "Not observed" : String(value);
       row.append(cell);
+    }
+    function unmappedDgnLabel(activity) {
+      const formatDgn = (value) => "0x" + Number(value).toString(16).toUpperCase().padStart(5, "0");
+      const dgnName = activity.dgnName || "UNKNOWN_DGN";
+      if (!activity.pgnName) return dgnName + " (DGN " + formatDgn(activity.dgn) + ")";
+      const destination = activity.destinationAddress == null ? "" : ", DA " + formatDgn(activity.destinationAddress);
+      return activity.pgnName + " (" + activity.protocol + " PGN " + formatDgn(activity.pgn) + destination + "; ID " + formatDgn(activity.dgn) + ")";
     }
     async function refresh() {
       const button = document.querySelector("#refresh");
@@ -110,8 +117,8 @@ inline constexpr char SMARTCOACH_DIAGNOSTICS_PAGE[] = R"HTML(<!doctype html>
         const unmappedRows = report.unmappedTraffic || [];
         for (const activity of unmappedRows) {
           const row = document.createElement("tr");
-          addCell(row, activity.dgnName || "UNKNOWN_DGN");
-          addCell(row, activity.family);
+          addCell(row, unmappedDgnLabel(activity));
+          addCell(row, activity.family === "Unknown" ? activity.protocol : activity.family);
           addCell(row, activity.sourceAddress);
           addCell(row, activity.rvcIndex + " (" + (activity.instanceVerified ? "verified" : "candidate") + ")");
           addCell(row, activity.hits);
@@ -124,7 +131,7 @@ inline constexpr char SMARTCOACH_DIAGNOSTICS_PAGE[] = R"HTML(<!doctype html>
           const row = document.createElement("tr");
           const cell = document.createElement("td");
           cell.colSpan = 8;
-          cell.textContent = "No unmapped RV-C traffic observed";
+          cell.textContent = "No unmapped CAN traffic observed";
           row.append(cell);
           unmapped.append(row);
         }

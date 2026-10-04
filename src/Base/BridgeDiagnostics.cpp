@@ -33,6 +33,63 @@ namespace {
         }
         return allFf;
     }
+
+    struct PgnDescription {
+        uint32_t value;
+        const char* protocol;
+        const char* name;
+        bool hasDestinationAddress;
+        uint8_t destinationAddress;
+    };
+
+    PgnDescription describeUnknownPgn(uint32_t rawDgn) {
+        PgnDescription description = {rawDgn, "Unknown", "", false, 0};
+        uint8_t pduFormat = static_cast<uint8_t>((rawDgn >> 8) & 0xFF);
+        bool pdu1 = pduFormat < 0xF0;
+        uint32_t pgn = pdu1 ? rawDgn & 0x1FF00 : rawDgn;
+        if (pdu1) {
+            description.destinationAddress = static_cast<uint8_t>(rawDgn & 0xFF);
+        }
+
+        if (rawDgn == 0xFECA) {
+            description.protocol = "J1939";
+            description.name = "DM1";
+        } else if (rawDgn == 0xFEF5) {
+            description.protocol = "J1939";
+            description.name = "AMBIENT_CONDITIONS_1";
+        } else if (rawDgn == 0xFEFC) {
+            description.protocol = "J1939";
+            description.name = "DASH_DISPLAY";
+        } else if (rawDgn == 0x1F809) {
+            description.protocol = "NMEA 2000";
+            description.name = "TIME_AND_DATE";
+        } else if (pdu1 && pgn == 0xE800) {
+            description.protocol = "J1939";
+            description.name = "ACKNOWLEDGMENT";
+            description.value = pgn;
+            description.hasDestinationAddress = true;
+        } else if (pdu1 && pgn == 0xEA00) {
+            description.protocol = "J1939";
+            description.name = "REQUEST";
+            description.value = pgn;
+            description.hasDestinationAddress = true;
+        } else if (pdu1 && pgn == 0xEE00) {
+            description.protocol = "J1939";
+            description.name = "ADDRESS_CLAIMED";
+            description.value = pgn;
+            description.hasDestinationAddress = true;
+        } else if (pdu1 && pgn == 0xEF00) {
+            description.protocol = "J1939";
+            description.name = "PROPRIETARY_A";
+            description.value = pgn;
+            description.hasDestinationAddress = true;
+        } else if (!pdu1 && pduFormat == 0xFF && rawDgn <= 0x0FFFF) {
+            description.protocol = "J1939";
+            description.name = "PROPRIETARY_B";
+        }
+
+        return description;
+    }
 }
 
 BridgeDiagnostics& BridgeDiagnostics::instance() {
@@ -185,7 +242,7 @@ String BridgeDiagnostics::reportJson() {
     bus["untrackedConfiguredDevices"] = diagnostics.untrackedConfiguredDevices_;
     bus["unmappedOverflowHits"] = diagnostics.unmappedOverflow_;
     document["handledFramesMeaning"] = "Handler returned true; not proof of valid status data or hardware acknowledgement";
-    document["unmappedTrafficMeaning"] = "Bus DGNs with no configured HomeKit device; not enabled accessories";
+    document["unmappedTrafficMeaning"] = "Observed CAN traffic without a configured HomeKit device; not necessarily RV-C and not an enabled accessory";
     document["payloadAllFfMeaning"] = "All sampled data bytes are 0xFF; often unavailable or not reporting";
     twai_status_info_t status = {};
     bool available = twai_get_status_info(&status) == ESP_OK;
@@ -228,7 +285,21 @@ String BridgeDiagnostics::reportJson() {
         const UnmappedActivity& activity = diagnostics.unmapped_[index];
         RVC_DGN dgn = static_cast<RVC_DGN>(activity.dgn);
         JsonObject row = unmapped.add<JsonObject>();
-        row["dgnName"] = LearnTable::dgnName(dgn);
+        row["dgn"] = activity.dgn;
+        const char* dgnName = LearnTable::dgnName(dgn);
+        row["dgnName"] = dgnName;
+        if (std::strcmp(dgnName, "UNKNOWN_DGN") != 0) {
+            row["protocol"] = "RV-C";
+            row["pgn"] = activity.dgn;
+        } else {
+            PgnDescription description = describeUnknownPgn(activity.dgn);
+            row["protocol"] = description.protocol;
+            row["pgn"] = description.value;
+            if (description.name[0] != '\0') row["pgnName"] = description.name;
+            if (description.hasDestinationAddress) {
+                row["destinationAddress"] = description.destinationAddress;
+            }
+        }
         row["family"] = LearnTable::relatedFamily(dgn);
         row["rvcIndex"] = activity.instanceIndex;
         row["instanceVerified"] = activity.instanceVerified;

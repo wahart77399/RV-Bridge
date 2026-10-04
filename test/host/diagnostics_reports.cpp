@@ -154,6 +154,22 @@ namespace {
         fakeEspTimerMicros = 3000000;
         BridgeDiagnostics::observeUnmapped(CHARGER_STATUS, 40, 1, false, allFf, 8);
 
+        fakeEspTimerMicros = 3200000;
+        BridgeDiagnostics::observeUnmapped(static_cast<RVC_DGN>(0xE894), 42, 0x94,
+                           false, allFf, 8);
+        fakeEspTimerMicros = 3400000;
+        BridgeDiagnostics::observeUnmapped(static_cast<RVC_DGN>(0xEAFF), 43, 0xFF,
+                           false, allFf, 8);
+        fakeEspTimerMicros = 3600000;
+        BridgeDiagnostics::observeUnmapped(static_cast<RVC_DGN>(0xFECA), 44, 1,
+                           false, allFf, 8);
+        fakeEspTimerMicros = 3800000;
+        BridgeDiagnostics::observeUnmapped(static_cast<RVC_DGN>(0x1F809), 45, 1,
+                           false, allFf, 8);
+        fakeEspTimerMicros = 3900000;
+        BridgeDiagnostics::observeUnmapped(static_cast<RVC_DGN>(0x12345), 41, 9,
+                           false, allFf, 8);
+
         fakeEspTimerMicros = 4000000;
         WiFi.statusCode = WL_CONNECTED;
         String serialized = BridgeDiagnostics::reportJson();
@@ -168,9 +184,13 @@ namespace {
             "overflow counter should be zero under capacity");
 
         JsonArrayConst unmapped = report["unmappedTraffic"].as<JsonArrayConst>();
-        require(unmapped.size() == 3, "expected three unmapped rows");
+        require(unmapped.size() == 8, "expected eight unmapped rows");
         JsonObjectConst first = unmapped[0].as<JsonObjectConst>();
         require(first["dgnName"] == "DC_SOURCE_STATUS_1", "DGN enum name missing or incorrect");
+        require(first["dgn"] == static_cast<uint32_t>(DC_SOURCE_STATUS_1),
+            "raw DGN value missing from unmapped report");
+        require(first["protocol"] == "RV-C" && first["pgn"] == static_cast<uint32_t>(DC_SOURCE_STATUS_1),
+            "fixed RV-C protocol/PGN fields incorrect");
         require(first["rvcIndex"] == 2 && first["instanceVerified"] == true,
             "verified instance index incorrect");
         require(first["sourceAddress"] == 33 && first["hits"] == 2,
@@ -192,6 +212,33 @@ namespace {
         const char* note = allFfRow["note"].as<const char*>();
         require(note != nullptr && std::string(note).find("0xFF") != std::string::npos,
             "all-0xFF note missing");
+
+        JsonObjectConst unknownRow = unmapped[3].as<JsonObjectConst>();
+        require(unknownRow["dgn"] == 0xE894 && unknownRow["dgnName"] == "UNKNOWN_DGN",
+            "unmapped PDU1 DGN value was not retained");
+        require(unknownRow["protocol"] == "J1939" && unknownRow["pgnName"] == "ACKNOWLEDGMENT",
+            "J1939 acknowledgement was not identified");
+        require(unknownRow["family"] == "Unknown", "J1939 PGN changed the RV-C family classification");
+        require(unknownRow["pgn"] == 0xE800 && unknownRow["destinationAddress"] == 0x94,
+            "PDU1 PGN or destination address was not normalized");
+
+        JsonObjectConst requestRow = unmapped[4].as<JsonObjectConst>();
+        require(requestRow["pgnName"] == "REQUEST" && requestRow["pgn"] == 0xEA00 &&
+                requestRow["destinationAddress"] == 0xFF,
+            "J1939 global request was not identified");
+
+        JsonObjectConst dm1Row = unmapped[5].as<JsonObjectConst>();
+        require(dm1Row["pgnName"] == "DM1" && dm1Row["protocol"] == "J1939",
+            "J1939 DM1 was not identified");
+
+        JsonObjectConst nmeaRow = unmapped[6].as<JsonObjectConst>();
+        require(nmeaRow["pgnName"] == "TIME_AND_DATE" && nmeaRow["protocol"] == "NMEA 2000",
+            "NMEA 2000 time/date PGN was not identified");
+
+        JsonObjectConst unclassifiedRow = unmapped[7].as<JsonObjectConst>();
+        require(unclassifiedRow["dgn"] == 0x12345 && unclassifiedRow["dgnName"] == "UNKNOWN_DGN" &&
+            unclassifiedRow["protocol"] == "Unknown" && unclassifiedRow["pgn"] == 0x12345,
+            "unknown DGN value was not retained for identification");
         }
 
         void testUnmappedOverflowBound() {
