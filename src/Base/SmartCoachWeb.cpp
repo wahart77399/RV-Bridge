@@ -123,6 +123,22 @@ namespace {
         if (error != nullptr) LittleFS.remove(temporaryPath);
         return error;
     }
+
+    class ScopedHeapBaseline {
+    public:
+        explicit ScopedHeapBaseline(const char* operation) : operation_(operation) {}
+        ScopedHeapBaseline(const ScopedHeapBaseline&) = delete;
+        ScopedHeapBaseline& operator=(const ScopedHeapBaseline&) = delete;
+        ScopedHeapBaseline(ScopedHeapBaseline&&) = delete;
+        ScopedHeapBaseline& operator=(ScopedHeapBaseline&&) = delete;
+        ~ScopedHeapBaseline() {
+            Serial.printf("SmartCoachWeb: %s freeHeap=%lu minFreeHeap=%lu\n", operation_,
+                          static_cast<unsigned long>(ESP.getFreeHeap()),
+                          static_cast<unsigned long>(ESP.getMinFreeHeap()));
+        }
+    private:
+        const char* operation_;
+    };
 }
 
 // -----------------------------------------------------------------
@@ -140,8 +156,7 @@ SmartCoachWebServer& SmartCoachWebServer::instance(uint16_t port)
 // Private constructor
 // -----------------------------------------------------------------
 SmartCoachWebServer::SmartCoachWebServer(uint16_t port)
-    : m_port(port)
-    , m_server(port)
+    : m_server(port)
     , m_running(false)
 {
 }
@@ -191,10 +206,12 @@ bool SmartCoachWebServer::isRunning() const
 void SmartCoachWebServer::registerAdditionalRoutes()
 {
     m_server.on("/diagnostics-page", HTTP_GET, [this]() {
+        ScopedHeapBaseline heapBaseline("diagnostics-page");
         m_server.sendHeader("Cache-Control", "no-store");
         m_server.send(200, "text/html", SMARTCOACH_DIAGNOSTICS_PAGE);
     });
     m_server.on("/diagnostics", HTTP_GET, [this]() {
+        ScopedHeapBaseline heapBaseline("diagnostics-report");
         String report = BridgeDiagnostics::reportJson();
         if (report.isEmpty()) {
             m_server.send(503, "application/json", "{\"error\":\"Diagnostics unavailable\"}");
@@ -212,6 +229,7 @@ void SmartCoachWebServer::registerAdditionalRoutes()
     m_server.on("/devices/rename", HTTP_POST, [this]() { handleRenameDevice(); });
     m_server.on("/devices/review", HTTP_POST, [this]() { handleReviewDevice(); });
     m_server.on("/discovery", HTTP_GET, [this]() {
+        ScopedHeapBaseline heapBaseline("discovery-report");
         String report = LearnMode::discoveryJson();
         m_server.sendHeader("Cache-Control", "no-store");
         if (report.isEmpty()) m_server.send(503, "application/json", "{\"error\":\"Discovery unavailable\"}");
@@ -243,6 +261,7 @@ void SmartCoachWebServer::serveStaticFile(const char* uri,
 
 void SmartCoachWebServer::handleRenameDevice()
 {
+    ScopedHeapBaseline heapBaseline("rename-device");
     int code = 400;
     const char* error = "Invalid request body";
     do {
@@ -307,6 +326,7 @@ void SmartCoachWebServer::handleWifiReset()
 
 void SmartCoachWebServer::handleReviewDevice()
 {
+    ScopedHeapBaseline heapBaseline("review-device");
     int code = 400;
     const char* error = "Invalid review request";
     do {
@@ -390,6 +410,7 @@ void SmartCoachWebServer::handleReviewDevice()
 
 void SmartCoachWebServer::handleCoachUpdate()
 {
+    ScopedHeapBaseline heapBaseline("coach-update");
     int code = 400;
     const char* error = "Invalid coach configuration";
     do {
@@ -425,6 +446,7 @@ void SmartCoachWebServer::handleCoachUpdate()
 
 void SmartCoachWebServer::handleEmailSettings()
 {
+    ScopedHeapBaseline heapBaseline("email-settings");
     int code = 400;
     const char* error = "Invalid email settings";
     bool saved = false;
@@ -501,6 +523,7 @@ void SmartCoachWebServer::handleEmailPortal()
 
 void SmartCoachWebServer::handleEmailSend()
 {
+    ScopedHeapBaseline heapBaseline("email-send");
     EmailReports::Result result = EmailReports::sendPendingReport();
     int code = 500;
     const char* label = "storage_error";
@@ -528,6 +551,7 @@ void SmartCoachWebServer::handleEmailSend()
 
 void SmartCoachWebServer::handleEmailStage()
 {
+    ScopedHeapBaseline heapBaseline("email-stage");
     int code = 200;
     const char* result = "staged";
     if (LearnMode::isLearning()) {
@@ -555,11 +579,6 @@ void SmartCoachWebServer::handleReboot()
     m_server.send(200, "application/json", "{\"rebooting\":true}");
     delay(500);
     ESP.restart();
-}
-
-WebServer& SmartCoachWebServer::server()
-{
-    return m_server;
 }
 
 // -----------------------------------------------------------------
@@ -601,16 +620,18 @@ void SmartCoachWebServer::handleNotFoundWrapper()
 // -----------------------------------------------------------------
 void SmartCoachWebServer::handleRoot()
 {
+    ScopedHeapBaseline heapBaseline("root-page");
     String indexPath = String(PORTAL_DIR) + "/index.html";
     if (LittleFS.exists(indexPath)) {
         File f = LittleFS.open(indexPath, "r");
-#ifdef FUTURE_DIAGNOSTICS
         constexpr size_t MAX_PORTAL_HTML_BYTES = 65536;
+        constexpr size_t MIN_FREE_HEAP_FOR_PORTAL_BUFFER = 16384;
         constexpr const char* DIAGNOSTICS_LINK = "<a class=\"footer-legal-link\" href=\"/diagnostics-page\">Diagnostics</a>";
         constexpr const char* EMAIL_LINK = "<a class=\"footer-legal-link\" href=\"/email\">Email reports</a>";
         size_t fileSize = f.size();
         bool served = false;
-        if (fileSize <= MAX_PORTAL_HTML_BYTES) {
+        if (fileSize <= MAX_PORTAL_HTML_BYTES &&
+            ESP.getFreeHeap() >= fileSize + MIN_FREE_HEAP_FOR_PORTAL_BUFFER) {
             String html;
             bool complete = html.reserve(fileSize + std::strlen(DIAGNOSTICS_LINK) + std::strlen(EMAIL_LINK) + 2);
             char buffer[512];
@@ -636,9 +657,6 @@ void SmartCoachWebServer::handleRoot()
             f.seek(0);
             m_server.streamFile(f, "text/html");
         }
-#else
-        m_server.streamFile(f, "text/html");
-#endif
         f.close();
     } else {
         m_server.send(200, "text/html",
@@ -651,32 +669,26 @@ void SmartCoachWebServer::handleRoot()
 
 void SmartCoachWebServer::handleStatus()
 {
-    String json;
-    json.reserve(128);
-    json += "{\"ip\":\"";
-    json += WiFi.localIP().toString();
-    json += "\",\"rssi\":";
-    json += WiFi.RSSI();
-    json += ",\"free_heap\":";
-    json += ESP.getFreeHeap();
-    json += ",\"uptime_ms\":";
-    json += millis();
-    json += ",\"restart_required\":";
-    json += m_restartRequired ? "true" : "false";
-    json += ",\"diagnostics_available\":true";
+    char json[384];
+    String ip = WiFi.localIP().toString();
     bool learningReportAvailable = LittleFS.exists("/learn_report.json");
     bool currentInventoryAvailable = LittleFS.exists("/devices.json");
     bool reportAvailable = !LearnMode::isLearning() && (learningReportAvailable || currentInventoryAvailable);
-    json += ",\"email_reports_available\":true,\"email_relay_configured\":";
-    json += EmailReports::relayConfigured() ? "true" : "false";
-    json += ",\"email_report_pending\":";
-    json += LittleFS.exists("/email_outbox.json") ? "true" : "false";
-    json += ",\"email_report_available\":";
-    json += reportAvailable ? "true" : "false";
-    json += ",\"email_learning_report_available\":";
-    json += (!LearnMode::isLearning() && learningReportAvailable) ? "true" : "false";
-    json += '}';
-    m_server.send(200, "application/json", json);
+    bool emailReportPending = LittleFS.exists("/email_outbox.json");
+    bool emailRelayConfigured = EmailReports::relayConfigured();
+    int length = snprintf(json, sizeof(json),
+        "{\"ip\":\"%s\",\"rssi\":%d,\"free_heap\":%lu,\"uptime_ms\":%lu,"
+        "\"restart_required\":%s,\"diagnostics_available\":true,"
+        "\"email_reports_available\":true,\"email_relay_configured\":%s,"
+        "\"email_report_pending\":%s,\"email_report_available\":%s,"
+        "\"email_learning_report_available\":%s}",
+        ip.c_str(), WiFi.RSSI(), static_cast<unsigned long>(ESP.getFreeHeap()),
+        static_cast<unsigned long>(millis()), m_restartRequired ? "true" : "false",
+        emailRelayConfigured ? "true" : "false", emailReportPending ? "true" : "false",
+        reportAvailable ? "true" : "false",
+        (!LearnMode::isLearning() && learningReportAvailable) ? "true" : "false");
+    if (length >= 0 && static_cast<size_t>(length) < sizeof(json)) m_server.send(200, "application/json", json);
+    else m_server.send(500, "application/json", "{\"error\":\"Status unavailable\"}");
 }
 
 void SmartCoachWebServer::handleNotFound()

@@ -1,5 +1,4 @@
 #pragma once
-// #ifdef HOME_KIT_2
 #include "SpanView.h"
 #include "HomeSpan.h"
 #include "PowerSensor.h"

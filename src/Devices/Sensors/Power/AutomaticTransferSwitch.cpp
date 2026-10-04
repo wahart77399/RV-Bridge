@@ -11,8 +11,7 @@
 #include "debug.h"
 
 void AutomaticTransferSwitch::attachView(const char* name, bool showCurrent , bool showFault) {
-    AutomaticTransferSwitchView* view = new AutomaticTransferSwitchView(this, name);
-    addView(view);
+    new AutomaticTransferSwitchView(this, name);
 }
 
 boolean AutomaticTransferSwitch::executeCommand(RVC_DGN dgn, const uint8_t* data, uint8_t sAddress) {

@@ -138,20 +138,7 @@ class GenericDevice {
         }
 
 
-        GenericDevice(const GenericDevice& orig) :
-            views(),
-            frame(orig.frame),  // may need to allocate memory and deep copy - not sure yet
-            currentData(nullptr),
-            sourceAddress(orig.sourceAddress),
-            instance(orig.instance) {  //,group(orig.group), availableDGNs(orig.availableDGNs) { 
-            // Copy constructor
-            if (orig.currentData) {
-                // ********************** WARNING ****************************************************************
-                // this wont work, it will alocate the size of the pointer - I believe it needs to be 8 bytes long
-                currentData = new uint8_t[DATA_SIZE]; // new uint8_t[sizeof(uint8_t) * 8];
-                memcpy(currentData, orig.currentData, DATA_SIZE); // sizeof(orig.currentData));
-            }             
-        }
+        GenericDevice(const GenericDevice&) = delete;
 
         GenericDevice(uint8_t* data) :
              views(), 
@@ -171,32 +158,7 @@ class GenericDevice {
             }  
         }
 
-        // assign operator
-        GenericDevice& operator=(const GenericDevice& orig) {
-            if (this != &orig) {
-                if (currentData) {
-                    delete[] currentData; // delete old data
-                }
-                currentData = nullptr; // Clear existing data
-                if (orig.currentData) {
-                    // ********************** WARNING ****************************************************************
-                    // this wont work, it will alocate the size of the pointer - I believe it needs to be 8 bytes long
-                    currentData = new uint8_t[DATA_SIZE]; // new uint8_t[sizeof(orig.currentData)];
-                    memcpy(currentData, orig.currentData, DATA_SIZE); //sizeof(orig.currentData));
-                } 
-                sourceAddress = orig.sourceAddress;
-                instance = orig.instance;
-                // group = orig.group;
-                // availableDGNs = orig.availableDGNs;
-                frame = orig.frame;
-                // availableDGNs = nullptr; // Initialize to nullptr
-                //if (orig.availableDGNs != nullptr) {
-                //    availableDGNs = new RVC_DGN[sizeof(orig.availableDGNs)];
-                //    memcpy(availableDGNs, orig.availableDGNs, sizeof(orig.availableDGNs));
-                //}
-            }
-            return *this;
-        }
+        GenericDevice& operator=(const GenericDevice&) = delete;
 
         GenericDevice(GenericDevice&&) = delete;
         GenericDevice& operator=(GenericDevice&&) = delete;

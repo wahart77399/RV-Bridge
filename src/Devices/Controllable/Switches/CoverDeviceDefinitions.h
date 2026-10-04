@@ -239,7 +239,7 @@ typedef enum {
 } SHADE_MOTION;
 
 #endif  // AWNING_DEFINITIONS_H
-#endif // HOME_KIT_2
+#endif
 */
 
 #include "RVConstants.h"

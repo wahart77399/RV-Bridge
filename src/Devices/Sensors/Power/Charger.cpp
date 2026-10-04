@@ -121,8 +121,7 @@ uint8_t Charger::rawChargerPriority() const {
 
 #include "ChargerView.h"
 void Charger::attachView(const char* name, bool showCurrent, bool showFault) {
-    ChargerView* view = new ChargerView(this, name);
-    addView(view);
+    new ChargerView(this, name);
 }
 
 ChargerOperatingState Charger::operatingState() const {

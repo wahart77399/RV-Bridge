@@ -93,10 +93,10 @@ class ChassisMobility : public GenericDevice {
             // Constructor implementation
             ;
         }
-        ChassisMobility(const ChassisMobility& orig) : GenericDevice(orig) {
-            // Copy constructor implementation
-            ;
-        }
+        ChassisMobility(const ChassisMobility&) = delete;
+        ChassisMobility& operator=(const ChassisMobility&) = delete;
+        ChassisMobility(ChassisMobility&&) = delete;
+        ChassisMobility& operator=(ChassisMobility&&) = delete;
 
         ChassisMobility(uint8_t address) 
             : GenericDevice(address, DEFAULT_CHASSIS_INDEX) {} 

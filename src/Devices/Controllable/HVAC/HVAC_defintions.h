@@ -1,5 +1,4 @@
 #include "RVConstants.h"
-// #ifdef HOME_KIT_1
 #ifndef HVAC_DEFINITIONS_H
 #define HVAC_DEFINITIONS_H
 

@@ -26,8 +26,7 @@ uint8_t Generator::lineOf(RVC_DGN /*dgn*/, const uint8_t* raw) const
 
 void Generator::attachView(const char* name, bool showCurrent, bool showFault)
 {
-    GeneratorView* view = new GeneratorView(this, name);
-    addView(view);
+    new GeneratorView(this, name);
 }
 
 boolean Generator::executeCommand(RVC_DGN dgn, const uint8_t* buffer, uint8_t /*val*/)

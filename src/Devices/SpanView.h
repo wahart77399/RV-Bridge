@@ -68,8 +68,8 @@ class SpanView {
 
     public:
 
-        SpanView(); // : model(nullptr) { SpanView::prepHomeSpan();}
-        SpanView(GenericDevice* refModel); // : model(refModel)  { SpanView::prepHomeSpan(); model->addView(this); }
+        SpanView() = delete;
+        SpanView(GenericDevice* refModel);
         SpanView(const SpanView&) = delete;
         SpanView(SpanView&&) = delete;
         SpanView& operator=(SpanView&&) = delete;

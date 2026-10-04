@@ -17,7 +17,8 @@ namespace {
 
 PowerSensorView::PowerSensorView(PowerSensor* model, const char* name, const uint8_t legs, const boolean b,
                                  bool showCurrent, bool showFault)
-    : model_(model)
+    : SpanView(model)
+    , model_(model)
     , voltageChar_{nullptr,nullptr}
     , currentChar_{nullptr, nullptr}
     , faultChar_{nullptr,nullptr}

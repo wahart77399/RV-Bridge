@@ -76,6 +76,9 @@ namespace {
         JsonObjectConst second = report["configuredDevices"][1].as<JsonObjectConst>();
         require(second["observed"] == false && second["lastDgn"].isNull() && second["lastFrameAgeMs"].isNull(), "unobserved device fields are not null");
         require(fakeTwaiStatusReads == 1, "report performed unexpected driver polling");
+        ESP.freeHeapBytes = 1000;
+        require(BridgeDiagnostics::reportJson().isEmpty(), "diagnostics serialized without the reserved heap margin");
+        ESP.freeHeapBytes = 120000;
     }
 }
 

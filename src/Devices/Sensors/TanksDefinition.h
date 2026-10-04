@@ -30,4 +30,4 @@ typedef enum {
 
 
 
-#endif // ifdef HOME_KIT_2
+#endif

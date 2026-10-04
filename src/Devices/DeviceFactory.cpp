@@ -159,10 +159,6 @@ std::map<String, DeviceFactory::DeviceCreator> DeviceFactory::creators;
 
 void DeviceFactory::registerCreators() {
 
-    // ============================================================
-    // HOME_KIT_1
-    // ============================================================
-
     creators["DC_DimmableSwitch"] = [](const DeviceConfig& c, const CoachSpec&) -> GenericDevice* {
         auto* d = new LightDevice(c.sourceAddress, c.rvcIndex, LightKind::Dimmable);
         DGN2DeviceMap[DC_DIMMER_COMMAND][c.rvcIndex]  = d;
@@ -205,10 +201,6 @@ void DeviceFactory::registerCreators() {
         return d;
     };
 
-
-    // ============================================================
-    // HOME_KIT_2
-    // ============================================================
 
     creators["FloorHeat"] = [](const DeviceConfig& c, const CoachSpec&) -> GenericDevice* {
         auto* d = new FloorHeat(c.sourceAddress, c.rvcIndex);
@@ -339,7 +331,7 @@ bool DeviceFactory::loadCoachSpec(const char* path, CoachSpec& out) {
     bool success = false;
     File file;
 
-    if (path != nullptr && LittleFS.begin()) {
+    if (path != nullptr && LittleFS.begin(false)) {
         file = LittleFS.open(path, "r");
         if (file) {
             JsonDocument doc;   // or StaticJsonDocument<2048> if you fix the size

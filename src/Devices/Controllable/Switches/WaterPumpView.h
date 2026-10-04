@@ -97,4 +97,4 @@ class WaterPumpView : public SpanView {
 
 };
 
-#endif // HOME_KIT_1 // WATER_PUMP_VIEW_H
+#endif // WATER_PUMP_VIEW_H

@@ -101,9 +101,8 @@ class WaterPump : public GenericDevice {
             // Constructor implementation
         }
 
-        WaterPump(const WaterPump& orig) : GenericDevice(orig) {
-            // Copy constructor implementation
-        }
+        WaterPump(const WaterPump&) = delete;
+        WaterPump& operator=(const WaterPump&) = delete;
 
         WaterPump(uint8_t address) : GenericDevice(address, WATER_PUMP_INDEX) { 
         }

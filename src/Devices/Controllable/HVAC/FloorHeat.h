@@ -146,13 +146,8 @@ class FloorHeat : public GenericDevice {
                 commandData[i] = INVALID_DATA; // initialize to invalid data
             }
         }
-        FloorHeat(const FloorHeat& orig) : GenericDevice(orig) {
-            // Copy constructor implementation
-            commandData = new uint8_t[sizeof(uint8_t) * 8]; // allocate 8 bytes for the data
-            for (uint8_t i = 0; i < 8; i++) {
-                commandData[i] = orig.commandData[i]; // initialize to invalid data
-            }
-        }
+        FloorHeat(const FloorHeat&) = delete;
+        FloorHeat& operator=(const FloorHeat&) = delete;
         FloorHeat(uint8_t address, uint8_t instance) : GenericDevice(address, instance) {     
             // Constructor with parameters implementation
             commandData = new uint8_t[sizeof(uint8_t) * 8]; // allocate 8 bytes for the data

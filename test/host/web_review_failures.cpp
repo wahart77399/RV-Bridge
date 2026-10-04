@@ -162,6 +162,7 @@ int main(int argc, char** argv) {
                 fixture();
                 fakeEspTimerMicros = 1000000;
                 fakeTwaiStatusReads = 0;
+                Serial.log.clear();
                 WebServer::active->request("/diagnostics", HTTP_GET);
                 JsonDocument report; deserializeJson(report, WebServer::active->responseBody.c_str());
                 require(WebServer::active->responseCode == 200, "diagnostics route failed");
@@ -169,12 +170,14 @@ int main(int argc, char** argv) {
                 require(WebServer::active->responseHeaders["Content-Disposition"].find("attachment") != std::string::npos, "diagnostics response is not a download");
                 require(report["bus"]["receivedFrames"] == 0 && report["configuredDevices"].size() == 0, "unexpected diagnostics data");
                 require(fakeTwaiStatusReads == 1, "diagnostics request made an unexpected number of driver reads");
+                require(Serial.log.find("diagnostics-report freeHeap=") != std::string::npos, "diagnostics heap baseline missing");
             }},
             {"root injects diagnostics link without changing filesystem", [] {
                 fixture();
                 const std::string original = "<html><body><footer class=\"footer\"><span>SmartCoach</span></footer></body></html>";
                 LittleFS.put("/SmartCoachDevicePortal/index.html", original);
                 LittleFS.files["/SmartCoachDevicePortal/index.html"]->availableAtEof = true;
+                Serial.log.clear();
                 WebServer::active->request("/", HTTP_GET);
                 const std::string response = WebServer::active->responseBody.c_str();
                 size_t linkPosition = response.find("href=\"/diagnostics-page\"");
@@ -183,6 +186,16 @@ int main(int argc, char** argv) {
                 require(response.find("href=\"/email\">Email reports</a>") != std::string::npos, "email setup link missing");
                 require(response.find("href=\"/diagnostics-page\"", linkPosition + 1) == std::string::npos, "diagnostics link duplicated");
                 require(LittleFS.content("/SmartCoachDevicePortal/index.html") == original, "portal filesystem was modified");
+                require(Serial.log.find("root-page freeHeap=") != std::string::npos, "root-page heap baseline missing");
+            }},
+            {"root streams original portal when heap reserve is low", [] {
+                fixture();
+                const std::string original = "<html><body><footer><span>SmartCoach</span></footer></body></html>";
+                LittleFS.put("/SmartCoachDevicePortal/index.html", original);
+                ESP.freeHeapBytes = 1000;
+                WebServer::active->request("/", HTTP_GET);
+                ESP.freeHeapBytes = 120000;
+                require(WebServer::active->responseCode == 200 && std::string(WebServer::active->responseBody.c_str()) == original, "low-heap root did not stream the original portal");
             }},
             {"root does not duplicate existing diagnostics link", [] {
                 fixture();

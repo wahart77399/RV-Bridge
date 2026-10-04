@@ -31,8 +31,7 @@ uint8_t Inverter::lineOf(RVC_DGN dgn, const uint8_t* raw) const
 
 void Inverter::attachView(const char* name, bool showCurrent, bool showFault)
 {
-    InverterView* view = new InverterView(this, name);
-    addView(view);
+    new InverterView(this, name);
 }
 
 boolean Inverter::executeCommand(RVC_DGN dgn, const uint8_t* buffer, uint8_t /*val*/)

@@ -85,9 +85,11 @@ inline void delay(uint32_t duration) { fakeMillis += duration; }
 struct RestartRequested {};
 struct FakeEsp {
     unsigned restarts = 0;
+    uint32_t freeHeapBytes = 120000;
+    uint32_t minimumFreeHeapBytes = 90000;
     void restart() { ++restarts; throw RestartRequested{}; }
-    uint32_t getFreeHeap() const { return 120000; }
-    uint32_t getMinFreeHeap() const { return 90000; }
+    uint32_t getFreeHeap() const { return freeHeapBytes; }
+    uint32_t getMinFreeHeap() const { return minimumFreeHeapBytes; }
 };
 inline FakeEsp ESP;
 

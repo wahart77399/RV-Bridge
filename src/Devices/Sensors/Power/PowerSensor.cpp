@@ -107,17 +107,6 @@ CAN_frame_t* PowerSensor::buildCommand(RVC_DGN /*dgn*/)
     return nullptr;   // listen-only for power sensors
 }
 
-// ------------------------------------------------------------------
-// Public behaviour
-// ------------------------------------------------------------------
-/**
-void PowerSensor::attachView(const char* name, bool showCurrent, bool showFault)
-{
-    PowerSensorView* view = new PowerSensorView(this, name, showCurrent, showFault);
-    addView(view);
-}
-    */
-
 uint16_t PowerSensor::rmsVoltage(uint8_t line, uint8_t io)
 {
     uint16_t result = 0;

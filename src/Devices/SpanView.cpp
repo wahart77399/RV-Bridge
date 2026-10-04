@@ -103,10 +103,6 @@ SpanAccessory* SpanView::createAccessory(void) {
 	return new SpanAccessory(nextAccessoryAidValue++);
 }
 
-SpanView::SpanView() : model(nullptr) { 
-	SpanView::prepHomeSpan();
-}
-
 SpanView::SpanView(GenericDevice* refModel) : model(refModel)  { 
 	SpanView::prepHomeSpan(); 
 	if (model != nullptr)

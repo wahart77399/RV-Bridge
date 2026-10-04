@@ -261,7 +261,7 @@ class CoverDevice : public GenericDevice {
 
 };
 
-#endif // ifdef HOME_KIT_2
+#endif
 */
 #include "RVConstants.h"
 #include "debug.h"

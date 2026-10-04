@@ -83,9 +83,8 @@ class Tanks : public GenericDevice {
             // Constructor implementation
         }
 
-        Tanks(const Tanks& orig) : GenericDevice(orig), tankSize(orig.tankSize) {
-            // Copy constructor implementation
-        }
+        Tanks(const Tanks&) = delete;
+        Tanks& operator=(const Tanks&) = delete;
 
         Tanks(uint8_t address, uint8_t index, uint16_t size) : GenericDevice(address, index), tankSize(size) { 
         }

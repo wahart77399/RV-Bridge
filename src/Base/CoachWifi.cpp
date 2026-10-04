@@ -325,15 +325,6 @@ void CoachWifi::startHomeSpan() {
     homeSpan.setConnectionCallback(CoachWifi::connectionEstablished);
     homeSpan.setStatusCallback(CoachWifi::wifiStatusChanged);
 
-/* *
-#ifdef HOME_KIT_1
-    homeSpan.begin(Category::Bridges, "RV-Bridge", DEFAULT_HOST_NAME, "RV-Bridge-ESP32");
-#endif
-#ifdef HOME_KIT_2
-    homeSpan.begin(Category::Bridges, "RV-Bridge-2", DEFAULT_HOST_NAME, "RV-Bridge-ESP32");
-#endif
-*/
-
     homeSpan.begin(Category::Bridges, "SmartCoach", DEFAULT_HOST_NAME, "SmartCoach-ESP32-S3");
 }
 

@@ -126,9 +126,6 @@ struct DeviceConfig {
     uint32_t    aid = 0;             // Stable starting AID; multi-accessory views use following IDs
     String      room;                // Suggested HomeKit room; Apple Home owns actual room assignment
     uint16_t    order         = 100;
-    // String      homeKitType;        // Optional for documentation or future use
-    // String      group;              // HOME_KIT_1 or HOME_KIT_2 or other groupings
-
     // free form extras, (awning timers, tank kind, etc)
     // std::map<String, String> extra; // key-value pairs for additional configuration
     std::vector<ExtraPair> extras;

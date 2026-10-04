@@ -243,7 +243,7 @@ class CoverView : public SpanView  {
         
 };
 // #endif  // ifndef AWNING_VIEW_H
-#endif // ifdef HOME_KIT_2
+#endif
 */
 #include "RVConstants.h"
 #include "debug.h"

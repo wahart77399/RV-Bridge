@@ -210,10 +210,10 @@ class HVAC_Thermostat : public GenericDevice {
             
         }
 
-        HVAC_Thermostat(const HVAC_Thermostat& orig) : GenericDevice(orig) { 
-            // Copy constructor implementation
-            
-        }
+        HVAC_Thermostat(const HVAC_Thermostat&) = delete;
+        HVAC_Thermostat& operator=(const HVAC_Thermostat&) = delete;
+        HVAC_Thermostat(HVAC_Thermostat&&) = delete;
+        HVAC_Thermostat& operator=(HVAC_Thermostat&&) = delete;
 
         HVAC_Thermostat(uint8_t address, uint8_t instance) : GenericDevice(address, instance) {     
             

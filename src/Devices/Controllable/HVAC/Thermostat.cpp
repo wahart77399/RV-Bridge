@@ -1,5 +1,4 @@
 // #include "RVConstants.h"
-// #ifdef HOME_KIT_1
 #include "Arduino.h"
 #include "CanFrameTypes.h"
 #include "PacketQueue.h"

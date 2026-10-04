@@ -47,7 +47,6 @@ protected:
     // -----------------------------------------------------------------
     virtual void registerAdditionalRoutes();
     void serveStaticFile(const char* uri, const char* path, const char* contentType);
-    WebServer& server();
 
 private:
     // -----------------------------------------------------------------
@@ -58,7 +57,6 @@ private:
     // -----------------------------------------------------------------
     // Private attributes
     // -----------------------------------------------------------------
-    uint16_t      m_port;
     WebServer     m_server;
     bool          m_running;
     bool          m_restartRequired = false;

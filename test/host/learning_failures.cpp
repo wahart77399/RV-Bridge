@@ -25,6 +25,8 @@ namespace {
         LittleFS = FakeFilesystem{};
         Serial.log.clear();
         ESP.restarts = 0;
+        ESP.freeHeapBytes = 120000;
+        ESP.minimumFreeHeapBytes = 90000;
         fakeMillis = 1000;
         LittleFS.put("/coach.json", R"({"year":2022,"make":"Test","model":"Coach","floorplan":"1","coachId":"test","chassisAid":61})");
         LittleFS.put("/devices.json", previousConfig);
@@ -186,6 +188,13 @@ int main() {
             JsonDocument discovery;
             require(!deserializeJson(discovery, LearnMode::discoveryJson().c_str()), "invalid discovery snapshot");
             require(discovery["records"][1]["rvcIndex"] == 9 && discovery["records"][1]["rvcIndexVerified"] == false, "unhandled index not marked as candidate");
+        }},
+        {"discovery JSON refuses low-heap serialization", [] {
+            fixture();
+            ESP.freeHeapBytes = 1000;
+            String discovery = LearnMode::discoveryJson();
+            ESP.freeHeapBytes = 120000;
+            require(discovery.isEmpty(), "discovery JSON consumed the reserved heap margin");
         }},
         {"ignored late discovery is not offered again", [] {
             fixture(); startAndObserve(); finish();

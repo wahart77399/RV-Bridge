@@ -17,6 +17,9 @@ uint32_t         LearnMode::lastFinishAttemptMs_ = 0;
 uint32_t         LearnMode::lastDiscoveryScanMs_ = 0;
 
 namespace {
+    constexpr size_t MAX_DISCOVERY_JSON_BYTES = 32768;
+    constexpr uint32_t MIN_FREE_HEAP_FOR_JSON = 24576;
+
     bool isLightType(const char* type) {
         return (type != nullptr) &&
                ((strcmp(type, "DC_Switch") == 0) || (strcmp(type, "DC_DimmableSwitch") == 0));
@@ -87,7 +90,16 @@ String LearnMode::discoveryJson() {
         row["sample"] = hexBytes(record.sample, sizeof(record.sample));
     }
     String json;
-    if (!document.overflowed()) serializeJson(document, json);
+    size_t expected = 0;
+    bool canSerialize = !document.overflowed();
+    if (canSerialize) {
+        expected = measureJson(document);
+        canSerialize = expected > 0 && expected <= MAX_DISCOVERY_JSON_BYTES &&
+                       ESP.getFreeHeap() >= expected + MIN_FREE_HEAP_FOR_JSON;
+    }
+    if (canSerialize && json.reserve(expected)) {
+        if (serializeJson(document, json) != expected) json = "";
+    }
     return json;
 }
 

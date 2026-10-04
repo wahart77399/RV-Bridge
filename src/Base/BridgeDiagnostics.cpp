@@ -7,6 +7,11 @@
 #include <esp_timer.h>
 #include <cstring>
 
+namespace {
+    constexpr size_t MAX_DIAGNOSTICS_JSON_BYTES = 32768;
+    constexpr uint32_t MIN_FREE_HEAP_FOR_JSON = 24576;
+}
+
 BridgeDiagnostics& BridgeDiagnostics::instance() {
     static BridgeDiagnostics diagnostics;
     return diagnostics;
@@ -150,6 +155,15 @@ String BridgeDiagnostics::reportJson() {
         else row["lastHandledFrameAgeMs"] = nullptr;
     }
     String json;
-    if (!document.overflowed()) serializeJson(document, json);
+    size_t expected = 0;
+    bool canSerialize = !document.overflowed();
+    if (canSerialize) {
+        expected = measureJson(document);
+        canSerialize = expected > 0 && expected <= MAX_DIAGNOSTICS_JSON_BYTES &&
+                       ESP.getFreeHeap() >= expected + MIN_FREE_HEAP_FOR_JSON;
+    }
+    if (canSerialize && json.reserve(expected)) {
+        if (serializeJson(document, json) != expected) json = "";
+    }
     return json;
 }

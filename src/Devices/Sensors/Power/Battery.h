@@ -301,24 +301,8 @@ class Battery : public GenericDevice {
         }
 
 
-        Battery(const Battery& orig) : GenericDevice(orig), source2Data(nullptr), source3Data(nullptr), source4Data(nullptr) {
-            // Copy constructor implementation
-            if (orig.source2Data != nullptr) {
-                source2Data = new uint8_t[sizeof(uint8_t) * 8];
-                for (uint8_t i = 0; i < 8; i++)
-                    source2Data[i] = orig.source2Data[i];
-            }
-            if (orig.source3Data != nullptr) {
-                source3Data = new uint8_t[sizeof(uint8_t) * 8];
-                for (uint8_t i = 0; i < 8; i++)
-                    source3Data[i] = orig.source3Data[i];
-            }
-            if (orig.source4Data != nullptr) {
-                source4Data = new uint8_t[sizeof(uint8_t) * 8];
-                for (uint8_t i = 0; i < 8; i++)
-                    source4Data[i] = orig.source4Data[i];
-            }
-        }
+        Battery(const Battery&) = delete;
+        Battery& operator=(const Battery&) = delete;
 
 
         Battery(uint8_t address, uint8_t index, uint8_t pri) : GenericDevice(address, index), source2Data(nullptr), source3Data(nullptr), source4Data(nullptr) { 
