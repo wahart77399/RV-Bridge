@@ -1,4 +1,4 @@
-# RV-Bridge: HomeKit to RV-C Adapter 
+# SmartCoach (aka RV-Bridge): HomeKit to RV-C Adapter 
 This is a forked version of Randy Ubillos's RV-Bridge
 
 ## Overview
@@ -7,8 +7,24 @@ The RV-Bridge was originally developed by Randy Ubillos, you may find the origin
 https://github.com/wahart77399/RV-Bridge
 
 ## Development and Hardware
-I use Randy’s original hardware and 3D casing. Unfortunately, the ESP32 board he used did not allow me to run a debugger, so you will note a lot of commented out print statements as I debugged the solution. 
-One important note, I used two esp32 boards due to limited memory on the board, so you will see that I have HOME_KIT1 and HOME_KIT2 defined to separate the functionality. Interestingly, after the fact, I don’t think it was necessary, so, you may be able to remove the definitions.
+Originally, I use Randy’s original hardware and 3D casing. Unfortunately, the ESP32 board he used did not allow me to build all the devices I wanted. So, I researched and found a different board, the ESP32-S3 with CAN and LIN bus connections from SKPang. You can find the board [here](https://copperhilltech.com/esp32s3-can-lin-bus-board/). Once I made that decision, I decided to add more capability, including:
+* Captive Portal for setting up Wifi Credentials
+* Device Creation from JSON file
+* Coach Specication Creation from JSON file
+* Auto Discovery of devices
+* Web Portal
+     * Learning / listening of devices on RVC CAN bus.
+     * Coach Spec editing
+     * Name assignment and enabling of devices
+     * Listening of CAN bus for unassigned devices
+     * CAN bus diagnostics
+     * Reboot of SmartCoach
+     * Automatic email diagnostic and device reports
+     * Wipe Wifi Credentials
+ 
+These capabilities add substantial features making it more of a SmartCoach solution and not just a simple bridge.
+There is a another readme for setting up email relay in the cloud/gmail-relay with scripts to use.
+In addition, I've upgraded the library stack to be current with HomeSpan and uses the internal TWAI on the ESP32. Finally, I added regression test suite for the builds.
 
 ---
 ## MVC
@@ -17,12 +33,9 @@ The architecture relies heavily on the Model View Controller pattern. The Model 
 ---
 ## Libraries
 lib_deps =
-     
      elapsedMillis
-     
-     miwagner/ESP32CAN@^0.0.1
-     
-     homespan/HomeSpan@^1.9.1
+     homespan/HomeSpan@2.1.8       
+     bblanchon/ArduinoJson@^7.2.0
      
 ---
 ## Archive
@@ -71,11 +84,8 @@ All controllable devices (switches and HVAC devices) are located in this directo
 Switches, including adjustable switches, are located in a sub directory, switches, under controllable. This includes:
 * WaterPump
 * DoorLock
-* DC_Switch
-* DC_DimmableSwitch
-* Awning: Awnings are timed since they don’t return a step value as they are extended or retracted.
-  They also need a safety switch to protect from accidentally extending while traveling. 
-* Shades: They are just like awnings.
+* LightDevice
+* CoverDevices for Awnings and Shades.
 
 #### HVAC
 The HVAC devices included are:
@@ -98,11 +108,10 @@ Power devices have an inheritance that is set up to simplify the code; all power
 * Battery
 * Generator
 * Inverter
+* Charger
 ---
 ## Other Considerations
-In my coach, I’ve added the capability of including Ring devices into the HomeKit. Ring devices are not native to HomeKit, but can be added via a tool similar to my RV-Bridge, HOOBS or Homebridge.org . HOOBS can be found here:  https://www.hoobs.com
-I use a “HOOBS Box”, not the “HOOBS Pro”. However, I would also consider using a HOOBS MicroSD simply because you can use your own Raspberry PI solution and won’t necessarily be dependent on another vendor to provide the hardware. The options are there for you.
-HOOBS has a long list of potential plugins beyond Ring that can be implemented. 
+In my coach, I’ve added the capability of including Ring devices into the HomeKit. Ring devices are not native to HomeKit, but can be added via a tool similar to my RV-Bridge, Homebridge.org . I use a homebridge on a Orange PI board. I use a Ring plugin to map Ring devices to the Apple Home so, for example, when I lock my door, the Ring alarm is armed and unarmed when the door is unlocked. 
 
 In addition, I use the EVE Home app for any automation, EVE Home is more sophisticated and includes the ability to perform conditional statements where HomeKit does not. In addition, EVE Home is a vendor for motion sensors, security devices, etc.
 
