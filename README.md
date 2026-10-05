@@ -10,7 +10,7 @@ https://github.com/wahart77399/RV-Bridge
 Originally, I used Randy’s original hardware and 3D casing. Unfortunately, the ESP32 board he used did not allow me to build all the devices I wanted. So, I researched and found a different board, the ESP32-S3 with CAN and LIN bus connections from SKPang. You can find the board [here](https://copperhilltech.com/esp32s3-can-lin-bus-board/). Once I made that decision, I decided to add more capability, including:
 * Captive Portal for setting up Wifi Credentials
 * Device Creation from JSON file
-* Coach Specication Creation from JSON file
+* Coach Specification Creation from JSON file
 * Auto Discovery of devices
 * Web Portal
      * Learning / listening of devices on RVC CAN bus.
@@ -23,62 +23,66 @@ Originally, I used Randy’s original hardware and 3D casing. Unfortunately, the
      * Wipe Wifi Credentials
  
 These capabilities add substantial features making it more of a SmartCoach solution and not just a simple bridge.
-There is a another [readme] (cloud/gmail-relay/README.md) for [setting up email relay](cloud/gmail-relay/README.md) in the cloud/gmail-relay with scripts to use.
+For email relay setup, see [the guide](cloud/gmail-relay/README.md).
 In addition, I've upgraded the library stack to be current with HomeSpan and uses the internal TWAI on the ESP32. Finally, I added regression test suite for the builds.
 
 ---
-## Sample EVE Home Screen Shots
-<img width="200" height="900" alt=" yada yada " src="images/IMG_6506.PNG"/>    <img width="200" height="900" alt=" yada yada " src="images/IMG_6507.PNG"/>    <img width="200" height="900" alt=" yada yada " src="images/IMG_6508.PNG"/>  |  <img width="200" height="900" alt=" yada " src="images/IMG_6524.PNG"/>
-<img width="200" height="900" alt=" yada yada " src="images/IMG_6509.PNG"/>    <img width="200" height="900" alt=" yada yada " src="images/IMG_6510.PNG"/>    <img width="200" height="900" alt=" yada yada " src="images/IMG_6511.PNG"/>  |  <img width="200" height="900" alt=" yada yada" src="images/IMG_6512.PNG"/>
+## Sample EVE Home Screens
+These screenshots show RV devices in the EVE Home app, including awning, motion, and door-lock controls. The available screens depend on the devices installed in the coach.
+
+<img width="200" alt="Door awning and window covering controls" src="images/IMG_6506.PNG"/>    <img width="200" alt="Chassis motion sensor status" src="images/IMG_6507.PNG"/>    <img width="200" alt="Front door lock controls" src="images/IMG_6508.PNG"/>  |  <img width="200" alt="EVE Home accessory screen" src="images/IMG_6524.PNG"/>
+<img width="200" alt="EVE Home accessory screen" src="images/IMG_6509.PNG"/>    <img width="200" alt="EVE Home accessory screen" src="images/IMG_6510.PNG"/>    <img width="200" alt="EVE Home accessory screen" src="images/IMG_6511.PNG"/>  |  <img width="200" alt="EVE Home accessory screen" src="images/IMG_6512.PNG"/>
 
 ---
-<img width="200" height="900" alt=" yada yada " src="images/IMG_6513.PNG"/>    <img width="200" height="900" alt=" yada yada " src="images/IMG_6514.PNG"/>
-<img width="200" height="900" alt=" yada yada " src="images/IMG_6521.PNG"/>
+<img width="200" alt="EVE Home accessory screen" src="images/IMG_6513.PNG"/>    <img width="200" alt="EVE Home accessory screen" src="images/IMG_6514.PNG"/>
+<img width="200" alt="EVE Home accessory screen" src="images/IMG_6521.PNG"/>
 
 ---
-<img width="200" height="900" alt=" yada yada " src="images/IMG_6522.PNG"/>
+<img width="200" alt="EVE Home accessory screen" src="images/IMG_6522.PNG"/>
 
 ---
-<img width="200" height="900" alt=" yada " src="images/IMG_6523.PNG"/>  <img width="200" height="900" alt=" yada " src="images/IMG_6525.PNG"/>
+<img width="200" alt="EVE Home accessory screen" src="images/IMG_6523.PNG"/>  <img width="200" alt="EVE Home accessory screen" src="images/IMG_6525.PNG"/>
 
-<img width="200" height="900" alt=" yodle " src="images/IMG_6526.PNG"/>  <img width="200" height="900" alt="yodle" src="images/IMG_6527.PNG"/>
+<img width="200" alt="EVE Home accessory screen" src="images/IMG_6526.PNG"/>  <img width="200" alt="EVE Home accessory screen" src="images/IMG_6527.PNG"/>
 
-<img width="200" height="900" alt="yodle" src="images/IMG_6528.PNG"/>
+<img width="200" alt="EVE Home accessory screen" src="images/IMG_6528.PNG"/>
 
 ## Web Portal
-The screenshot below is of the Web Portal page. It shows...
+The first screen shows the coach profile and discovered devices.
 
-<img width="200" height="900" alt="Web Portal Top of Page" src="images/IMG_6503.PNG"/>
+<img width="200" alt="Web Portal Top of Page" src="images/IMG_6503.PNG"/>
 
 ---
 This screenshot, below, shows the coach details when you click on the "View Coach Details" button at the top.
 
-<img width="200" height="900" alt="Coach Details" src="images/IMG_6504.PNG"/>
+<img width="200" alt="Coach Details" src="images/IMG_6504.PNG"/>
 
 ---
-This is the Water Pump switch that has been approved for uploading into Home. It shows its related RVC DGNs (Data Group Number).
+This Water Pump has been discovered but is still unassigned. Its card shows the two related RV-C messages.
 
-<img width="200" height="900" aalt="Water Pump with DGNs" src="images/IMG_6505.PNG"/>
+<img width="200" alt="Unassigned Water Pump card showing its RV-C messages" src="images/IMG_6505.PNG"/>
 
 ---
 This shows the reboot and reset buttons along with links to the Diagnostic Page and Email Reports.
 
-<img width="200" height="900" alt="Diagnostic Page Bottom" src="images/IMG_6520.PNG"/>
+<img width="200" alt="Diagnostic Page Bottom" src="images/IMG_6520.PNG"/>
 
 ### Diagnostic Portal
+The diagnostics page shows bridge health, configured devices, and unmapped CAN traffic.
 
-<img width="200" height="900" alt="Diagnostics Page Top" src="images/IMG_6516.PNG"/>   <img width="200" height="900" alt="Diagnostics Page Showing Configured Device Metrics" src="images/IMG_6517.PNG"/>
+<img width="200" alt="Diagnostics Page Top" src="images/IMG_6516.PNG"/>   <img width="200" alt="Diagnostics Page Showing Configured Device Metrics" src="images/IMG_6517.PNG"/>
 
 ---
-<img alt="Diagnostic Page Showing Unmapped DGN Metrics" src="images/IMG_6518.PNG"/>   
-<img alt="Diagnostic Page Showing DM-RV DGN" src="images/IMG_6519.PNG"/>
+<img width="850" alt="Diagnostics table showing unmapped CAN messages" src="images/IMG_6518.PNG"/>
+<img width="850" alt="Diagnostics table showing decoded DM-RV details" src="images/IMG_6519.PNG"/>
 
 
 ### Email Portal
+The email page lets owners choose report options and configure email delivery.
 
-## Captive PortaL
-The captive portal is used to setup the Wifi and Password, Coach details, and emails.
-<img alt="Captive Portal" src="images/CaptivePortal.png"/>
+## Captive Portal
+The captive portal collects coach Wi-Fi, coach details, and report preferences during setup.
+<img width="850" alt="SmartCoach captive portal setup page" src="images/CaptivePortal.png"/>
 
 ---
 ## MVC
@@ -101,7 +105,7 @@ The main.cpp is located directly under the src directory tree. It manages the in
 
 ---
 ## Base
-The base directory maintains any global constants that all classes may need. In addition, there are two classes, CoachESP32 and CoachWifi. CoachESP32 controls the ESP32 board and communicates with it. The CoachWifi controls access to the Wifi of the Coach to communicate with Apple HomeKit’s hub, one or more Apple TVs. WifiCreds is a placeholder, this will need to be productized for the average user so that it does not need to be re-compiled every time and in my opinion It should be encrypted somehow.
+The Base folder contains code used across the project. `CoachESP32` manages the board. `CoachWifi` connects to the coach Wi-Fi and starts the setup page when needed. Wi-Fi details are saved on the device, so changing them does not require rebuilding the firmware.
 
 ---
 ## Class Hierarchy
@@ -123,7 +127,7 @@ Packets are referenced or used by models and controllers.
 
 ---
 ## Devices
-All devices are created during initialization by a singleton pattern class called DeviceFactory. There is code commented out that can read a configuration file for all the devices, but I never really tested it and used it. I would encourage the use so that this code is not recompiled for each coach model and year. The config file should be read for the devices and attributes needed. The device factory will create each device accordingly.
+At startup, `DeviceFactory` reads `devices.json` and `coach.json` to create the devices for this coach. You can change many device names and settings in the web portal without rebuilding the firmware.
 
 ### Generic Device
 GenericDevice is model base class and has much of the functionality that all devices use as well as the management of the views. 
@@ -253,6 +257,8 @@ RV-Bridge is the result of putting these pieces together.
 
 Uses an ESP32 with a CAN-Bus interface, either as separate components, or more easily, this board I found from [skpang.co.uk](https://www.skpang.co.uk):
 
+The photo shows the ESP32 board used for the bridge.
+
 ![ESP32 Module](/images/board_in_box.jpeg)
 
 In the U.S. it's available on the CopperHillTech Website:<br>
@@ -268,6 +274,8 @@ The connector used by the Firefly system is a ***3M 37104-A165-00E MB*** which c
 Insert four 24AWG wires into the Can-Bus connector (I used silicone covered wire as they are much more flexible) and compress to make the connections. Twist the data and power pairs together and screw them into the terminal block on the CAN-Bus interface on the ESP32.
 
 The CAN-Bus connector plugs into one of the available sockets inside the system wiring panel.
+
+The photos below show the cable, connector wiring, the coach wiring panel, and the Home app after setup.
 
 |  |  |
 | :---: | :---: |
