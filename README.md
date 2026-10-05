@@ -28,52 +28,49 @@ In addition, I've upgraded the library stack to be current with HomeSpan and use
 
 ---
 ## Sample EVE Home Screen Shots
-<img alt=" yada yada " src="images/IMG_6506.PNG"/>
-<img alt=" yada yada " src="images/IMG_6507.PNG"/>
-<img alt=" yada yada " src="images/IMG_6508.PNG"/>
-<img alt=" yada yada " src="images/IMG_6509.PNG"/>
-<img alt=" yada yada " src="images/IMG_6510.PNG"/>
-<img alt=" yada yada " src="images/IMG_6511.PNG"/>
-<img alt=" yada yada" src="images/IMG_6512.PNG"/>
-<img alt=" yada yada " src="images/IMG_6513.PNG"/>
-<img alt=" yada yada " src="images/IMG_6514.PNG"/>
-<img alt=" yada yada " src="images/IMG_6521.PNG"/>
-<img alt=" yada yada " src="images/IMG_6522.PNG"/>
-<img alt=" yada " src="images/IMG_6524.PNG"/>
-<img alt=" yada " src="images/IMG_6523.PNG"/>
-<img alt=" yada " src="images/IMG_6525.PNG"/>
-<img alt=" yodle " src="images/IMG_6526.PNG"/>
-<img alt="yodle" src="images/IMG_6527.PNG"/>
-<img alt="yodle" src="images/IMG_6528.PNG"/>
+<img width="200" height="900" alt=" yada yada " src="images/IMG_6506.PNG"/>    <img width="200" height="900" alt=" yada yada " src="images/IMG_6507.PNG"/>    <img width="200" height="900" alt=" yada yada " src="images/IMG_6508.PNG"/>  |  <img width="200" height="900" alt=" yada " src="images/IMG_6524.PNG"/>
+<img width="200" height="900" alt=" yada yada " src="images/IMG_6509.PNG"/>    <img width="200" height="900" alt=" yada yada " src="images/IMG_6510.PNG"/>    <img width="200" height="900" alt=" yada yada " src="images/IMG_6511.PNG"/>  |  <img width="200" height="900" alt=" yada yada" src="images/IMG_6512.PNG"/>
+
+---
+<img width="200" height="900" alt=" yada yada " src="images/IMG_6513.PNG"/>    <img width="200" height="900" alt=" yada yada " src="images/IMG_6514.PNG"/>
+<img width="200" height="900" alt=" yada yada " src="images/IMG_6521.PNG"/>
+
+---
+<img width="200" height="900" alt=" yada yada " src="images/IMG_6522.PNG"/>
+
+---
+<img width="200" height="900" alt=" yada " src="images/IMG_6523.PNG"/>  <img width="200" height="900" alt=" yada " src="images/IMG_6525.PNG"/>
+
+<img width="200" height="900" alt=" yodle " src="images/IMG_6526.PNG"/>  <img width="200" height="900" alt="yodle" src="images/IMG_6527.PNG"/>
+
+<img width="200" height="900" alt="yodle" src="images/IMG_6528.PNG"/>
 
 ## Web Portal
 The screenshot below is of the Web Portal page. It shows...
 
-<img alt="Web Portal Top of Page" src="images/IMG_6503.PNG"/>
+<img width="200" height="900" alt="Web Portal Top of Page" src="images/IMG_6503.PNG"/>
 
 ---
 This screenshot, below, shows the coach details when you click on the "View Coach Details" button at the top.
 
-<img alt="Coach Details" src="images/IMG_6504.PNG"/>
+<img width="200" height="900" alt="Coach Details" src="images/IMG_6504.PNG"/>
 
 ---
 This is the Water Pump switch that has been approved for uploading into Home. It shows its related RVC DGNs (Data Group Number).
 
-<img alt="Water Pump with DGNs" src="images/IMG_6505.PNG"/>
+<img width="200" height="900" aalt="Water Pump with DGNs" src="images/IMG_6505.PNG"/>
 
 ---
 This shows the reboot and reset buttons along with links to the Diagnostic Page and Email Reports.
-<img alt="Diagnostic Page Bottom" src="images/IMG_6520.PNG"/>
+
+<img width="200" height="900" alt="Diagnostic Page Bottom" src="images/IMG_6520.PNG"/>
 
 ### Diagnostic Portal
 
-<img alt="Diagnostics Page Top" src="images/IMG_6516.PNG"/>
+<img width="200" height="900" alt="Diagnostics Page Top" src="images/IMG_6516.PNG"/>   <img width="200" height="900" alt="Diagnostics Page Showing Configured Device Metrics" src="images/IMG_6517.PNG"/>
 
 ---
-<img alt="Diagnostics Page Showing Configured Device Metrics" src="images/IMG_6517.PNG"/>
-
----
-<img alt="Diagnostic Page Showing Unmapped DGN Metrics" src="images/IMG_6518.PNG"/>
+<img alt="Diagnostic Page Showing Unmapped DGN Metrics" src="images/IMG_6518.PNG"/>   
 <img alt="Diagnostic Page Showing DM-RV DGN" src="images/IMG_6519.PNG"/>
 
 
