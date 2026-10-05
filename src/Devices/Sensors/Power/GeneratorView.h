@@ -14,13 +14,11 @@ public:
     ~GeneratorView() = default;
 
     GeneratorView(Generator* model, const char* name);
-    // bool updateView() override;
+    bool updateView() override;
 
 private:
-/**
     Generator* model_;
-
-    Generator* model(void) const        { return model_; }
-    void model(Generator* mdl)    { model_ = mdl; }
-*/
+    SpanCharacteristic* engineFaultChar_;
+    SpanCharacteristic* generatorRunningChar_;
+    SpanCharacteristic* externalActivityChar_;
 };

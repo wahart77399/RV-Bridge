@@ -36,6 +36,16 @@ class Tanks : public GenericDevice {
     private:
         friend class TanksView;
         uint16_t tankSize; // in liters
+        uint8_t autoFillStatusData_ = 0xFF;
+        bool autoFillStatusReceived_ = false;
+
+        void setAutoFillStatus(const uint8_t* data);
+        bool hasAutoFillOperatingStatus() const;
+        bool autoFillOperating() const;
+        bool hasAutoFillValveStatus() const;
+        bool autoFillValveOpen() const;
+        bool hasAutoFillResult() const;
+        bool autoFillResultFailed() const;
 
         uint16_t size(void) const { 
             uint16_t result = INVALID_SIZE;

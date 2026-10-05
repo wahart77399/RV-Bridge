@@ -25,6 +25,8 @@ const uint8_t INVERTER_LINE_1_VALUE = 0x00;  // 0000 0000
 const uint8_t INVERTER_LINE_2_VALUE = 0x10;  // 0001 0000
 const uint8_t INVERTER_INPUT_VALUE = 0x00;   // 0000 0000
 const uint8_t INVERTER_OUTPUT_VALUE = 0x40;  // 0100 0000
+constexpr uint8_t INVERTER_TEMPERATURES_PER_STATUS = 3;
+constexpr uint8_t INVERTER_TEMPERATURE_COUNT = INVERTER_TEMPERATURES_PER_STATUS * 2;
 
 class InverterView;
 
@@ -32,7 +34,16 @@ class Inverter : public PowerSensor {
     friend class InverterView;
 
 private:
+    double componentTemperatureC_[INVERTER_TEMPERATURE_COUNT];
+    bool componentTemperatureAvailable_[INVERTER_TEMPERATURE_COUNT];
+    float dcVoltageV_;
+    float dcCurrentA_;
+    bool dcVoltageAvailable_;
+    bool dcCurrentAvailable_;
+
     InverterStatus status() const;
+    void setTemperatureStatus(const uint8_t* data, uint8_t sensorOffset);
+    void setDcStatus(const uint8_t* data);
 
 protected:
     uint8_t lineOf(RVC_DGN dgn, const uint8_t* raw) const override;

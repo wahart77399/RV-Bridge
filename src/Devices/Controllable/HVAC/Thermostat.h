@@ -65,6 +65,14 @@ class HVAC_Thermostat : public GenericDevice {
 
         const uint8_t HEAT_TEMP_INDEX = 0;
         const uint8_t COLD_TEMP_INDEX = 1;
+        uint16_t ambientTemperatureRaw_ = BAD_UINT16_DATA;
+        bool ambientTemperatureAvailable_ = false;
+        bool furnaceStatusAvailable_ = false;
+        bool furnaceHeating_ = false;
+        uint8_t airConditionerMode_ = 0xFF;
+        uint8_t airConditionerMaxFanRaw_ = 0xFF;
+        uint8_t heatPumpMode_ = 0xFF;
+        uint8_t heatPumpMaxOutputRaw_ = 0xFF;
     public:
         /*
         static inline double convToTempC(uint16_t value) {
@@ -77,6 +85,48 @@ class HVAC_Thermostat : public GenericDevice {
 
     private:
         friend class ThermostatView;
+
+        bool hasAmbientTemperature() const { return ambientTemperatureAvailable_; }
+        double getAmbientTemperatureC() const {
+            return ambientTemperatureAvailable_ ? convToTempC(ambientTemperatureRaw_) : INVALID_TEMPERATURE;
+        }
+        bool hasFurnaceStatus() const { return furnaceStatusAvailable_; }
+        bool isFurnaceHeating() const { return furnaceHeating_; }
+        void setAirConditionerStatus(const uint8_t* data) {
+            if (data != nullptr) {
+                airConditionerMode_ = data[1];
+                airConditionerMaxFanRaw_ = data[2];
+            }
+        }
+        void setHeatPumpStatus(const uint8_t* data) {
+            if (data != nullptr) {
+                heatPumpMode_ = data[1];
+                heatPumpMaxOutputRaw_ = data[2];
+            }
+        }
+        bool hasAirConditionerMode() const { return airConditionerMode_ <= 1; }
+        uint8_t airConditionerMode() const { return airConditionerMode_; }
+        bool hasAirConditionerMaxFan() const { return airConditionerMaxFanRaw_ <= 200; }
+        float airConditionerMaxFanPercent() const { return airConditionerMaxFanRaw_ * 0.5f; }
+        bool hasHeatPumpMode() const { return heatPumpMode_ <= 1; }
+        uint8_t heatPumpMode() const { return heatPumpMode_; }
+        bool hasHeatPumpMaxOutput() const { return heatPumpMaxOutputRaw_ <= 200; }
+        float heatPumpMaxOutputPercent() const { return heatPumpMaxOutputRaw_ * 0.5f; }
+        void setAmbientTemperature(const uint8_t* data) {
+            if (data != nullptr) {
+                ambientTemperatureRaw_ = static_cast<uint16_t>(data[1]) |
+                                         (static_cast<uint16_t>(data[2]) << 8);
+                double temperatureC = convToTempC(ambientTemperatureRaw_);
+                ambientTemperatureAvailable_ = ambientTemperatureRaw_ != BAD_UINT16_DATA &&
+                                               temperatureC >= -50.0 && temperatureC <= 100.0;
+            }
+        }
+        void setFurnaceStatus(const uint8_t* data) {
+            if (data != nullptr) {
+                furnaceStatusAvailable_ = data[3] <= RVCPercentMax;
+                furnaceHeating_ = furnaceStatusAvailable_ && data[3] > 0;
+            }
+        }
 
         void setFanMode(const RVCFanMode setting) {
             uint8_t* rawData = getCurrentData();

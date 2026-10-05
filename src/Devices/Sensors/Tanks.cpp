@@ -25,6 +25,45 @@ const uint8_t Tanks::GRAY_WATER_SECOND_INSTANCE   = 18;
 const uint8_t Tanks::LPG_SECOND_INSTANCE          = 19;
 const std::map<uint8_t, std::string> Tanks::tankNames = { {FRESH_WATER_INSTANCE, "Fresh Tank"}, {BLACK_WATER_INSTANCE, "Black Tank"}, {GRAY_WATER_INSTANCE, "Gray Tank"}, {LPG_INSTANCE, "LPG Tank"} };    ;
 
+void Tanks::setAutoFillStatus(const uint8_t* data)
+{
+    if (data != nullptr) {
+        autoFillStatusData_ = data[0];
+        autoFillStatusReceived_ = true;
+    }
+}
+
+bool Tanks::hasAutoFillOperatingStatus() const
+{
+    return autoFillStatusReceived_ && (autoFillStatusData_ & 0x03) <= 1;
+}
+
+bool Tanks::autoFillOperating() const
+{
+    return (autoFillStatusData_ & 0x03) == 1;
+}
+
+bool Tanks::hasAutoFillValveStatus() const
+{
+    return autoFillStatusReceived_ && ((autoFillStatusData_ >> 2) & 0x03) <= 1;
+}
+
+bool Tanks::autoFillValveOpen() const
+{
+    return ((autoFillStatusData_ >> 2) & 0x03) == 1;
+}
+
+bool Tanks::hasAutoFillResult() const
+{
+    return autoFillStatusReceived_ && ((autoFillStatusData_ >> 4) & 0x0F) <= 4;
+}
+
+bool Tanks::autoFillResultFailed() const
+{
+    uint8_t lastOperation = (autoFillStatusData_ >> 4) & 0x0F;
+    return lastOperation == 2 || lastOperation == 4;
+}
+
 
 
 
@@ -46,6 +85,11 @@ boolean Tanks::executeCommand(RVC_DGN dgn, const uint8_t* data, uint8_t sAddress
                 // then we don't send a command on the CAN bus, we update our views (HOME SPAN)
                 // the -> the views will requst the data from the buffer
                 setData(dgn, rawData);
+                updateViews();
+                cmdExecuted = true;
+                break;
+            case (AUTOFILL_STATUS):
+                setAutoFillStatus(data);
                 updateViews();
                 cmdExecuted = true;
                 break;

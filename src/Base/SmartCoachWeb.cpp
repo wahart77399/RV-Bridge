@@ -34,6 +34,37 @@ static bool isValidOwnerEmail(const char* address)
 }
 
 namespace {
+    class DiagnosticsHttpSink : public DiagnosticsJsonSink {
+    public:
+        explicit DiagnosticsHttpSink(WebServer& server) : server_(server) {}
+
+        size_t extraHeapRequired(size_t) const override { return 0; }
+
+        bool begin(size_t) override {
+            started_ = true;
+            server_.chunkResponseBegin("application/json");
+            return true;
+        }
+
+        size_t write(const uint8_t* data, size_t length) override {
+            server_.chunkWrite(reinterpret_cast<const char*>(data), length);
+            return length;
+        }
+
+        bool finish() override {
+            server_.chunkResponseEnd();
+            return true;
+        }
+
+        bool started() const { return started_; }
+
+    private:
+        WebServer& server_;
+        bool started_ = false;
+    };
+}
+
+namespace {
     constexpr const char* PORTAL_DIR = "/SmartCoachDevicePortal";
     constexpr const char* EMAIL_PORTAL_HTML = R"HTML(<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SmartCoach Email Reports</title><style>body{margin:0;background:#eef2eb;color:#18392f;font:16px system-ui,sans-serif}main{max-width:620px;margin:5vh auto;padding:24px;background:#fff;border:1px solid #cbd7ca;border-radius:6px}h1{font-size:24px;margin:0 0 20px}h2{font-size:16px;margin:24px 0 12px}label{display:flex;align-items:center;gap:10px;margin:14px 0}input:not([type=checkbox]){box-sizing:border-box;width:100%;padding:11px;border:1px solid #9bac9e;border-radius:4px;font:inherit}input[type=checkbox]{width:18px;height:18px}button{padding:10px 14px;margin:8px 8px 0 0;border:1px solid #315e4b;border-radius:4px;background:#315e4b;color:#fff;font:inherit;cursor:pointer}button:disabled{opacity:.6}p{line-height:1.5;color:#52675c;overflow-wrap:anywhere}#message{min-height:1.5em;color:#315e4b}#error{color:#a4493d}</style></head><body><main><h1>Email reports</h1><p>Recipients: <span id="recipients">Loading</span></p><form id="settings"><label><input id="ownerConsent" type="checkbox"> Email me the discovery report when learning completes</label><label><input id="diagnosticConsent" type="checkbox"> Email diagnostic reports to owner addresses</label><label><input id="supportConsent" type="checkbox"> Allow opted-in reports to be copied to support</label><h2>Gmail relay</h2><label for="endpoint">Google Apps Script web app URL</label><input id="endpoint" type="url" maxlength="256" placeholder="https://script.google.com/macros/s/.../exec"><label for="token">Per-coach relay token (64 hexadecimal characters)</label><input id="token" type="password" maxlength="64" pattern="[0-9a-fA-F]{64}" autocomplete="new-password"><p>This is not your Gmail password. Use this page on trusted coach Wi-Fi; the relay token is stored on the bridge in NVS.</p><button id="save" type="submit">Save settings</button></form><button id="stage" type="button" hidden>Stage latest discovery report</button><button id="send" type="button" hidden>Send pending report</button><p id="message" role="status"></p><p id="error" role="alert"></p></main><script>const byId=id=>document.getElementById(id);async function refresh(){try{const responses=await Promise.all([fetch('/coach.json',{cache:'no-store'}),fetch('/status',{cache:'no-store'})]);if(!responses[0].ok||!responses[1].ok)throw new Error('Bridge status unavailable');const coach=await responses[0].json();const status=await responses[1].json();byId('recipients').textContent=Array.isArray(coach.ownerEmails)?coach.ownerEmails.join(', '):'No owner addresses configured';byId('ownerConsent').checked=Boolean(coach.emailReports);byId('diagnosticConsent').checked=Boolean(coach.diagnosticEmails);byId('supportConsent').checked=Boolean(coach.shareWithSupport);byId('message').textContent=status.email_relay_configured?'Relay configured':'Relay not configured';byId('stage').hidden=!(status.email_report_available&&coach.emailReports&&!status.email_report_pending);byId('send').hidden=!(status.email_relay_configured&&status.email_report_pending)}catch(error){byId('error').textContent=error.message}}byId('settings').addEventListener('submit',async event=>{event.preventDefault();const endpoint=byId('endpoint').value.trim();const token=byId('token').value.trim();if(Boolean(endpoint)!==Boolean(token)){byId('error').textContent='Enter both relay fields, or leave both blank.'}else{byId('save').disabled=true;byId('error').textContent='';try{const response=await fetch('/email/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({emailReports:byId('ownerConsent').checked,diagnosticEmails:byId('diagnosticConsent').checked,shareWithSupport:byId('supportConsent').checked,endpoint,token})});const result=await response.json();if(!response.ok)throw new Error(result.error||'Could not save settings');byId('token').value='';byId('message').textContent='Settings saved';await refresh()}catch(error){byId('error').textContent=error.message}finally{byId('save').disabled=false}}});byId('stage').addEventListener('click',async()=>{byId('stage').disabled=true;try{const response=await fetch('/email/stage',{method:'POST'});const result=await response.json();if(!response.ok)throw new Error(result.result||'Could not stage report');byId('message').textContent='Report staged';await refresh()}catch(error){byId('error').textContent=error.message}finally{byId('stage').disabled=false}});byId('send').addEventListener('click',async()=>{if(confirm('Send the pending report to the listed owner addresses?')){byId('send').disabled=true;try{const response=await fetch('/email/send',{method:'POST'});const result=await response.json();if(!response.ok)throw new Error(result.result==='delivery_uncertain'?'Delivery is uncertain. Check Gmail before retrying.':result.result||'Delivery failed');byId('message').textContent='Report sent';await refresh()}catch(error){byId('error').textContent=error.message}finally{byId('send').disabled=false}}});refresh();</script></body></html>)HTML";
 
@@ -212,13 +243,11 @@ void SmartCoachWebServer::registerAdditionalRoutes()
     });
     m_server.on("/diagnostics", HTTP_GET, [this]() {
         ScopedHeapBaseline heapBaseline("diagnostics-report");
-        String report = BridgeDiagnostics::reportJson();
-        if (report.isEmpty()) {
+        m_server.sendHeader("Cache-Control", "no-store");
+        m_server.sendHeader("Content-Disposition", "attachment; filename=smartcoach-diagnostics.json");
+        DiagnosticsHttpSink sink(m_server);
+        if (!BridgeDiagnostics::writeReport(sink) && !sink.started()) {
             m_server.send(503, "application/json", "{\"error\":\"Diagnostics unavailable\"}");
-        } else {
-            m_server.sendHeader("Cache-Control", "no-store");
-            m_server.sendHeader("Content-Disposition", "attachment; filename=smartcoach-diagnostics.json");
-            m_server.send(200, "application/json", report);
         }
     });
     serveStaticFile("/style.css", "/SmartCoachDevicePortal/style.css", "text/css");

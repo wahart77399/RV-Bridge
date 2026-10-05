@@ -37,10 +37,12 @@
 #include "RVConstants.h"
 #include "debug.h"
 #include "Arduino.h"
+#include <cstring>
 #include "PowerSensor.h"
 #include "ATS_Definitions.h"
 
 class AutomaticTransferSwitch : public PowerSensor {
+    friend class DeviceFactory;
     public:
         static const uint8_t ATS_BYTE_0 = 0; 
         static const uint8_t ATS_STATUS_INDEX_MASK  = 0x07;  // 0000 0111
@@ -49,6 +51,17 @@ class AutomaticTransferSwitch : public PowerSensor {
         static const uint8_t ATS_STATUS_LEG_MASK    = 0x80;  // 1000 0000
     private:
         friend class AutomaticTransferSwitchView;
+        char sourceNames_[7][33] = {
+            "Primary", "Secondary", "Source 2", "Source 3", "Source 4", "Source 5", "Source 6"
+        };
+        char sourceStatusDetail_[65] = {};
+
+        void setSourceName(uint8_t source, const char* name) {
+            if (source < 7 && name != nullptr && name[0] != '\0') {
+                std::strncpy(sourceNames_[source], name, sizeof(sourceNames_[source]) - 1);
+                sourceNames_[source][sizeof(sourceNames_[source]) - 1] = '\0';
+            }
+        }
 
         static uint8_t byte0(const uint8_t* raw) {
             uint8_t result = 0;

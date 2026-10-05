@@ -37,6 +37,7 @@ namespace {
 
         fakeEspTimerMicros = 3000000;
         BridgeDiagnostics::observeDevice(&observed, THERMOSTAT_STATUS_1, 104, true);
+        BridgeDiagnostics::observeDeviceDetail(&observed, "ATS source: Genset (Manual)");
         BridgeDiagnostics::observeDevice(&overflow, TANK_STATUS, 120, false);
         BridgeDiagnostics::observeTransmit(true);
         BridgeDiagnostics::observeTransmit(false);
@@ -74,6 +75,7 @@ namespace {
         JsonObjectConst first = report["configuredDevices"][0].as<JsonObjectConst>();
         require(first["name"] == "Living Thermostat" && first["observed"] == true, "registered device identity missing");
         require(first["lastSourceAddress"] == 104 && first["lastDgnName"] == "THERMOSTAT_STATUS_1", "latest device observation missing");
+        require(first["statusDetail"] == "ATS source: Genset (Manual)", "device status detail missing");
         require(first["lastDgn"].isNull(), "numeric DGN should not be the primary label");
         require(first["receivedFrames"] == 1 && first["handledFrames"] == 1, "device counters incorrect");
         require(first["lastFrameAgeMs"] == 2000 && first["lastHandledFrameAgeMs"] == 2000, "device age fields incorrect");
@@ -169,6 +171,9 @@ namespace {
         fakeEspTimerMicros = 3900000;
         BridgeDiagnostics::observeUnmapped(static_cast<RVC_DGN>(0x12345), 41, 9,
                            false, allFf, 8);
+        uint8_t dmRvPayload[8] = {0xF5, 0x87, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+        fakeEspTimerMicros = 3950000;
+        BridgeDiagnostics::observeUnmapped(DM_RV, 141, 0x87, true, dmRvPayload, 8);
 
         fakeEspTimerMicros = 4000000;
         WiFi.statusCode = WL_CONNECTED;
@@ -184,13 +189,13 @@ namespace {
             "overflow counter should be zero under capacity");
 
         JsonArrayConst unmapped = report["unmappedTraffic"].as<JsonArrayConst>();
-        require(unmapped.size() == 8, "expected eight unmapped rows");
+        require(unmapped.size() == 9, "expected nine unmapped rows");
         JsonObjectConst first = unmapped[0].as<JsonObjectConst>();
         require(first["dgnName"] == "DC_SOURCE_STATUS_1", "DGN enum name missing or incorrect");
         require(first["dgn"] == static_cast<uint32_t>(DC_SOURCE_STATUS_1),
             "raw DGN value missing from unmapped report");
-        require(first["protocol"] == "RV-C" && first["pgn"] == static_cast<uint32_t>(DC_SOURCE_STATUS_1),
-            "fixed RV-C protocol/PGN fields incorrect");
+        require(first["protocol"] == "RV-C" && first["family"] == "Battery" && first["pgn"].isNull(),
+            "fixed RV-C protocol/family fields incorrect");
         require(first["rvcIndex"] == 2 && first["instanceVerified"] == true,
             "verified instance index incorrect");
         require(first["sourceAddress"] == 33 && first["hits"] == 2,
@@ -209,16 +214,12 @@ namespace {
             "unverified DGN metadata incorrect");
         require(allFfRow["payloadAllFf"] == true && allFfRow["payloadHex"] == "FFFFFFFFFFFFFFFF",
             "all-0xFF payload not reported");
-        const char* note = allFfRow["note"].as<const char*>();
-        require(note != nullptr && std::string(note).find("0xFF") != std::string::npos,
-            "all-0xFF note missing");
-
         JsonObjectConst unknownRow = unmapped[3].as<JsonObjectConst>();
         require(unknownRow["dgn"] == 0xE894 && unknownRow["dgnName"] == "UNKNOWN_DGN",
             "unmapped PDU1 DGN value was not retained");
         require(unknownRow["protocol"] == "J1939" && unknownRow["pgnName"] == "ACKNOWLEDGMENT",
             "J1939 acknowledgement was not identified");
-        require(unknownRow["family"] == "Unknown", "J1939 PGN changed the RV-C family classification");
+        require(unknownRow["family"].isNull(), "unknown RV-C family should be omitted for compactness");
         require(unknownRow["pgn"] == 0xE800 && unknownRow["destinationAddress"] == 0x94,
             "PDU1 PGN or destination address was not normalized");
 
@@ -237,8 +238,24 @@ namespace {
 
         JsonObjectConst unclassifiedRow = unmapped[7].as<JsonObjectConst>();
         require(unclassifiedRow["dgn"] == 0x12345 && unclassifiedRow["dgnName"] == "UNKNOWN_DGN" &&
-            unclassifiedRow["protocol"] == "Unknown" && unclassifiedRow["pgn"] == 0x12345,
+            unclassifiedRow["protocol"] == "Unknown" && unclassifiedRow["pgn"].isNull(),
             "unknown DGN value was not retained for identification");
+
+        JsonObjectConst dmRvRow = unmapped[8].as<JsonObjectConst>();
+        JsonObjectConst dmRv = dmRvRow["dmRv"].as<JsonObjectConst>();
+        require(dmRvRow["dgnName"] == "DM-RV" && dmRv["powerState"] == "On" &&
+                    dmRv["activityState"] == "Active" && dmRv["yellowLampCode"] == 3 &&
+                    dmRv["redLampCode"] == 3 && dmRv["dsa"] == 0x87,
+                "DM-RV status bits were not decoded");
+        require(dmRvRow["rvcIndex"].isNull() && dmRvRow["instanceVerified"] == false &&
+                    dmRvRow["dsa"] == 0x87,
+                "DM-RV DSA was mislabeled as an RVC instance");
+        require(dmRv["spnMsb"] == 0xFF && dmRv["spnIntermediate"] == 0xFF &&
+                    dmRv["spnLsb"] == 7 && dmRv["fmi"] == 31 &&
+                    dmRv["occurrenceCountAvailable"] == false &&
+                    dmRv["dsaExtensionDefined"] == false &&
+                    dmRv["bankSelectionSupported"] == false,
+                "DM-RV diagnostic fields or sentinels were not decoded");
         }
 
         void testUnmappedOverflowBound() {
@@ -257,6 +274,30 @@ namespace {
         require(report["unmappedTraffic"].size() == 64, "unmapped table exceeded bound");
         require(report["bus"]["unmappedOverflowHits"] == 1, "overflow hits not counted");
         }
+
+    void testLiveScaleDiagnosticsReportFits() {
+        resetHostFakes();
+        GenericDevice observed;
+        std::vector<GenericDevice> registered(32);
+        BridgeDiagnostics::registerDevice(&observed, "Thermostat", "Observed", 1, 103);
+        for (size_t index = 0; index < registered.size(); ++index) {
+            BridgeDiagnostics::registerDevice(&registered[index], "Battery", "Battery",
+                                              static_cast<uint8_t>(index), 250);
+        }
+        uint8_t payload[8] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
+        for (uint16_t index = 0; index < 64; ++index) {
+            BridgeDiagnostics::observeUnmapped(static_cast<RVC_DGN>(0x12300 + index),
+                                               static_cast<uint8_t>(index),
+                                               static_cast<uint8_t>(index), false, payload, 8);
+        }
+
+        String serialized = BridgeDiagnostics::reportJson();
+        JsonDocument report;
+        require(!serialized.isEmpty() && !deserializeJson(report, serialized.c_str()),
+                "live-scale diagnostics JSON unavailable");
+        require(report["configuredDevices"].size() == 33 && report["unmappedTraffic"].size() == 64,
+                "live-scale diagnostics rows were truncated");
+    }
 }
 
     int main(int argc, char** argv) {
@@ -267,6 +308,9 @@ namespace {
         } else if (argc > 1 && std::strcmp(argv[1], "--unmapped-overflow") == 0) {
             testUnmappedOverflowBound();
             std::cout << "PASS: unmapped overflow bound\n";
+        } else if (argc > 1 && std::strcmp(argv[1], "--live-scale") == 0) {
+            testLiveScaleDiagnosticsReportFits();
+            std::cout << "PASS: live-scale diagnostics report fits\n";
         } else {
             testBoundedPassiveReport();
             std::cout << "PASS: bounded passive diagnostics report and counters\n";

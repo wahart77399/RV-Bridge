@@ -49,6 +49,8 @@ class Battery : public GenericDevice {
         uint8_t* source2Data;
         uint8_t* source3Data;
         uint8_t* source4Data;
+        bool dcDisconnectStatusAvailable_ = false;
+        bool dcConnected_ = false;
 
         const uint8_t TIME_TO_EMPTY = 0x00;
         const uint8_t TIME_TO_FULL = 0x01;
@@ -286,6 +288,14 @@ class Battery : public GenericDevice {
                     case (DC_SOURCE_STATUS_4):
                         setDataFromSource(data, getSource4Data());
                         break;
+                    case (DC_DISCONNECT_STATUS): {
+                        uint8_t circuitStatus = data[1] & 0x03;
+                        dcDisconnectStatusAvailable_ = circuitStatus <= 1;
+                        if (dcDisconnectStatusAvailable_) {
+                            dcConnected_ = circuitStatus == 1;
+                        }
+                        break;
+                    }
                     default:
                         RV_PRINTF("Battery::setData failed = no matching dgn - dgn= %0x\n", dgn);
                 }

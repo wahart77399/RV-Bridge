@@ -11,6 +11,10 @@ Charger::Charger(uint8_t address, uint8_t instance)
     for (uint8_t i = 0; i < DATA_SIZE; ++i) {
         statusData_[i]  = 0;
         status2Data_[i] = 0;
+        configurationData_[i] = 0xFF;
+        configuration2Data_[i] = 0xFF;
+        configuration3Data_[i] = 0xFF;
+        configuration4Data_[i] = 0xFF;
     }
     statusData_[STATUS_INSTANCE_INDEX]  = instance;
     status2Data_[STATUS2_INSTANCE_INDEX] = instance;
@@ -32,6 +36,14 @@ if (data != nullptr) {
             copyBuffer(data, statusData());
         } else if (dgn == CHARGER_STATUS_2) {
             copyBuffer(data, status2Data());
+        } else if (dgn == CHARGER_CONFIGURATION_STATUS) {
+            copyBuffer(data, configurationData_);
+        } else if (dgn == CHARGER_CONFIGURATION_STATUS_2) {
+            copyBuffer(data, configuration2Data_);
+        } else if (dgn == CHARGER_CONFIGURATION_STATUS_3) {
+            copyBuffer(data, configuration3Data_);
+        } else if (dgn == CHARGER_CONFIGURATION_STATUS_4) {
+            copyBuffer(data, configuration4Data_);
         }
     }
 }
@@ -181,6 +193,104 @@ uint8_t Charger::chargerPriority() const {
     return rawChargerPriority();
 }
 
+bool Charger::hasMaximumChargeCurrent() const {
+    return getLilEndian(configurationData_[CONFIG_MAX_CURRENT_MSB],
+                        configurationData_[CONFIG_MAX_CURRENT_LSB]) != 0xFFFF;
+}
+
+float Charger::maximumChargeCurrentA() const {
+    uint16_t raw = getLilEndian(configurationData_[CONFIG_MAX_CURRENT_MSB],
+                                configurationData_[CONFIG_MAX_CURRENT_LSB]);
+    return static_cast<float>(static_cast<int32_t>(raw) - ADC_ZERO_U16) * ADC_PRECISION;
+}
+
+bool Charger::hasMaximumChargePercent() const {
+    return configuration2Data_[CONFIG2_MAX_CURRENT_PERCENT] != 0xFF;
+}
+
+float Charger::maximumChargePercent() const {
+    return configuration2Data_[CONFIG2_MAX_CURRENT_PERCENT] * 0.5f;
+}
+
+bool Charger::hasRechargeVoltage() const {
+    return getLilEndian(configuration2Data_[CONFIG2_RECHARGE_VOLTAGE_MSB],
+                        configuration2Data_[CONFIG2_RECHARGE_VOLTAGE_LSB]) != 0xFFFF;
+}
+
+float Charger::rechargeVoltage() const {
+    uint16_t raw = getLilEndian(configuration2Data_[CONFIG2_RECHARGE_VOLTAGE_MSB],
+                                configuration2Data_[CONFIG2_RECHARGE_VOLTAGE_LSB]);
+    return static_cast<float>(raw) * VDC_PRECISION;
+}
+
+bool Charger::hasBulkVoltage() const {
+    return getLilEndian(configuration3Data_[CONFIG3_BULK_VOLTAGE_MSB],
+                        configuration3Data_[CONFIG3_BULK_VOLTAGE_LSB]) != 0xFFFF;
+}
+
+float Charger::bulkVoltage() const {
+    return getLilEndian(configuration3Data_[CONFIG3_BULK_VOLTAGE_MSB],
+                        configuration3Data_[CONFIG3_BULK_VOLTAGE_LSB]) * VDC_PRECISION;
+}
+
+bool Charger::hasAbsorptionVoltage() const {
+    return getLilEndian(configuration3Data_[CONFIG3_ABSORPTION_VOLTAGE_MSB],
+                        configuration3Data_[CONFIG3_ABSORPTION_VOLTAGE_LSB]) != 0xFFFF;
+}
+
+float Charger::absorptionVoltage() const {
+    return getLilEndian(configuration3Data_[CONFIG3_ABSORPTION_VOLTAGE_MSB],
+                        configuration3Data_[CONFIG3_ABSORPTION_VOLTAGE_LSB]) * VDC_PRECISION;
+}
+
+bool Charger::hasFloatVoltage() const {
+    return getLilEndian(configuration3Data_[CONFIG3_FLOAT_VOLTAGE_MSB],
+                        configuration3Data_[CONFIG3_FLOAT_VOLTAGE_LSB]) != 0xFFFF;
+}
+
+float Charger::floatVoltage() const {
+    return getLilEndian(configuration3Data_[CONFIG3_FLOAT_VOLTAGE_MSB],
+                        configuration3Data_[CONFIG3_FLOAT_VOLTAGE_LSB]) * VDC_PRECISION;
+}
+
+bool Charger::hasTemperatureCompensation() const {
+    return configuration3Data_[CONFIG3_TEMP_COMPENSATION] <= 250;
+}
+
+uint8_t Charger::temperatureCompensation() const {
+    return configuration3Data_[CONFIG3_TEMP_COMPENSATION];
+}
+
+bool Charger::hasBulkTime() const {
+    return getLilEndian(configuration4Data_[CONFIG4_BULK_TIME_MSB],
+                        configuration4Data_[CONFIG4_BULK_TIME_LSB]) != 0xFFFF;
+}
+
+uint16_t Charger::bulkTimeMinutes() const {
+    return getLilEndian(configuration4Data_[CONFIG4_BULK_TIME_MSB],
+                        configuration4Data_[CONFIG4_BULK_TIME_LSB]);
+}
+
+bool Charger::hasAbsorptionTime() const {
+    return getLilEndian(configuration4Data_[CONFIG4_ABSORPTION_TIME_MSB],
+                        configuration4Data_[CONFIG4_ABSORPTION_TIME_LSB]) != 0xFFFF;
+}
+
+uint16_t Charger::absorptionTimeMinutes() const {
+    return getLilEndian(configuration4Data_[CONFIG4_ABSORPTION_TIME_MSB],
+                        configuration4Data_[CONFIG4_ABSORPTION_TIME_LSB]);
+}
+
+bool Charger::hasFloatTime() const {
+    return getLilEndian(configuration4Data_[CONFIG4_FLOAT_TIME_MSB],
+                        configuration4Data_[CONFIG4_FLOAT_TIME_LSB]) != 0xFFFF;
+}
+
+uint16_t Charger::floatTimeMinutes() const {
+    return getLilEndian(configuration4Data_[CONFIG4_FLOAT_TIME_MSB],
+                        configuration4Data_[CONFIG4_FLOAT_TIME_LSB]);
+}
+
 boolean Charger::executeCommand(RVC_DGN dgn, const uint8_t* buffer, uint8_t /*val*/) {
     boolean handled = false;
 
@@ -189,6 +299,10 @@ boolean Charger::executeCommand(RVC_DGN dgn, const uint8_t* buffer, uint8_t /*va
             case CHARGER_AC_STATUS_1:
             case CHARGER_STATUS:
             case CHARGER_STATUS_2:
+            case CHARGER_CONFIGURATION_STATUS:
+            case CHARGER_CONFIGURATION_STATUS_2:
+            case CHARGER_CONFIGURATION_STATUS_3:
+            case CHARGER_CONFIGURATION_STATUS_4:
                 setData(dgn, const_cast<uint8_t*>(buffer));
                 updateViews();
                 handled = true;

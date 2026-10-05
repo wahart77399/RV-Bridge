@@ -44,9 +44,10 @@ class BatteryView : SpanView {
             Characteristic::RMSAmperage                 rmsRipple;
 
             
-            BatteryState() : Service::TemperatureSensor(), 
+            BatteryState(const char* batteryName) : Service::TemperatureSensor(),
                                 inst(), priority(),batteryLevel(tempCfromTempF(ONE_HUNDRED_PERCENT_DEGREE_F)), dcVoltage(12), dcCurrent(), temperature(72), 
                                 /* capacityRemaining(), */ rmsRipple() {
+                inst.setString(batteryName);
                 inst.setDescription("Battery Instance");
                 priority.setDescription("Battery Priority");
                 batteryLevel.setDescription("Battery Level");
@@ -87,6 +88,7 @@ class BatteryView : SpanView {
 
         };
         BatteryState* batteryMeter;
+        SpanCharacteristic* dcDisconnectState_;
         
         void setBatteryMeter( BatteryState* val) { batteryMeter = val; }
 

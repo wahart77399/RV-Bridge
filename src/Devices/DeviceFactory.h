@@ -47,7 +47,7 @@ class DeviceFactory {
     public:
         static DeviceFactory* getInstance(void);
 
-        GenericDevice* getDeviceByData(RVC_DGN, uint8_t* data);
+        GenericDevice* getDeviceByData(RVC_DGN, uint8_t* data, uint8_t sourceAddress);
 
         static bool instanceFromData(RVC_DGN dgn, uint8_t* data, uint8_t& index);
         static bool loadCoachSpec(const char* path, CoachSpec& out);

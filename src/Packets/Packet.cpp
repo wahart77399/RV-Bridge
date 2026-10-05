@@ -142,7 +142,7 @@ void Packet::processPacket(CAN_frame_t *packet)
 			LearnMode::observe(dgn, sourceAddress, rawData);
 			DeviceFactory* factory = DeviceFactory::getInstance();
 			if (factory != nullptr) {
-				GenericDevice* device = factory->getDeviceByData(dgn, rawData);
+				GenericDevice* device = factory->getDeviceByData(dgn, rawData, sourceAddress);
 				if (device != nullptr) {
 					bool handled = device->executeCommand(dgn, rawData, sourceAddress);
 					BridgeDiagnostics::observeDevice(device, dgn, sourceAddress, handled);
@@ -150,7 +150,17 @@ void Packet::processPacket(CAN_frame_t *packet)
 					uint8_t instanceIndex = rawData[0];
 					bool instanceVerified = false;
 					const char* dgnName = LearnTable::dgnName(dgn);
-					if (dgnName != nullptr && std::strcmp(dgnName, "UNKNOWN_DGN") != 0) {
+					if (dgn == DM_RV) {
+						if (packet->FIR.B.DLC > 1) {
+							instanceIndex = rawData[1];
+							instanceVerified = true;
+						} else {
+							instanceIndex = 0xFF;
+						}
+					} else if ((dgn == GENERATOR_STATUS_1) || (dgn == GENERATOR_STATUS_2) ||
+					           (dgn == GENERATOR_DEMAND_STATUS)) {
+						instanceIndex = 0xFF;
+					} else if (dgnName != nullptr && std::strcmp(dgnName, "UNKNOWN_DGN") != 0) {
 						uint8_t decodedIndex = instanceIndex;
 						instanceVerified = DeviceFactory::instanceFromData(dgn, rawData, decodedIndex);
 						if (instanceVerified) instanceIndex = decodedIndex;

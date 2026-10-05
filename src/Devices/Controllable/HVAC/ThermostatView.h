@@ -108,7 +108,8 @@ class ThermostatView : public SpanView {
  
                 ThermostatView::FanController*       fan;
 
-                ThermostatController(ThermostatView* vw, GenericDevice* mdl, ThermostatView::FanController* fn, const char* spanDeviceName) : Service::Thermostat() {
+                ThermostatController(ThermostatView* vw, GenericDevice* mdl, ThermostatView::FanController* fn, const char* /*spanDeviceName*/) : Service::Thermostat() {
+                    setPrimary();
                     ambientTemp = new Characteristic::CurrentTemperature(tempCfromTempF(DEFAULT_TEMP));
                     targetTemp = new Characteristic::TargetTemperature(tempCfromTempF(DEFAULT_TEMP));
                     currentState = new Characteristic::CurrentHeatingCoolingState(heatingCoolingStateOff);
@@ -116,17 +117,6 @@ class ThermostatView : public SpanView {
                     temperatureDisplayUnits = new Characteristic::TemperatureDisplayUnits(homeKitTemperatureDisplayFahrenheit);
                     targetTemp->setRange(tempCfromTempF(50), tempCfromTempF(95), TEMP_STEP_C)->setVal(tempCfromTempF(DEFAULT_TEMP)); // degCfromDegF(1.0))->setVal(tempCfromTempF(68));
 
-                    // prep fan
-
-                    const char* append = " Fan";
-                    size_t buffer_size = strlen(spanDeviceName) + strlen(append) + 1; 
-                    char* fanName = new char[buffer_size];
-                    strcpy(fanName, spanDeviceName);
-                    strcat(fanName, append);
-                    SpanView::createAccessory();
-                    new Service::AccessoryInformation(); 
-                    new Characteristic::Identify();
-                    new Characteristic::Name(fanName);
                     fan = fn;  
                     this->model = (HVAC_Thermostat* )mdl;
                     view = vw;
@@ -134,12 +124,18 @@ class ThermostatView : public SpanView {
                 boolean update(void); 
                 // void setLevel(uint8_t index, uint8_t level);
                 void setAmbientTemp(uint8_t index, double tempC);
-                void setInfo(RVCMode opMode, RVCFanMode fanMode, RVCForcedFan fanSpeed, double heatTemp, double coolTemp);
+                void setInfo(RVCMode opMode, RVCFanMode fanMode, RVCForcedFan fanSpeed,
+                             double heatTemp, double coolTemp, bool hasAmbientTemp, double ambientTempC,
+                             bool hasFurnaceStatus, bool furnaceHeating);
                 
 
         }; 
         
         ThermostatController* controller;
+        SpanCharacteristic* airConditionerModeChar_;
+        SpanCharacteristic* airConditionerMaxFanChar_;
+        SpanCharacteristic* heatPumpModeChar_;
+        SpanCharacteristic* heatPumpMaxOutputChar_;
 
         void setController(ThermostatView::ThermostatController* ctl) { controller = ctl; }
 

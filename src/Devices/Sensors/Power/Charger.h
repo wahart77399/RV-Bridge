@@ -54,6 +54,7 @@ enum class ChargerOperatingState : uint8_t {
 
 class Charger : public PowerSensor {
     friend class PowerSensorView; // AC tiles via base view
+    friend class ChargerView;
 
 private:
     static constexpr uint8_t STATUS_INSTANCE_INDEX        = 0;
@@ -74,17 +75,47 @@ private:
     static constexpr uint8_t STATUS2_MEAS_CURR_LSB        = 6;
     static constexpr uint8_t STATUS2_TEMPERATURE_INDEX    = 7;
 
+    static constexpr uint8_t CONFIG_MAX_CURRENT_MSB        = 6;
+    static constexpr uint8_t CONFIG_MAX_CURRENT_LSB        = 7;
+
+    static constexpr uint8_t CONFIG2_MAX_CURRENT_PERCENT   = 1;
+    static constexpr uint8_t CONFIG2_RECHARGE_VOLTAGE_MSB  = 5;
+    static constexpr uint8_t CONFIG2_RECHARGE_VOLTAGE_LSB  = 6;
+
+    static constexpr uint8_t CONFIG3_BULK_VOLTAGE_MSB      = 1;
+    static constexpr uint8_t CONFIG3_BULK_VOLTAGE_LSB      = 2;
+    static constexpr uint8_t CONFIG3_ABSORPTION_VOLTAGE_MSB = 3;
+    static constexpr uint8_t CONFIG3_ABSORPTION_VOLTAGE_LSB = 4;
+    static constexpr uint8_t CONFIG3_FLOAT_VOLTAGE_MSB     = 5;
+    static constexpr uint8_t CONFIG3_FLOAT_VOLTAGE_LSB     = 6;
+    static constexpr uint8_t CONFIG3_TEMP_COMPENSATION     = 7;
+
+    static constexpr uint8_t CONFIG4_BULK_TIME_MSB        = 1;
+    static constexpr uint8_t CONFIG4_BULK_TIME_LSB        = 2;
+    static constexpr uint8_t CONFIG4_ABSORPTION_TIME_MSB  = 3;
+    static constexpr uint8_t CONFIG4_ABSORPTION_TIME_LSB  = 4;
+    static constexpr uint8_t CONFIG4_FLOAT_TIME_MSB       = 5;
+    static constexpr uint8_t CONFIG4_FLOAT_TIME_LSB       = 6;
+
     static constexpr float   VDC_PRECISION = 0.05f;
     static constexpr float   ADC_PRECISION = 0.05f;
     static constexpr uint16_t ADC_ZERO_U16 = 0x7D00;
 
     uint8_t statusData_[DATA_SIZE];
     uint8_t status2Data_[DATA_SIZE];
+    uint8_t configurationData_[DATA_SIZE];
+    uint8_t configuration2Data_[DATA_SIZE];
+    uint8_t configuration3Data_[DATA_SIZE];
+    uint8_t configuration4Data_[DATA_SIZE];
 
     uint8_t*       statusData()       { return statusData_; }
     const uint8_t* statusData() const { return statusData_; }
     uint8_t*       status2Data()       { return status2Data_; }
     const uint8_t* status2Data() const { return status2Data_; }
+    const uint8_t* configurationData() const { return configurationData_; }
+    const uint8_t* configuration2Data() const { return configuration2Data_; }
+    const uint8_t* configuration3Data() const { return configuration3Data_; }
+    const uint8_t* configuration4Data() const { return configuration4Data_; }
 
     void copyBuffer(const uint8_t* src, uint8_t* dst);
 
@@ -98,6 +129,26 @@ private:
     uint8_t  rawChargerTemperatureC() const;
     uint8_t  rawDcSourceInstance() const;
     uint8_t  rawChargerPriority() const;
+    bool hasMaximumChargeCurrent() const;
+    float maximumChargeCurrentA() const;
+    bool hasMaximumChargePercent() const;
+    float maximumChargePercent() const;
+    bool hasRechargeVoltage() const;
+    float rechargeVoltage() const;
+    bool hasBulkVoltage() const;
+    float bulkVoltage() const;
+    bool hasAbsorptionVoltage() const;
+    float absorptionVoltage() const;
+    bool hasFloatVoltage() const;
+    float floatVoltage() const;
+    bool hasTemperatureCompensation() const;
+    uint8_t temperatureCompensation() const;
+    bool hasBulkTime() const;
+    uint16_t bulkTimeMinutes() const;
+    bool hasAbsorptionTime() const;
+    uint16_t absorptionTimeMinutes() const;
+    bool hasFloatTime() const;
+    uint16_t floatTimeMinutes() const;
 
 protected:
     void setData(RVC_DGN dgn, uint8_t* data) override;

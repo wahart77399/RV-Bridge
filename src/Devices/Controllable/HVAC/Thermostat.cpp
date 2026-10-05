@@ -89,6 +89,27 @@ boolean HVAC_Thermostat::executeCommand(RVC_DGN dgn, const uint8_t* data, uint8_
             case (THERMOSTAT_STATUS_2):
                 // do nothing
                 // RV_PRINTF("HVAC_Thermostat::executeCommand - THERMOSTAT_STATUS_2 dgn not supported\n");
+                break;
+            case THERMOSTAT_AMBIENT_STATUS:
+                setAmbientTemperature(data);
+                updateViews();
+                cmdExecuted = true;
+                break;
+            case FURNACE_STATUS:
+                setFurnaceStatus(data);
+                updateViews();
+                cmdExecuted = true;
+                break;
+            case AIR_CONDITIONER_STATUS:
+                setAirConditionerStatus(data);
+                updateViews();
+                cmdExecuted = true;
+                break;
+            case HEAT_PUMP_STATUS:
+                setHeatPumpStatus(data);
+                updateViews();
+                cmdExecuted = true;
+                break;
             default:
                 break;
         }

@@ -16,7 +16,10 @@ public:
 
     InverterView(Inverter* model, const char* name, const uint8_t numLegs = DEFAULT_NUM_LEGS, bool io = false,
                     bool showCurrent = true, bool showFault = false );
-    // bool updateView() override;
+    bool updateView() override;
 private:
     Inverter* model_;
+    SpanCharacteristic* temperatureChar_[INVERTER_TEMPERATURE_COUNT];
+    SpanCharacteristic* dcVoltageChar_;
+    SpanCharacteristic* dcCurrentChar_;
 };

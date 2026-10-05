@@ -78,6 +78,9 @@ if ($result == 0) {
     if ($result == 0) {
         $result = system("$temporary/diagnostics-reports", '--unmapped-overflow');
     }
+    if ($result == 0) {
+        $result = system("$temporary/diagnostics-reports", '--live-scale');
+    }
 }
 if ($result == 0) {
     my @aidCommand = (

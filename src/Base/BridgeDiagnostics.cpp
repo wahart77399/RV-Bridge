@@ -12,6 +12,59 @@
 namespace {
     constexpr size_t MAX_DIAGNOSTICS_JSON_BYTES = 32768;
     constexpr uint32_t MIN_FREE_HEAP_FOR_JSON = 24576;
+    constexpr size_t JSON_STREAM_BUFFER_BYTES = 512;
+
+    class BufferedJsonSinkWriter {
+    public:
+        explicit BufferedJsonSinkWriter(DiagnosticsJsonSink& sink) : sink_(sink) {}
+
+        size_t write(uint8_t value) {
+            buffer_[buffered_++] = value;
+            if (buffered_ == sizeof(buffer_)) flush();
+            return failed_ ? 0 : 1;
+        }
+
+        size_t write(const uint8_t* data, size_t length) {
+            size_t offset = 0;
+            while (offset < length && !failed_) {
+                size_t available = sizeof(buffer_) - buffered_;
+                size_t copied = length - offset < available ? length - offset : available;
+                memcpy(buffer_ + buffered_, data + offset, copied);
+                buffered_ += copied;
+                offset += copied;
+                if (buffered_ == sizeof(buffer_)) flush();
+            }
+            return failed_ ? 0 : length;
+        }
+
+        bool flush() {
+            if (!failed_ && buffered_ > 0) {
+                failed_ = sink_.write(buffer_, buffered_) != buffered_;
+                buffered_ = 0;
+            }
+            return !failed_;
+        }
+
+    private:
+        DiagnosticsJsonSink& sink_;
+        uint8_t buffer_[JSON_STREAM_BUFFER_BYTES] = {};
+        size_t buffered_ = 0;
+        bool failed_ = false;
+    };
+
+    class StringDiagnosticsJsonSink : public DiagnosticsJsonSink {
+    public:
+        explicit StringDiagnosticsJsonSink(String& output) : output_(output) {}
+        size_t extraHeapRequired(size_t jsonLength) const override { return jsonLength; }
+        bool begin(size_t jsonLength) override { return output_.reserve(jsonLength); }
+        size_t write(const uint8_t* data, size_t length) override {
+            return output_.concat(reinterpret_cast<const char*>(data), length) ? length : 0;
+        }
+        bool finish() override { return true; }
+
+    private:
+        String& output_;
+    };
 
     void appendPayloadHex(char* out, size_t outSize, const uint8_t* data, uint8_t length) {
         static const char digits[] = "0123456789ABCDEF";
@@ -178,6 +231,15 @@ void BridgeDiagnostics::observeDevice(const GenericDevice* device, RVC_DGN dgn, 
     }
 }
 
+void BridgeDiagnostics::observeDeviceDetail(const GenericDevice* device, const char* detail) {
+    if (device != nullptr && detail != nullptr) {
+        DeviceActivity* activity = instance().findActivity(device);
+        if (activity != nullptr) {
+            activity->statusDetail = detail;
+        }
+    }
+}
+
 void BridgeDiagnostics::observeUnmapped(RVC_DGN dgn, uint8_t sourceAddress, uint8_t instanceIndex,
                                         bool instanceVerified, const uint8_t* data, uint8_t dataLength) {
     BridgeDiagnostics& diagnostics = instance();
@@ -217,10 +279,9 @@ void BridgeDiagnostics::observeQueueDrop() {
     ++instance().queueDrops_;
 }
 
-String BridgeDiagnostics::reportJson() {
+void BridgeDiagnostics::populateReport(JsonDocument& document) {
     const BridgeDiagnostics& diagnostics = instance();
     uint64_t now = nowMs();
-    JsonDocument document;
     document["schemaVersion"] = 1;
     document["uptimeMs"] = now;
     document["resetReason"] = static_cast<int>(esp_reset_reason());
@@ -267,6 +328,9 @@ String BridgeDiagnostics::reportJson() {
         row["rvcIndex"] = activity.rvcIndex;
         row["sourceAddress"] = activity.configuredSourceAddress;
         row["observed"] = activity.receivedCount > 0;
+        if (activity.statusDetail != nullptr && activity.statusDetail[0] != '\0') {
+            row["statusDetail"] = activity.statusDetail;
+        }
         if (activity.receivedCount > 0) {
             row["lastSourceAddress"] = activity.lastSourceAddress;
             row["lastDgnName"] = LearnTable::dgnName(activity.lastDgn);
@@ -290,19 +354,25 @@ String BridgeDiagnostics::reportJson() {
         row["dgnName"] = dgnName;
         if (std::strcmp(dgnName, "UNKNOWN_DGN") != 0) {
             row["protocol"] = "RV-C";
-            row["pgn"] = activity.dgn;
         } else {
             PgnDescription description = describeUnknownPgn(activity.dgn);
             row["protocol"] = description.protocol;
-            row["pgn"] = description.value;
+            if (description.value != activity.dgn) row["pgn"] = description.value;
             if (description.name[0] != '\0') row["pgnName"] = description.name;
             if (description.hasDestinationAddress) {
                 row["destinationAddress"] = description.destinationAddress;
             }
         }
-        row["family"] = LearnTable::relatedFamily(dgn);
-        row["rvcIndex"] = activity.instanceIndex;
-        row["instanceVerified"] = activity.instanceVerified;
+        const char* family = LearnTable::relatedFamily(dgn);
+        if (std::strcmp(family, "Unknown") != 0) row["family"] = family;
+        if (dgn == DM_RV) {
+            row["rvcIndex"] = nullptr;
+            row["instanceVerified"] = false;
+            row["dsa"] = activity.sampleLength > 1 ? activity.sample[1] : 0xFF;
+        } else {
+            row["rvcIndex"] = activity.instanceIndex;
+            row["instanceVerified"] = activity.instanceVerified;
+        }
         row["sourceAddress"] = activity.sourceAddress;
         char payloadHex[17];
         appendPayloadHex(payloadHex, sizeof(payloadHex), activity.sample, activity.sampleLength);
@@ -311,20 +381,56 @@ String BridgeDiagnostics::reportJson() {
         row["hits"] = activity.hitCount;
         row["lastFrameAgeMs"] = now - activity.lastSeenMs;
         row["inReview"] = false;
-        row["note"] = activity.lastSampleAllFf
-            ? "Seen on bus; payload is all 0xFF, often unavailable or not reporting"
-            : "Seen on bus; no configured device for this DGN/index";
+        if (dgn == DM_RV && activity.sampleLength == 8) {
+            const uint8_t operating = activity.sample[0];
+            const uint8_t powerCode = operating & 0x03;
+            const uint8_t activityCode = (operating >> 2) & 0x03;
+            JsonObject details = row["dmRv"].to<JsonObject>();
+            details["powerStateCode"] = powerCode;
+            details["powerState"] = powerCode == 0 ? "Off" : powerCode == 1 ? "On" : "Reserved";
+            details["activityStateCode"] = activityCode;
+            details["activityState"] = activityCode == 0 ? "Standby" : activityCode == 1 ? "Active" : "Reserved";
+            details["yellowLampCode"] = (operating >> 4) & 0x03;
+            details["redLampCode"] = (operating >> 6) & 0x03;
+            details["dsa"] = activity.sample[1];
+            details["spnMsb"] = activity.sample[2];
+            details["spnIntermediate"] = activity.sample[3];
+            details["spnLsb"] = (activity.sample[4] >> 5) & 0x07;
+            details["fmi"] = activity.sample[4] & 0x1F;
+            uint8_t occurrenceCount = activity.sample[5] & 0x7F;
+            details["occurrenceCountAvailable"] = occurrenceCount != 0x7F;
+            if (occurrenceCount != 0x7F) details["occurrenceCount"] = occurrenceCount;
+            details["occurrenceReservedBitSet"] = (activity.sample[5] & 0x80) != 0;
+            details["dsaExtension"] = activity.sample[6];
+            details["dsaExtensionDefined"] = activity.sample[6] != 0xFF;
+            uint8_t bankSelect = activity.sample[7] & 0x0F;
+            details["bankSelect"] = bankSelect;
+            details["bankSelectionSupported"] = bankSelect <= 13;
+        }
     }
+}
+
+bool BridgeDiagnostics::writeReport(DiagnosticsJsonSink& sink) {
+    JsonDocument document;
+    populateReport(document);
+    if (document.overflowed()) return false;
+
+    size_t expected = measureJson(document);
+    if (expected == 0 || expected > MAX_DIAGNOSTICS_JSON_BYTES ||
+        ESP.getFreeHeap() < MIN_FREE_HEAP_FOR_JSON + sink.extraHeapRequired(expected)) {
+        return false;
+    }
+    if (!sink.begin(expected)) return false;
+
+    BufferedJsonSinkWriter writer(sink);
+    size_t written = serializeJson(document, writer);
+    bool complete = writer.flush() && written == expected;
+    return sink.finish() && complete;
+}
+
+String BridgeDiagnostics::reportJson() {
     String json;
-    size_t expected = 0;
-    bool canSerialize = !document.overflowed();
-    if (canSerialize) {
-        expected = measureJson(document);
-        canSerialize = expected > 0 && expected <= MAX_DIAGNOSTICS_JSON_BYTES &&
-                       ESP.getFreeHeap() >= expected + MIN_FREE_HEAP_FOR_JSON;
-    }
-    if (canSerialize && json.reserve(expected)) {
-        if (serializeJson(document, json) != expected) json = "";
-    }
+    StringDiagnosticsJsonSink sink(json);
+    if (!writeReport(sink)) json = "";
     return json;
 }

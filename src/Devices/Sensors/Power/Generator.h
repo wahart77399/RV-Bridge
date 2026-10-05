@@ -45,6 +45,21 @@ public:
     friend class GeneratorView;
 
 private:
+    uint8_t status2Data_[DATA_SIZE];
+    bool status2Received_;
+    uint8_t status1State_ = 0xFF;
+    bool status1Received_ = false;
+    uint8_t demandStatusData_[DATA_SIZE];
+    bool demandStatusReceived_;
+    void setStatus1(const uint8_t* data);
+    void setStatus2(const uint8_t* data);
+    void setDemandStatus(const uint8_t* data);
+    bool hasStatus1() const;
+    bool isRunning() const;
+    bool status1Fault() const;
+    bool hasEngineFault() const;
+    bool hasExternalActivityStatus() const;
+    bool externalActivityDetected() const;
 
 protected:
     uint8_t lineOf(RVC_DGN dgn, const uint8_t* raw) const override;

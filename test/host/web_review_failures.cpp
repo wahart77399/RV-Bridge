@@ -166,6 +166,7 @@ int main(int argc, char** argv) {
                 WebServer::active->request("/diagnostics", HTTP_GET);
                 JsonDocument report; deserializeJson(report, WebServer::active->responseBody.c_str());
                 require(WebServer::active->responseCode == 200, "diagnostics route failed");
+                require(WebServer::active->chunkedResponseEnded, "diagnostics stream was not terminated");
                 require(WebServer::active->responseHeaders["Cache-Control"] == "no-store", "diagnostics response can be cached");
                 require(WebServer::active->responseHeaders["Content-Disposition"].find("attachment") != std::string::npos, "diagnostics response is not a download");
                 require(report["bus"]["receivedFrames"] == 0 && report["configuredDevices"].size() == 0, "unexpected diagnostics data");

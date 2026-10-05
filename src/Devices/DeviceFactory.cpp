@@ -108,6 +108,9 @@ bool DeviceFactory::instanceFromData(RVC_DGN dgn, uint8_t* data, uint8_t& index)
         if ((dgn == WATER_PUMP_COMMAND) || (dgn == WATER_PUMP_STATUS)) {
             index = WATER_PUMP_INDEX;
             found = true;
+        } else if (dgn == AUTOFILL_STATUS) {
+            index = Tanks::FRESH_WATER_INSTANCE;
+            found = true;
         } else if ((dgn == ATS_AC_STATUS_1) || (dgn == ATS_AC_STATUS_2) || (dgn == ATS_AC_STATUS_3) || (dgn == ATS_AC_STATUS_4)) {
             // RV-C packs the ATS instance into the low bits of byte 0
             uint8_t tmp = data[AutomaticTransferSwitch::ATS_BYTE_0] & AutomaticTransferSwitch::ATS_STATUS_INDEX_MASK;
@@ -115,6 +118,10 @@ bool DeviceFactory::instanceFromData(RVC_DGN dgn, uint8_t* data, uint8_t& index)
                 index = tmp;
                 found = true;
             }
+        } else if ((dgn == CHARGER_AC_STATUS_1) || (dgn == CHARGER_AC_STATUS_2) ||
+                   (dgn == CHARGER_AC_STATUS_3) || (dgn == CHARGER_AC_STATUS_4)) {
+            index = data[0] & 0x0F;
+            found = true;
         } else if ((dgn == INVERTER_AC_STATUS_1) || (dgn == INVERTER_STATUS)) {
             uint8_t tmp = data[INVERTER_LINE_INDEX];
             if (dgn == INVERTER_AC_STATUS_1) {
@@ -131,6 +138,9 @@ bool DeviceFactory::instanceFromData(RVC_DGN dgn, uint8_t* data, uint8_t& index)
                 index = tmp;
                 found = true;
             }
+        } else if ((dgn == GENERATOR_STATUS_1) || (dgn == GENERATOR_STATUS_2) ||
+                   (dgn == GENERATOR_DEMAND_STATUS)) {
+            index = 0xFF;
         } else {
             index = Packet::getIndex(data);
             found = true;
@@ -139,16 +149,27 @@ bool DeviceFactory::instanceFromData(RVC_DGN dgn, uint8_t* data, uint8_t& index)
     return found;
 }
 
-GenericDevice* DeviceFactory::getDeviceByData(RVC_DGN dgn, uint8_t* data) {
+GenericDevice* DeviceFactory::getDeviceByData(RVC_DGN dgn, uint8_t* data, uint8_t sourceAddress) {
     GenericDevice* result = nullptr;
-    uint8_t index = 0;
-    if (instanceFromData(dgn, data, index)) {
-        // find() rather than [] so unknown bus traffic doesn't grow the map
+    if ((dgn == GENERATOR_STATUS_1) || (dgn == GENERATOR_STATUS_2) ||
+        (dgn == GENERATOR_DEMAND_STATUS)) {
         auto byDgn = DGN2DeviceMap.find(dgn);
         if (byDgn != DGN2DeviceMap.end()) {
-            auto byIndex = byDgn->second.find(index);
-            if (byIndex != byDgn->second.end()) {
-                result = byIndex->second;
+            auto bySource = byDgn->second.find(sourceAddress);
+            if (bySource != byDgn->second.end()) {
+                result = bySource->second;
+            }
+        }
+    } else {
+        uint8_t index = 0;
+        if (instanceFromData(dgn, data, index)) {
+        // find() rather than [] so unknown bus traffic doesn't grow the map
+            auto byDgn = DGN2DeviceMap.find(dgn);
+            if (byDgn != DGN2DeviceMap.end()) {
+                auto byIndex = byDgn->second.find(index);
+                if (byIndex != byDgn->second.end()) {
+                    result = byIndex->second;
+                }
             }
         }
     }
@@ -197,6 +218,10 @@ void DeviceFactory::registerCreators() {
         DGN2DeviceMap[THERMOSTAT_COMMAND_2][c.rvcIndex] = d;
         DGN2DeviceMap[THERMOSTAT_STATUS_1][c.rvcIndex]  = d;
         DGN2DeviceMap[THERMOSTAT_STATUS_2][c.rvcIndex]  = d;
+        DGN2DeviceMap[THERMOSTAT_AMBIENT_STATUS][c.rvcIndex] = d;
+        DGN2DeviceMap[FURNACE_STATUS][c.rvcIndex] = d;
+        DGN2DeviceMap[AIR_CONDITIONER_STATUS][c.rvcIndex] = d;
+        DGN2DeviceMap[HEAT_PUMP_STATUS][c.rvcIndex] = d;
         ThermostatView::createThermostatView(d, c.name.c_str());
         return d;
     };
@@ -270,6 +295,9 @@ void DeviceFactory::registerCreators() {
             }
             auto* d = new Tanks(c.sourceAddress, c.rvcIndex, tankSz);
             DGN2DeviceMap[TANK_STATUS][c.rvcIndex] = d;
+            if (c.rvcIndex == Tanks::FRESH_WATER_INSTANCE) {
+                DGN2DeviceMap[AUTOFILL_STATUS][c.rvcIndex] = d;
+            }
             TanksView::createTanksView(d, c.name.c_str());
             result = d;
         }
@@ -279,6 +307,9 @@ void DeviceFactory::registerCreators() {
     creators["Generator"] = [](const DeviceConfig& c, const CoachSpec&) -> GenericDevice* {
         auto* d = new Generator(c.sourceAddress, c.rvcIndex);
         DGN2DeviceMap[GENERATOR_AC_STATUS_1][c.rvcIndex] = (PowerSensor*)d;
+        DGN2DeviceMap[GENERATOR_STATUS_1][c.sourceAddress] = d;
+        DGN2DeviceMap[GENERATOR_STATUS_2][c.sourceAddress] = d;
+        DGN2DeviceMap[GENERATOR_DEMAND_STATUS][c.sourceAddress] = d;
         d->attachView(c.name.c_str());
         return d;
     };
@@ -287,6 +318,9 @@ void DeviceFactory::registerCreators() {
         auto* d = new Inverter(c.sourceAddress, c.rvcIndex);
         DGN2DeviceMap[INVERTER_AC_STATUS_1][c.rvcIndex] = d;
         DGN2DeviceMap[INVERTER_STATUS][c.rvcIndex]      = d;
+        DGN2DeviceMap[INVERTER_TEMPERATURE_STATUS][c.rvcIndex] = d;
+        DGN2DeviceMap[INVERTER_TEMPERATURE_STATUS_2][c.rvcIndex] = d;
+        DGN2DeviceMap[INVERTER_DC_STATUS][c.rvcIndex] = d;
         d->attachView("Inv");  // full name is too long once the per-reading suffixes are appended
         return d;
     };
@@ -297,12 +331,21 @@ void DeviceFactory::registerCreators() {
         DGN2DeviceMap[DC_SOURCE_STATUS_2][c.rvcIndex] = (PowerSensor*)d;
         DGN2DeviceMap[DC_SOURCE_STATUS_3][c.rvcIndex] = (PowerSensor*)d;
         DGN2DeviceMap[DC_SOURCE_STATUS_4][c.rvcIndex] = (PowerSensor*)d;
+        if (c.rvcIndex == 1) {
+            DGN2DeviceMap[DC_DISCONNECT_STATUS][c.rvcIndex] = d;
+        }
         BatteryView::createBatteryView((GenericDevice*)d, c.name.c_str());
         return d;
     };
 
     creators["ATS"] = [](const DeviceConfig& c, const CoachSpec&) -> GenericDevice* {
         auto* d = new AutomaticTransferSwitch(c.sourceAddress, c.rvcIndex);
+        for (uint8_t source = 0; source < 7; ++source) {
+            String key = "source" + String(source) + "Name";
+            String label = c.extraString(key.c_str(), "");
+            d->setSourceName(source, label.c_str());
+        }
+        DGN2DeviceMap[ATS_STATUS][c.rvcIndex] = d;
         DGN2DeviceMap[ATS_AC_STATUS_1][c.rvcIndex] = d;
         DGN2DeviceMap[ATS_AC_STATUS_2][c.rvcIndex] = d;
         DGN2DeviceMap[ATS_AC_STATUS_3][c.rvcIndex] = d;
@@ -320,6 +363,10 @@ void DeviceFactory::registerCreators() {
         DGN2DeviceMap[CHARGER_STATUS][c.rvcIndex] = d;
         DGN2DeviceMap[CHARGER_STATUS_2][c.rvcIndex] = d;
         DGN2DeviceMap[CHARGER_STATUS_3][c.rvcIndex] = d;
+        DGN2DeviceMap[CHARGER_CONFIGURATION_STATUS][c.rvcIndex] = d;
+        DGN2DeviceMap[CHARGER_CONFIGURATION_STATUS_2][c.rvcIndex] = d;
+        DGN2DeviceMap[CHARGER_CONFIGURATION_STATUS_3][c.rvcIndex] = d;
+        DGN2DeviceMap[CHARGER_CONFIGURATION_STATUS_4][c.rvcIndex] = d;
         d->attachView(c.name.c_str());
         return d;
     };

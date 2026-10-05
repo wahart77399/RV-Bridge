@@ -184,9 +184,15 @@ boolean ThermostatView::ThermostatController::update(void) {
     return updated;
 }
 
-void ThermostatView::ThermostatController::setInfo(RVCMode opMode, RVCFanMode fanMode, RVCForcedFan fanSpeed, double heatTemp, double coolTemp) {
+void ThermostatView::ThermostatController::setInfo(RVCMode opMode, RVCFanMode fanMode, RVCForcedFan fanSpeed,
+                                                   double heatTemp, double coolTemp, bool hasAmbientTemp,
+                                                   double ambientTempC, bool hasFurnaceStatus,
+                                                   bool furnaceHeating) {
     if ((currentState != nullptr) && (targetState != nullptr) && (targetTemp != nullptr) && (fan != nullptr) && (ambientTemp != nullptr)) {
-        HomeKitOperatingMode homeKitOperatingMode = (HomeKitOperatingMode) currentState->getVal();
+        if (hasAmbientTemp && fabs(ambientTemp->getVal<double>() - ambientTempC) > 0.05) {
+            ambientTemp->setVal(ambientTempC);
+        }
+        HomeKitOperatingMode homeKitOperatingMode = static_cast<HomeKitOperatingMode>(targetState->getVal<uint8_t>());
         switch(opMode) {
             case (RVCMode::COOL):
                 
@@ -257,6 +263,12 @@ void ThermostatView::ThermostatController::setInfo(RVCMode opMode, RVCFanMode fa
             default:
                 break;
         }
+        if (hasFurnaceStatus) {
+            uint8_t heatingState = furnaceHeating
+                ? HomeKitHVACStates::heatingCoolingStateHeat
+                : HomeKitHVACStates::heatingCoolingStateOff;
+            if (currentState->getVal<uint8_t>() != heatingState) currentState->setVal(heatingState);
+        }
         fan->setModeSpeed(fanMode, fanSpeed);
         PacketQueue::clearLastPacketReceiveTime();
     }
@@ -278,7 +290,21 @@ bool ThermostatView::updateView(void) {
             RVCForcedFan fanSpeed = mdl->getFanSpeed();
             float coolTemp = mdl->getCoolTemp();
             float heatTemp = mdl->getHeatTemp();
-            controller->setInfo(opMode, fanMode, fanSpeed, heatTemp, coolTemp);
+            controller->setInfo(opMode, fanMode, fanSpeed, heatTemp, coolTemp,
+                                mdl->hasAmbientTemperature(), mdl->getAmbientTemperatureC(),
+                                mdl->hasFurnaceStatus(), mdl->isFurnaceHeating());
+            if (mdl->hasAirConditionerMode() && airConditionerModeChar_ != nullptr) {
+                airConditionerModeChar_->setVal(tempCfromTempF(mdl->airConditionerMode()));
+            }
+            if (mdl->hasAirConditionerMaxFan() && airConditionerMaxFanChar_ != nullptr) {
+                airConditionerMaxFanChar_->setVal(tempCfromTempF(mdl->airConditionerMaxFanPercent()));
+            }
+            if (mdl->hasHeatPumpMode() && heatPumpModeChar_ != nullptr) {
+                heatPumpModeChar_->setVal(tempCfromTempF(mdl->heatPumpMode()));
+            }
+            if (mdl->hasHeatPumpMaxOutput() && heatPumpMaxOutputChar_ != nullptr) {
+                heatPumpMaxOutputChar_->setVal(tempCfromTempF(mdl->heatPumpMaxOutputPercent()));
+            }
             updated = true; 
         }
     }
@@ -286,7 +312,13 @@ bool ThermostatView::updateView(void) {
     return updated;
  }
 
- ThermostatView::ThermostatView(GenericDevice* model, const char* spanDevName) : SpanView(model), controller(nullptr) {
+ ThermostatView::ThermostatView(GenericDevice* model, const char* spanDevName)
+     : SpanView(model)
+     , controller(nullptr)
+     , airConditionerModeChar_(nullptr)
+     , airConditionerMaxFanChar_(nullptr)
+     , heatPumpModeChar_(nullptr)
+     , heatPumpMaxOutputChar_(nullptr) {
 
  }
 
@@ -312,6 +344,26 @@ bool ThermostatView::updateView(void) {
 
     ThermostatView::ThermostatController* controller = new ThermostatView::ThermostatController(vw, model, fn, spanDevName);
     vw->setController(controller);
+
+    new Service::TemperatureSensor();
+        new Characteristic::ConfiguredName("A/C Mode (0 Auto, 1 Manual)");
+    vw->airConditionerModeChar_ = new Characteristic::CurrentTemperature(tempCfromTempF(0));
+    vw->airConditionerModeChar_->setRange(tempCfromTempF(0), tempCfromTempF(1));
+
+    new Service::TemperatureSensor();
+        new Characteristic::ConfiguredName("A/C Max Fan Speed (%)");
+    vw->airConditionerMaxFanChar_ = new Characteristic::CurrentTemperature(tempCfromTempF(0));
+    vw->airConditionerMaxFanChar_->setRange(tempCfromTempF(0), tempCfromTempF(100));
+
+    new Service::TemperatureSensor();
+        new Characteristic::ConfiguredName("Heat Pump Mode (0 Auto, 1 Manual)");
+    vw->heatPumpModeChar_ = new Characteristic::CurrentTemperature(tempCfromTempF(0));
+    vw->heatPumpModeChar_->setRange(tempCfromTempF(0), tempCfromTempF(1));
+
+    new Service::TemperatureSensor();
+        new Characteristic::ConfiguredName("Heat Pump Max Output (%)");
+    vw->heatPumpMaxOutputChar_ = new Characteristic::CurrentTemperature(tempCfromTempF(0));
+    vw->heatPumpMaxOutputChar_->setRange(tempCfromTempF(0), tempCfromTempF(100));
 
 
     if (vw != nullptr)

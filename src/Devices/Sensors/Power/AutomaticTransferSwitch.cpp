@@ -9,6 +9,9 @@
 #include "AutomaticTransferSwitchView.h"
 #include "PacketQueue.h"
 #include "debug.h"
+#include "BridgeDiagnostics.h"
+
+#include <cstdio>
 
 void AutomaticTransferSwitch::attachView(const char* name, bool showCurrent , bool showFault) {
     new AutomaticTransferSwitchView(this, name);
@@ -22,6 +25,18 @@ boolean AutomaticTransferSwitch::executeCommand(RVC_DGN dgn, const uint8_t* data
         CAN_frame_t* frame = nullptr;
         uint8_t* rawData = (uint8_t* )data;
         switch (dgn) {
+            case ATS_STATUS: {
+                uint8_t source = data[1];
+                uint8_t mode = data[2] & 0x03;
+                const char* sourceName = source < 7 ? sourceNames_[source] :
+                                         (source == 253 ? "No source active" : "Unknown source");
+                const char* modeName = mode == 0 ? "Automatic" : mode == 1 ? "Manual" : "Unknown mode";
+                std::snprintf(sourceStatusDetail_, sizeof(sourceStatusDetail_), "ATS source: %s (%s)", sourceName, modeName);
+                BridgeDiagnostics::observeDeviceDetail(this, sourceStatusDetail_);
+                updateViews();
+                cmdExecuted = true;
+                break;
+            }
             case (ATS_AC_STATUS_1):
                 // RV_PRINTF("AutomaticTransferSwitch::executeCommand case LOCK_STATUS\n");
                 // then we don't send a command on the CAN bus, we update our views (HOME SPAN)

@@ -1,10 +1,20 @@
 #pragma once
 
 #include <Arduino.h>
+#include <ArduinoJson.h>
 #include "CanFrameTypes.h"
 #include "DGN.h"
 
 class GenericDevice;
+
+class DiagnosticsJsonSink {
+public:
+    virtual ~DiagnosticsJsonSink() = default;
+    virtual size_t extraHeapRequired(size_t jsonLength) const = 0;
+    virtual bool begin(size_t jsonLength) = 0;
+    virtual size_t write(const uint8_t* data, size_t length) = 0;
+    virtual bool finish() = 0;
+};
 
 class BridgeDiagnostics {
 public:
@@ -12,17 +22,20 @@ public:
                                uint8_t rvcIndex, uint8_t sourceAddress);
     static void observeFrame(const CAN_frame_t& frame);
     static void observeDevice(const GenericDevice* device, RVC_DGN dgn, uint8_t sourceAddress, bool handled);
+    static void observeDeviceDetail(const GenericDevice* device, const char* detail);
     static void observeUnmapped(RVC_DGN dgn, uint8_t sourceAddress, uint8_t instanceIndex,
                                 bool instanceVerified, const uint8_t* data, uint8_t dataLength);
     static void observeTransmit(bool accepted);
     static void observeQueueDrop();
     static String reportJson();
+    static bool writeReport(DiagnosticsJsonSink& sink);
 
 private:
     struct DeviceActivity {
         const GenericDevice* model = nullptr;
         char type[33] = {};
         char name[65] = {};
+        const char* statusDetail = nullptr;
         uint8_t rvcIndex = 0;
         uint8_t configuredSourceAddress = 0;
         uint64_t lastSeenMs = 0;
@@ -71,6 +84,7 @@ private:
 
     static BridgeDiagnostics& instance();
     static uint64_t nowMs();
+    static void populateReport(JsonDocument& document);
     DeviceActivity* findActivity(const GenericDevice* device);
     UnmappedActivity* findUnmapped(uint32_t dgn, uint8_t sourceAddress, uint8_t instanceIndex);
 };

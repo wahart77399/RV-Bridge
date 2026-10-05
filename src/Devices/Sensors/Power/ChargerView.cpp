@@ -37,6 +37,7 @@ void ChargerView::buildChargeAccessories(const char* name) {
             new Characteristic::Identify();
             new Characteristic::Name((String(name) + " State").c_str());
         new Service::TemperatureSensor();
+                new Characteristic::Name("Charger Operating State");
                 stateChar_ = new Characteristic::CurrentTemperature(tempCfromTempF(0.0F));
                 stateChar_->setRange(tempCfromTempF(0.0F), tempCfromTempF(10.0F));
 }

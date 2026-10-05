@@ -44,11 +44,11 @@ inline constexpr char SMARTCOACH_DIAGNOSTICS_PAGE[] = R"HTML(<!doctype html>
     <section aria-label="System and bus summary"><div class="metrics" id="metrics"></div></section>
     <section aria-labelledby="device-heading">
       <h2 id="device-heading">Configured devices</h2>
-      <div class="table-wrap"><table><thead><tr><th>Name</th><th>Type</th><th>Index</th><th>Source</th><th>Observed</th><th>Last DGN</th><th>Last frame age</th><th>Handled / received</th></tr></thead><tbody id="devices"></tbody></table></div>
+      <div class="table-wrap"><table><thead><tr><th>Name</th><th>Type</th><th>Index</th><th>Source</th><th>Observed</th><th>Last DGN</th><th>Status detail</th><th>Last frame age</th><th>Handled / received</th></tr></thead><tbody id="devices"></tbody></table></div>
     </section>
     <section aria-labelledby="unmapped-heading">
       <h2 id="unmapped-heading">Unmapped CAN traffic</h2>
-      <div class="table-wrap"><table><thead><tr><th>DGN</th><th>Family</th><th>Source</th><th>Index</th><th>Hits</th><th>Last frame age</th><th>Payload</th><th>Review status</th></tr></thead><tbody id="unmapped"></tbody></table></div>
+      <div class="table-wrap"><table><thead><tr><th>DGN</th><th>Family</th><th>Source</th><th>Index</th><th>Hits</th><th>Last frame age</th><th>Payload</th><th>DM-RV detail</th><th>Review status</th></tr></thead><tbody id="unmapped"></tbody></table></div>
     </section>
     <p id="meaning" class="note"></p>
   </main>
@@ -72,6 +72,13 @@ inline constexpr char SMARTCOACH_DIAGNOSTICS_PAGE[] = R"HTML(<!doctype html>
       const cell = document.createElement("td");
       cell.textContent = value == null ? "Not observed" : String(value);
       row.append(cell);
+    }
+    function dmRvSummary(details) {
+      if (!details) return "Not DM-RV";
+      const occurrence = details.occurrenceCountAvailable ? details.occurrenceCount : "Unavailable";
+      const extension = details.dsaExtensionDefined ? details.dsaExtension : "None";
+      const bank = details.bankSelectionSupported ? details.bankSelect : "Not supported";
+      return details.powerState + "/" + details.activityState + "; lamps Y=" + details.yellowLampCode + " R=" + details.redLampCode + "; DSA " + details.dsa + "; SPN " + details.spnMsb + "/" + details.spnIntermediate + "/" + details.spnLsb + "; FMI " + details.fmi + "; occurrences " + occurrence + "; DSA extension " + extension + "; bank " + bank;
     }
     function unmappedDgnLabel(activity) {
       const formatDgn = (value) => "0x" + Number(value).toString(16).toUpperCase().padStart(5, "0");
@@ -110,6 +117,7 @@ inline constexpr char SMARTCOACH_DIAGNOSTICS_PAGE[] = R"HTML(<!doctype html>
           addCell(row, device.sourceAddress);
           addCell(row, device.observed ? "Yes" : "No");
           addCell(row, device.lastDgnName);
+          addCell(row, device.statusDetail);
           addCell(row, device.lastFrameAgeMs == null ? null : device.lastFrameAgeMs + " ms");
           addCell(row, device.handledFrames + " / " + device.receivedFrames);
           devices.append(row);
@@ -118,19 +126,23 @@ inline constexpr char SMARTCOACH_DIAGNOSTICS_PAGE[] = R"HTML(<!doctype html>
         for (const activity of unmappedRows) {
           const row = document.createElement("tr");
           addCell(row, unmappedDgnLabel(activity));
-          addCell(row, activity.family === "Unknown" ? activity.protocol : activity.family);
+          addCell(row, activity.family || activity.protocol);
           addCell(row, activity.sourceAddress);
-          addCell(row, activity.rvcIndex + " (" + (activity.instanceVerified ? "verified" : "candidate") + ")");
+          const identity = activity.dsa == null
+            ? (activity.rvcIndex == null ? "No index" : activity.rvcIndex + " (" + (activity.instanceVerified ? "verified" : "candidate") + ")")
+            : "DSA " + activity.dsa;
+          addCell(row, identity);
           addCell(row, activity.hits);
           addCell(row, activity.lastFrameAgeMs == null ? null : activity.lastFrameAgeMs + " ms");
           addCell(row, activity.payloadHex);
+          addCell(row, dmRvSummary(activity.dmRv));
           addCell(row, (activity.inReview ? "In review" : "Not in review") + (activity.payloadAllFf ? " - all 0xFF" : ""));
           unmapped.append(row);
         }
         if (unmappedRows.length === 0) {
           const row = document.createElement("tr");
           const cell = document.createElement("td");
-          cell.colSpan = 8;
+          cell.colSpan = 9;
           cell.textContent = "No unmapped CAN traffic observed";
           row.append(cell);
           unmapped.append(row);

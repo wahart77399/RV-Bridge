@@ -7,7 +7,45 @@
 #include "DGN.h"
 
 Inverter::Inverter(uint8_t address, uint8_t instance)
-    : PowerSensor(address, instance) {}
+    : PowerSensor(address, instance)
+    , componentTemperatureC_{}
+    , componentTemperatureAvailable_{}
+    , dcVoltageV_(0.0f)
+    , dcCurrentA_(0.0f)
+    , dcVoltageAvailable_(false)
+    , dcCurrentAvailable_(false) {}
+
+void Inverter::setTemperatureStatus(const uint8_t* data, uint8_t sensorOffset)
+{
+    if (data != nullptr) {
+        for (uint8_t statusIndex = 0; statusIndex < INVERTER_TEMPERATURES_PER_STATUS; ++statusIndex) {
+            uint8_t sensorIndex = sensorOffset + statusIndex;
+            uint8_t msbIndex = 1 + statusIndex * 2;
+            uint16_t rawTemperature = getLilEndian(data[msbIndex], data[msbIndex + 1]);
+            componentTemperatureAvailable_[sensorIndex] = rawTemperature != 0xFFFF;
+            if (componentTemperatureAvailable_[sensorIndex]) {
+                componentTemperatureC_[sensorIndex] = convToTempC(rawTemperature);
+            }
+        }
+    }
+}
+
+void Inverter::setDcStatus(const uint8_t* data)
+{
+    if (data != nullptr) {
+        uint16_t rawVoltage = getLilEndian(data[1], data[2]);
+        dcVoltageAvailable_ = rawVoltage != 0xFFFF;
+        if (dcVoltageAvailable_) {
+            dcVoltageV_ = rawVoltage * 0.05f;
+        }
+
+        uint16_t rawCurrent = getLilEndian(data[3], data[4]);
+        dcCurrentAvailable_ = rawCurrent != 0xFFFF;
+        if (dcCurrentAvailable_) {
+            dcCurrentA_ = (static_cast<int32_t>(rawCurrent) - 0x7D00) * 0.05f;
+        }
+    }
+}
 
 InverterStatus Inverter::status() const
 {
@@ -49,6 +87,21 @@ boolean Inverter::executeCommand(RVC_DGN dgn, const uint8_t* buffer, uint8_t /*v
                 // then we don't send a command on the CAN bus, we update our views (HOME SPAN)
                 // the -> the views will requst the data from the buffer
                 setData(dgn, rawData);
+                updateViews();
+                cmdExecuted = true;
+                break;
+            case (INVERTER_TEMPERATURE_STATUS):
+                setTemperatureStatus(buffer, 0);
+                updateViews();
+                cmdExecuted = true;
+                break;
+            case (INVERTER_TEMPERATURE_STATUS_2):
+                setTemperatureStatus(buffer, INVERTER_TEMPERATURES_PER_STATUS);
+                updateViews();
+                cmdExecuted = true;
+                break;
+            case (INVERTER_DC_STATUS):
+                setDcStatus(buffer);
                 updateViews();
                 cmdExecuted = true;
                 break;

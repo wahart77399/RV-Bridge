@@ -155,6 +155,12 @@ bool BatteryView::updateView(void) {
            batteryMeter->setBatteryType(mdl->type());
         */
 
+        if ((dcDisconnectState_ != nullptr) && mdl->dcDisconnectStatusAvailable_) {
+            dcDisconnectState_->setVal(mdl->dcConnected_
+                ? Characteristic::ContactSensorState::DETECTED
+                : Characteristic::ContactSensorState::NOT_DETECTED);
+        }
+
         PacketQueue::clearLastPacketReceiveTime();
         updated = true; 
     }
@@ -162,7 +168,10 @@ bool BatteryView::updateView(void) {
     return updated;
 }
 
-BatteryView::BatteryView(GenericDevice* model, const char* spanDevName) : SpanView(model) {
+BatteryView::BatteryView(GenericDevice* model, const char* spanDevName)
+    : SpanView(model)
+    , batteryMeter(nullptr)
+    , dcDisconnectState_(nullptr) {
     BatteryView::initialize();
 
 }
@@ -176,15 +185,18 @@ BatteryView::BatteryView(GenericDevice* model, const char* spanDevName) : SpanVi
     new Service::AccessoryInformation(); 
     new Characteristic::Identify();
     new Characteristic::Name(spanDevName);
-    BatteryView::BatteryState* meter = new BatteryView::BatteryState();
+    BatteryView::BatteryState* meter = new BatteryView::BatteryState(spanDevName);
     if (model != nullptr) {
-        #ifdef INSTANCES
-        meter->setDCInstance((DC_SOURCE_INSTANCE_DEFINITION)(model->index()));
-        #endif
         uint8_t* rawData = ((Battery*) model)->getCurrentData();
         meter->setPriority((DC_SOURCE_PRIORITY_DEFINTION)rawData[DC_SOURCE_PRIORITY_INDEX]);
     }
     vw->setBatteryMeter(meter);
+
+    if ((model != nullptr) && (model->index() == 1)) {
+        new Service::ContactSensor();
+        new Characteristic::ConfiguredName("Battery Disconnect");
+        vw->dcDisconnectState_ = new Characteristic::ContactSensorState();
+    }
 
 
     

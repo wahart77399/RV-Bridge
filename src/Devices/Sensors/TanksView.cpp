@@ -16,16 +16,30 @@ bool TanksView::updateView(void) {
         uint8_t* rawData = mdl->getCurrentData();
         uint16_t tankSize = mdl->size();
         uint16_t absoluteLevel = mdl->level();
-        uint16_t levelPercent = (100 * absoluteLevel)/tankSize;
+        bool hasTankLevel = tankSize > 0 && absoluteLevel != INVALID_TANK_SIZE;
+        uint16_t levelPercent = hasTankLevel ? (100 * absoluteLevel) / tankSize : 0;
         // RV_PRINTF("TankView::updateView: index = %d, levelPercent=%d, absolute level=%d, size=%d \n", mdl->index(), levelPercent, absoluteLevel, tankSize );
          // convert to Celsius if needed
         tank->setTankSize(tankSize);
-        if (levelPercent < 100) {
+        if (hasTankLevel && levelPercent < 100) {
             tank->setTankLevel(levelPercent);
             // tank->setTankFullState(FILLING_TANK); // set the tank full state to filling
-        } else {
+        } else if (hasTankLevel) {
             tank->setTankLevel(100); // set to 100% if the level is greater than 100%
             // tank->setTankFullState(FULL_TANK); // set the tank full state
+        }
+        if (mdl->hasAutoFillOperatingStatus() && autoFillActiveChar_ != nullptr) {
+            autoFillActiveChar_->setVal(mdl->autoFillOperating()
+                ? Characteristic::ContactSensorState::DETECTED
+                : Characteristic::ContactSensorState::NOT_DETECTED);
+        }
+        if (mdl->hasAutoFillValveStatus() && autoFillValveChar_ != nullptr) {
+            autoFillValveChar_->setVal(mdl->autoFillValveOpen()
+                ? Characteristic::ContactSensorState::DETECTED
+                : Characteristic::ContactSensorState::NOT_DETECTED);
+        }
+        if (mdl->hasAutoFillResult() && autoFillResultFaultChar_ != nullptr) {
+            autoFillResultFaultChar_->setVal(mdl->autoFillResultFailed() ? 1 : 0);
         }
         PacketQueue::clearLastPacketReceiveTime();
         updated = true; 
@@ -34,7 +48,12 @@ bool TanksView::updateView(void) {
     return updated;
  }
 
-TanksView::TanksView(GenericDevice* model, const char* spanDevName) : SpanView(model) {
+TanksView::TanksView(GenericDevice* model, const char* spanDevName)
+    : SpanView(model)
+    , tank(nullptr)
+    , autoFillActiveChar_(nullptr)
+    , autoFillValveChar_(nullptr)
+    , autoFillResultFaultChar_(nullptr) {
 
 }
 
@@ -51,6 +70,19 @@ void TanksView::createTanksView(GenericDevice* model, const char* spanDevName) {
     TanksView::Tank* tank = new TanksView::Tank(spanDevName);
     tank->setDescription(desc.c_str());
     vw->setTank(tank);
+    if ((model != nullptr) && (model->index() == Tanks::FRESH_WATER_INSTANCE)) {
+        new Service::ContactSensor();
+        new Characteristic::ConfiguredName("AutoFill Active");
+        vw->autoFillActiveChar_ = new Characteristic::ContactSensorState();
+
+        new Service::ContactSensor();
+        new Characteristic::ConfiguredName("AutoFill Diverter Valve");
+        vw->autoFillValveChar_ = new Characteristic::ContactSensorState();
+
+        new Service::TemperatureSensor();
+        new Characteristic::ConfiguredName("AutoFill Last Operation");
+        vw->autoFillResultFaultChar_ = new Characteristic::StatusFault(false);
+    }
     // vw->updateView();
 
     

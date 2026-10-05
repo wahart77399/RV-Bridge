@@ -45,6 +45,9 @@ class TanksView : SpanView {
                 void setDescription(const char* desc) { percent->setDescription(desc); }
         };
         Tank* tank;
+        SpanCharacteristic* autoFillActiveChar_;
+        SpanCharacteristic* autoFillValveChar_;
+        SpanCharacteristic* autoFillResultFaultChar_;
         void setTank(Tank* tnk) { tank = tnk; }
 
 
