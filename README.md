@@ -78,7 +78,7 @@ This shows the reboot and reset buttons along with links to the Diagnostic Page 
 
 ## Captive PortaL
 The captive portal is used to setup the Wifi and Password, Coach details, and emails.
-<img alt="Captive Portal" src="images/CaptivePortal.png"
+<img alt="Captive Portal" src="images/CaptivePortal.png"/>
 
 ---
 ## MVC
