@@ -27,6 +27,46 @@ There is a another readme for setting up email relay in the cloud/gmail-relay wi
 In addition, I've upgraded the library stack to be current with HomeSpan and uses the internal TWAI on the ESP32. Finally, I added regression test suite for the builds.
 
 ---
+## Sample EVE Screen Shots
+
+## Web Portal
+The screenshot below is of the Web Portal page. It shows...
+
+<img alt="Web Portal Top of Page" src="images/IMG_6503.PNG"/>
+
+---
+This screenshot, below, shows the coach details when you click on the "View Coach Details" button at the top.
+
+<img alt="Coach Details" src="images/IMG_6504.PNG"/>
+
+---
+This is the Water Pump switch that has been approved for uploading into Home. It shows its related RVC DGNs (Data Group Number).
+
+<img alt="Water Pump with DGNs" src="images/IMG_6505.PNG"/>
+
+---
+This shows the reboot and reset buttons along with links to the Diagnostic Page and Email Reports.
+<img alt="Diagnostic Page Bottom" src="images/IMG_6520.PNG"/>
+
+### Diagnostic Portal
+
+<img alt="Diagnostics Page Top" src="images/IMG_6516.PNG"/>
+
+---
+<img alt="Diagnostics Page Showing Configured Device Metrics" src="images/IMG_6517.PNG"/>
+
+---
+<img alt="Diagnostic Page Showing Unmapped DGN Metrics" src="images/IMG_6518.PNG"/>
+<img alt="Diagnostic Page Showing DM-RV DGN" src="images/IMG_6519.PNG"/>
+
+
+### Email Portal
+
+## Captive PortaL
+The captive portal is used to setup the Wifi and Password, Coach details, and emails.
+<img alt="Captive Portal" src="images/CaptivePortal.png"
+
+---
 ## MVC
 The architecture relies heavily on the Model View Controller pattern. The Model is the RVC side of the house, the View is the Apple HomeKit and the Controller, if it is not a sensor, is typically a class defined within the View and private to the view. The controller interacts with the model per any changes made within the View (HomeKit). For example, in the ThermostatView, there are 2 controllers, one for the fan and one for the thermostat settings. Why did I make them private within the View Class? I did this to “encapsulate and hide” specific attributes from other non-related classes. This means that the Model, View, and Controller are cohesive and only share what they need to share but not to other un-related classes / objects. 
 
