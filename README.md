@@ -23,11 +23,28 @@ Originally, I used Randy’s original hardware and 3D casing. Unfortunately, the
      * Wipe Wifi Credentials
  
 These capabilities add substantial features making it more of a SmartCoach solution and not just a simple bridge.
-There is a another readme for setting up email relay in the cloud/gmail-relay with scripts to use.
+There is a another [readme] (cloud/gmail-relay/README.md) for [setting up email relay](cloud/gmail-relay/README.md) in the cloud/gmail-relay with scripts to use.
 In addition, I've upgraded the library stack to be current with HomeSpan and uses the internal TWAI on the ESP32. Finally, I added regression test suite for the builds.
 
 ---
-## Sample EVE Screen Shots
+## Sample EVE Home Screen Shots
+<img alt=" yada yada " src="images/IMG_6506.PNG"/>
+<img alt=" yada yada " src="images/IMG_6507.PNG"/>
+<img alt=" yada yada " src="images/IMG_6508.PNG"/>
+<img alt=" yada yada " src="images/IMG_6509.PNG"/>
+<img alt=" yada yada " src="images/IMG_6510.PNG"/>
+<img alt=" yada yada " src="images/IMG_6511.PNG"/>
+<img alt=" yada yada" src="images/IMG_6512.PNG"/>
+<img alt=" yada yada " src="images/IMG_6513.PNG"/>
+<img alt=" yada yada " src="images/IMG_6514.PNG"/>
+<img alt=" yada yada " src="images/IMG_6521.PNG"/>
+<img alt=" yada yada " src="images/IMG_6522.PNG"/>
+<img alt=" yada " src="images/IMG_6524.PNG"/>
+<img alt=" yada " src="images/IMG_6523.PNG"/>
+<img alt=" yada " src="images/IMG_6525.PNG"/>
+<img alt=" yodle " src="images/IMG_6526.PNG"/>
+<img alt="yodle" src="images/IMG_6527.PNG"/>
+<img alt="yodle" src="images/IMG_6528.PNG"/>
 
 ## Web Portal
 The screenshot below is of the Web Portal page. It shows...
