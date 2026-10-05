@@ -173,7 +173,7 @@ In my coach, I’ve added the capability of including Ring devices into the Home
 
 In addition, I use the EVE Home app for any automation, EVE Home is more sophisticated and includes the ability to perform conditional statements where HomeKit does not. In addition, EVE Home is a vendor for motion sensors, security devices, etc.
 
-Finally, I don’t use any RV based networking system like Winegard, I use Unifi’s Ubiquiti. If Ubiquiti was used, you could set up a firewall and link it to Starlink, use an 8 port POE switch, connect the HOOBS solution directly into the switch, and provide a wired connection to an AP on the ceiling and one in the basement for sensors. This would secure the Coach. Also, if clients wanted it, they could opt in to the Unifi Ubiquiti 5G Max which allows for dual sims and Starlink with a dual WAN on the Unifi Ubiquiti UCG-Max or UCG-Ultra. The UCG can be configured to be primary/secondary or load balanced.
+Finally, I don’t use any RV based networking system like Winegard, I use Unifi’s Ubiquiti. If Ubiquiti was used, you could set up a firewall and link it to Starlink, use an 8 port POE switch, connect the Homebridge solution directly into the switch, and provide a wired connection to an AP on the ceiling and one in the basement for sensors. This would secure the Coach. Also, if clients wanted it, they could opt in to the Unifi Ubiquiti 5G Max which allows for dual sims and Starlink with a dual WAN on the Unifi Ubiquiti UCG-Max or UCG-Ultra. The UCG can be configured to be primary/secondary or load balanced.
 
 ---
 ## Randy's Original Readme
