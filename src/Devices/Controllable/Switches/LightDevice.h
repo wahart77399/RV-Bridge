@@ -68,13 +68,12 @@ class LightDevice : public GenericDevice {
         void setBrightnessRaw(uint8_t bright) {
             uint8_t* d = getCurrentData();
             if (d != nullptr) {
-                if (bright <= DIMMER_STATUS_3_SWITCH_OFF) {
+                if (bright == DIMMER_STATUS_3_SWITCH_OFF) {
                     d[DC_DIMMER_COMMAND_BRIGHTNESS_INDEX] = DIMMER_STATUS_3_SWITCH_OFF;
-
-                } else if (bright > MAX_PERCENT) {
-                    d[DC_DIMMER_COMMAND_BRIGHTNESS_INDEX] = MAX_PERCENT;
                 } else {
-                    d[DC_DIMMER_COMMAND_BRIGHTNESS_INDEX] = bright;
+                    if (bright > MAX_PERCENT) bright = MAX_PERCENT;
+                    d[DC_DIMMER_COMMAND_BRIGHTNESS_INDEX] =
+                        static_cast<uint8_t>(bright / RVC_PERCENT_PRECISION);
                 }
             }
         }
@@ -139,10 +138,10 @@ class LightDevice : public GenericDevice {
             uint8_t result = 0;
             uint8_t d = getBrightnessRaw();
             if (d > DIMMER_STATUS_3_SWITCH_OFF) {
-                if (d >= MAX_PERCENT)
-                    result = MAX_PERCENT; // OK I need to look up MAX_PERCENT and remove magic numbers
+                if (d >= RVCBrightMax)
+                    result = MAX_PERCENT;
                 else
-                    result = ((d * 100UL) / MAX_PERCENT);
+                    result = static_cast<uint8_t>(d * RVC_PERCENT_PRECISION);
             }
             return result;
         }

@@ -85,7 +85,7 @@ bool DoorLockView::updateView(void) {
         uint8_t instance = indexOfModel();   
         uint8_t index = -1;
         DoorLock* mdl = (DoorLock* )getModel();
-        if (mdl != nullptr) {
+        if (mdl != nullptr && mdl->hasValidLockStatus()) {
             // RV_PRINTF("DoorLockView::updateView - mdl not null\n");
             index = mdl->index();
             // toggle the door lock state

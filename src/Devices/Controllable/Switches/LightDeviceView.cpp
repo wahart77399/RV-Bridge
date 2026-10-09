@@ -77,17 +77,23 @@ LightDeviceView::LightController::LightController(LightDeviceView* vw, GenericDe
 bool LightDeviceView::LightController::update(void) {                              // update() method
         boolean result = false;
         view->dontUpdateTheView(); 
-        // if (model != nullptr) {
+        if (model != nullptr && view != nullptr && power != nullptr) {
             uint8_t* rawData = model->getCurrentData();
-            view->setItOn(isOn());
-            if ((brightness != nullptr) && (view->isItDimmable())) {
+            bool powerChanged = power->updated();
+            bool brightnessChanged = brightness != nullptr && brightness->updated() && view->isItDimmable();
+
+            if (powerChanged && !isOn()) {
+                view->setItOn(false);
+            } else if (brightnessChanged) {
                 uint8_t pct = brightness->getNewVal();
                 view->setItsBrightness(pct);
+            } else if (powerChanged) {
+                view->setItOn(true);
             }
             RV_PRINTF("LightDeviceView::LightDeviceController::update - on: %d\n", model->isOn());
             model->executeCommand(DC_DIMMER_COMMAND, rawData);
             result = true;
-        // }     
+        }
         view->updateTheView();
         return(result);                               // return true
 } // update

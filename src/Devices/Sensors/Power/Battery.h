@@ -42,6 +42,7 @@
 #include "RVConstants.h"
 #include "BatteryDefinitions.h"
 #include "byteswap.h"
+#include <limits>
 
 class Battery : public GenericDevice {
     private:
@@ -88,22 +89,21 @@ class Battery : public GenericDevice {
         }
 
         // SOURCE 1 STATUS Data
-        const float_t directCurrentVoltage(void) const {
+        float_t directCurrentVoltage(void) const {
             uint8_t* data = getSource1Data();
             uint16_t value = 0;
-            float_t result = 0;
+            float_t result = std::numeric_limits<float_t>::quiet_NaN();
             if (data != nullptr) {
                 value = getLilEndian(data[DC_SOURCE_VOLTAGE_MSB_INDEX], data[DC_SOURCE_VOLTAGE_LSB_INDEX]);
-                if (value < VDC_MAX)
+                if (value <= VDC_RAW_MAX)
                     result = (value - VDC_OFFSET) * VDC_PRECISION;
             }
             return result;
         }
 
-        const float directCurrentAmperage(void) const {
+        float directCurrentAmperage(void) const {
             uint8_t* data = getSource1Data();
-            float result = 0.0f;
-            uint32_t value = 0;
+            float result = std::numeric_limits<float>::quiet_NaN();
             if (data != nullptr) {
                 const uint8_t* cur = &data[DC_SOURCE_CURRENT_MSB_1_INDEX];
                 uint32_t raw = rd_le32(cur);
@@ -116,24 +116,26 @@ class Battery : public GenericDevice {
         }
 
         // SOURCE 2 STATUS DATA
-        const uint16_t temperature(void) const {
+        const double temperature(void) const {
             uint8_t* data = getSource2Data();
-            uint16_t result = OUT_OF_RANGE_DATA;
+            double result = INVALID_TEMPERATURE;
             if (data != nullptr) {
-                result = convToTempC(getLilEndian(data[DC_SOURCE_TEMPERATURE_MSB_INDEX], data[DC_SOURCE_TEMPERATURE_LSB_INDEX]));
+                uint16_t rawTemperature = getLilEndian(data[DC_SOURCE_TEMPERATURE_MSB_INDEX], data[DC_SOURCE_TEMPERATURE_LSB_INDEX]);
+                if (rawTemperature != BAD_UINT16_DATA) {
+                    result = convToTempC(rawTemperature);
+                }
                 // RV_PRINTF("Battery::temperature = %d\n", result);
             }
             return result;
         }
 
-        const uint8_t level(void) const {
+        uint8_t level(void) const {
             uint8_t* data = getSource2Data();
-            uint8_t result = 0U; // static_cast<uint8_t>(MAX_RVC_PERCENT * RVC_PERCENT_PRECISION) ; // default to 125%
-            if ((data != nullptr) && (data[DC_SOURCE_STATE_OF_CHARGE_INDEX] != OUT_OF_RANGE_DATA)) {
+            uint8_t result = OUT_OF_RANGE_DATA;
+            if ((data != nullptr) && (data[DC_SOURCE_STATE_OF_CHARGE_INDEX] <= MAX_RVC_PERCENT)) {
                 uint8_t tmp = data[DC_SOURCE_STATE_OF_CHARGE_INDEX];
                 RV_PRINTF("Battery::level tmp = %d\n", tmp);
-                result = (tmp <= static_cast<uint8_t>(MAX_RVC_PERCENT)) ? tmp : static_cast<uint8_t>(MAX_RVC_PERCENT);
-                result = static_cast<uint8_t>(static_cast<float_t>(result) * RVC_PERCENT_PRECISION);
+                result = static_cast<uint8_t>(static_cast<float_t>(tmp) * RVC_PERCENT_PRECISION);
                 // RV_PRINTF("Battery::level result = %d\n", result);
             }
             return result;
@@ -207,14 +209,14 @@ class Battery : public GenericDevice {
             return result;
         }
         */
-        const uint16_t rmsRipple(void) const {
+        uint16_t rmsRipple(void) const {
             uint8_t* data = getSource3Data();
-            uint16_t result = OUT_OF_RANGE_DATA;
+            uint16_t result = INVALID_RMS_RIPPLE;
             if (data != nullptr) {
                 result = /* convFromTempC */ (getLilEndian(data[DC_SOURCE_AC_RIPPLE_MSB_INDEX], data[DC_SOURCE_AC_RIPPLE_LSB_INDEX]));
                 // RV_PRINTF("Battery::rmsRipple = %d\n", result);
-                if (result == INVALID_RMS_RIPPLE)
-                    result = OUT_OF_RANGE_DATA;
+                if (result > 65530)
+                    result = INVALID_RMS_RIPPLE;
             }
             return result;
         }

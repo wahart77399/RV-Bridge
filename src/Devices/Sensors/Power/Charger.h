@@ -118,6 +118,7 @@ private:
     const uint8_t* configuration4Data() const { return configuration4Data_; }
 
     void copyBuffer(const uint8_t* src, uint8_t* dst);
+    static const char* operatingStateName(uint8_t state);
 
     uint16_t rawDesiredChargeVoltage() const;
     float    rawDesiredChargeCurrent() const;
@@ -152,6 +153,8 @@ private:
 
 protected:
     void setData(RVC_DGN dgn, uint8_t* data) override;
+    uint8_t lineOf(RVC_DGN dgn, const uint8_t* raw) const override;
+    uint8_t ioOf(RVC_DGN dgn, const uint8_t* raw) const override;
 
 public:
     Charger() = delete;

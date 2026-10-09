@@ -100,6 +100,12 @@ h1 { font-size: clamp(42px, 5.5vw, 78px); line-height: .98; letter-spacing: -.07
 .rename-form input { background: white; border: 1px solid #cbd5c7; color: #19342d; font-size: 14px; outline: 0; padding: 11px 12px; width: 100%; }
 .rename-form input:focus-visible { border-color: #56815e; box-shadow: 0 0 0 2px rgba(86, 129, 94, .18); }
 .device-scope { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 18px; }
+.toolbar-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.apply-device-changes-button { min-height: 40px; padding: 9px 14px; border: 1px solid #365a43; border-radius: 4px; background: #365a43; color: #fff; font: inherit; cursor: pointer; }
+.apply-device-changes-button:hover { background: #284532; }
+.apply-device-changes-button:focus-visible { outline: 2px solid #365a43; outline-offset: 3px; }
+.apply-device-changes-button:disabled { opacity: .6; cursor: wait; }
+@media (max-width: 760px) { .toolbar-actions { width: 100%; } .toolbar-actions .search-field { flex: 1 1 220px; min-width: 0; } .apply-device-changes-button { flex: 1 1 auto; } }
 .device-scope button { min-height: 36px; border: 1px solid #cad4c7; border-radius: 4px; background: transparent; color: #365a43; padding: 7px 12px; cursor: pointer; }
 .device-scope button[aria-pressed="true"] { background: #365a43; color: #fff; border-color: #365a43; }
 .device-scope button span { display: inline-block; min-width: 2ch; margin-left: 6px; font-variant-numeric: tabular-nums; }
@@ -189,3 +195,40 @@ h1 { font-size: clamp(42px, 5.5vw, 78px); line-height: .98; letter-spacing: -.07
 .dgn-list p { color: #809181; font-family: 'DM Mono', monospace; font-size: 8px; letter-spacing: .08em; margin: 0 0 8px; text-transform: uppercase; }
 .dgn-list code { color: #3f664f; display: block; font-family: 'DM Mono', monospace; font-size: 9px; line-height: 1.7; }
 .category-section { max-width: 1106px; margin: 0 auto 38px; }.category-section:last-child { margin-bottom: 0; }.category-heading { align-items: baseline; border-bottom: 1px solid #d8ded5; display: flex; gap: 9px; margin-bottom: 13px; padding-bottom: 10px; }.category-heading span { color: #99a59a; font-family: 'DM Mono', monospace; font-size: 9px; }.category-heading h3 { color: #29473b; font-size: 16px; letter-spacing: -.04em; margin: 0; }.category-heading b { color: #9ba69a; font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 400; margin-left: auto; }
+
+@media (min-width: 1200px) {
+	.intro { max-width: 1600px; }
+	.toolbar,
+	.device-grid,
+	.coach-summary,
+	.diagnostics-header,
+	#diagnostics-status,
+	.diagnostics-metrics,
+	.diagnostics-devices,
+	.diagnostics-note,
+	.category-section { max-width: 1440px; }
+}
+
+@media (min-width: 1600px) {
+	.device-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (min-width: 761px) {
+	.category-section > .device-grid {
+		display: flex;
+		max-width: 100%;
+		overflow-x: auto;
+		overflow-y: hidden;
+		overscroll-behavior-x: contain;
+		scroll-snap-type: x proximity;
+		padding-bottom: 12px;
+		scrollbar-width: thin;
+	}
+	.category-section > .device-grid > .device-card {
+		flex: 0 0 clamp(280px, 26vw, 340px);
+		scroll-snap-align: start;
+	}
+	.category-section > .device-grid::-webkit-scrollbar { height: 9px; }
+	.category-section > .device-grid::-webkit-scrollbar-thumb { background: #aab6a5; border-radius: 8px; }
+	.category-section > .device-grid::-webkit-scrollbar-track { background: #e3e8df; }
+}

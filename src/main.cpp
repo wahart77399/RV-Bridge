@@ -51,6 +51,9 @@ CAN_device_t CAN_cfg;
 
 void setup() {
 	RV_PRINTF("setup start\n");
+#if defined(SMARTCOACH_AWNING_PARK_BYPASS) && SMARTCOACH_AWNING_PARK_BYPASS
+    Serial.println("WARNING: DIAGNOSTIC BUILD - AWNING PARK-BRAKE INTERLOCK BYPASSED. Restore Release after testing.");
+#endif
 	pinMode(LED_BUILTIN, OUTPUT);
 
 	CoachESP32* coachESP32 = CoachESP32::getInstance(&CAN_cfg);

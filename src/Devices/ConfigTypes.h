@@ -90,6 +90,23 @@ struct CoachSpec {
                 break;
             }
         }
+        if (!found) {
+            String alternateKey = key;
+            if (key.endsWith(" Shade")) {
+                alternateKey += "s";
+            } else if (key.endsWith(" Shades")) {
+                alternateKey = key.substring(0, key.length() - 1);
+            }
+            if (alternateKey != key) {
+                for (size_t i = 0; i < coverTimings.size(); ++i) {
+                    if (coverTimings[i].key == alternateKey) {
+                        out = coverTimings[i].timing;
+                        found = true;
+                        break;
+                    }
+                }
+            }
+        }
         return found;
     }
 

@@ -40,7 +40,8 @@ typedef enum {
 constexpr uint16_t BAD_DATA                = 0xffff;
 constexpr float_t  VAC_PRECISION           = 0.05f;
 constexpr float_t  AAC_PRECISION           = 0.05f;
-constexpr uint16_t VAC_MAX                 = 3213;
+constexpr uint16_t VAC_RAW_MAX             = 64250;
+constexpr float_t  VAC_MAX                 = 3212.5f;
 constexpr uint16_t AAC_MAX                 = 3213;
 constexpr uint16_t VAC_OFFSET              = 0;
 constexpr uint16_t AAC_OFFSET              = 1600;
@@ -81,6 +82,7 @@ protected:
     uint8_t*       dataBuffer()       { return getCurrentData(); }
     const uint8_t* dataBuffer() const { return getCurrentData(); }
     void setData(RVC_DGN dgn, uint8_t* sourceData) override;
+    void clearReadings();
     CAN_frame_t* buildCommand(RVC_DGN dgn) override;
 
     // which line / input-output an AC point message describes; NO_LINE if it is not an AC point

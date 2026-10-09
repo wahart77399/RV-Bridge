@@ -49,6 +49,7 @@ class DoorLock : public GenericDevice {
 
         const uint8_t LOCK_IT = 0x01;
         const uint8_t UNLOCK_IT = 0x00;
+        bool lockStatusAvailable_ = false;
         // boolean locked = false; // flag to indicate if the door is locked or not
         
         inline void setLockedFlag(bool lock) {
@@ -73,6 +74,8 @@ class DoorLock : public GenericDevice {
         inline const boolean isLocked(void) const {
             return getLockedFlag();
         }   
+
+        bool hasValidLockStatus() const { return lockStatusAvailable_; }
        
 
     protected:
@@ -85,7 +88,10 @@ class DoorLock : public GenericDevice {
                         rawData[LOCK_INDEX] = data[LOCK_INDEX];
                         break;
                     case LOCK_STATUS:
-                        rawData[LOCK_INDEX] = data[LOCK_INDEX];
+                        if (data[LOCK_INDEX] <= LOCK_IT) {
+                            rawData[LOCK_INDEX] = data[LOCK_INDEX];
+                            lockStatusAvailable_ = true;
+                        }
                         break;
                     default:
                         // do nothing

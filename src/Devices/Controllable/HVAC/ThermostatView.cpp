@@ -353,7 +353,7 @@ bool ThermostatView::updateView(void) {
     new Service::TemperatureSensor();
         new Characteristic::ConfiguredName("A/C Max Fan Speed (%)");
     vw->airConditionerMaxFanChar_ = new Characteristic::CurrentTemperature(tempCfromTempF(0));
-    vw->airConditionerMaxFanChar_->setRange(tempCfromTempF(0), tempCfromTempF(100));
+    vw->airConditionerMaxFanChar_->setRange(tempCfromTempF(0), tempCfromTempF(MAX_RVC_PERCENT * RVC_PERCENT_PRECISION));
 
     new Service::TemperatureSensor();
         new Characteristic::ConfiguredName("Heat Pump Mode (0 Auto, 1 Manual)");
@@ -363,7 +363,7 @@ bool ThermostatView::updateView(void) {
     new Service::TemperatureSensor();
         new Characteristic::ConfiguredName("Heat Pump Max Output (%)");
     vw->heatPumpMaxOutputChar_ = new Characteristic::CurrentTemperature(tempCfromTempF(0));
-    vw->heatPumpMaxOutputChar_->setRange(tempCfromTempF(0), tempCfromTempF(100));
+    vw->heatPumpMaxOutputChar_->setRange(tempCfromTempF(0), tempCfromTempF(MAX_RVC_PERCENT * RVC_PERCENT_PRECISION));
 
 
     if (vw != nullptr)

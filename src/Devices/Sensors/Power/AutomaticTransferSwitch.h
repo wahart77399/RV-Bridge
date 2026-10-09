@@ -55,6 +55,11 @@ class AutomaticTransferSwitch : public PowerSensor {
             "Primary", "Secondary", "Source 2", "Source 3", "Source 4", "Source 5", "Source 6"
         };
         char sourceStatusDetail_[65] = {};
+        static constexpr uint8_t SOURCE_COUNT = 7;
+        static constexpr uint8_t LEG_COUNT = 2;
+        uint8_t selectedSource_ = 0xFF;
+        uint8_t sourceReadings_[SOURCE_COUNT][LEG_COUNT][NUMIO][DATA_SIZE] = {};
+        bool sourceReadingReceived_[SOURCE_COUNT][LEG_COUNT][NUMIO] = {};
 
         void setSourceName(uint8_t source, const char* name) {
             if (source < 7 && name != nullptr && name[0] != '\0') {
@@ -113,6 +118,7 @@ class AutomaticTransferSwitch : public PowerSensor {
         }
 
     protected:
+        void setData(RVC_DGN dgn, uint8_t* data) override;
         uint8_t lineOf(RVC_DGN /*dgn*/, const uint8_t* raw) const override {
             return static_cast<uint8_t>((byte0(raw) & ATS_LEG_MASK) >> ATS_LEG_SHIFT);
         }

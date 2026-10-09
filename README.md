@@ -130,6 +130,23 @@ Packets are referenced or used by models and controllers.
 ## Devices
 At startup, `DeviceFactory` reads `devices.json` and `coach.json` to create the devices for this coach. You can change many device names and settings in the web portal without rebuilding the firmware.
 
+Saving coach details restarts SmartCoach after the configuration is successfully saved. Use **Apply Device Changes** beside device search to restart and load saved device changes; the button asks for confirmation and does not save unfinished edits.
+
+For an Inverter or Charger whose AC-point instance differs from its device instance, set `"extra": {"acPointInstance": 3}` on that device. Valid AC-point instances are 1 through 13. Without this setting, the bridge uses `rvcIndex` for AC telemetry as before; ordinary status messages still use `rvcIndex`. This maps one AC-point instance per configured device, not multiple independent measurement points.
+
+ATS input/output readings follow the source selected by `ATS_STATUS`. Until a valid source is reported, or when no source is active, the displayed readings remain zero; packets from inactive sources are cached separately.
+
+### RV-C Support Boundaries
+For temporary awning interlock diagnosis only, the `AwningDiagnostics` build environment enables `SMARTCOACH_AWNING_PARK_BYPASS`. It bypasses the bridge's park-brake check for awning writes and movement, not shades. Use only under direct supervision with the coach physically immobilized, keep the area clear, and restore `Release` immediately after testing. It must not be shipped to clients. Building does not deploy the bypass; uploading this firmware does. No filesystem upload is needed for this diagnostic test.
+
+The portal's Diagnostics page and downloadable report show named charger operating states, inverter modes, generator states, and ATS source/mode details. Voltage, current, temperature, percentages, and runtime remain numeric. Apple Home's existing tiles are unchanged; custom text is not substituted into numeric HomeKit characteristics.
+
+Generator, inverter, charger, and ATS AC displays consume AC Status Page 1. Pages 2 through 4 (peak readings, power/phase data, and additional qualification/fault data) are not consumed. `CHARGER_STATUS_3` derating telemetry and internal charger DC-bus telemetry are also not consumed.
+
+Battery accessories monitor `DC_SOURCE_STATUS` battery-bank instances, not individual `BATTERY_STATUS` devices. Unsupported bank fields are not displayed. Chassis motion uses speed from `CHASSIS_MOBILITY_STATUS`; the park-brake field remains the command safety gate. `CHASSIS_MOBILITY_STATUS_2` is not displayed. Shade position remains time-estimated because its status message has no absolute position.
+
+Run `perl test/host/run-learning-tests.pl --rvc` for focused production-method payload checks, or omit `--rvc` for the full host suites. These checks and a successful firmware build do not certify live-coach interoperability or full RV-C compliance.
+
 ### Generic Device
 GenericDevice is model base class and has much of the functionality that all devices use as well as the management of the views. 
 
@@ -251,7 +268,20 @@ RV-Bridge is the result of putting these pieces together.
 ---
 ## <a name="todo"></a>To-Do
 
+* **Tech debt (awning/chassis refinement, deferred until owner returns from visiting family):** Investigate the intermittent park-brake-unavailable event that rejected awning writes in Eve. Preserve the normal safety interlock and client pairing/accessory identities. Capture unavailable-state packets with source addresses and timestamps, check decoding/routing/startup/freshness behavior, and verify accepted/rejected writes and scene behavior across brake states. See the analysis below; a permanent decoder fix has not yet been established.
+* **Tech debt (verify on next development deployment):** HomeKit service definitions were corrected for Charger State, AutoFill Last Operation, and Generator Engine Status. Release build and host tests pass; still verify HomeSpan reports zero database warnings on-device and check existing Home/Eve displays. Characteristic order/count was kept stable; preserve client AIDs, IIDs, and pairings before any client release.
+* **Tech debt (stability, deferred until owner returns from visiting family):** Routine portal polling now reuses a cached discovery snapshot; `/discovery` is fetched on initial load and explicit Scan, while `/status` keeps learning state live. Browser checks confirmed no repeated discovery fetch during polling and manual Scan retries after an HTTP 503. The bridge previously recorded minimum heap as low as 512 bytes and `NetworkClient` errno 11; this mitigation does not prove the cause or live stability. Profile peak allocations and verify heap headroom under repeated scans, diagnostics requests, and HomeKit activity.
+* **Tech debt (client-release requirement, deferred until owner returns from visiting family):** Provide a portal-update process that automatically preserves saved coach settings, device configuration, accessory IDs (`aid` and `chassisAid`), and HomeKit pairings. Filesystem/portal updates must not replace client settings with bundled defaults. Manual configuration backups are a development workaround, not an acceptable client-update requirement. Verify preservation through updates and update failures before client release.
+* **Tech debt (soon, deferred until owner is ready):** Replace numeric power-state tiles in Apple Home (for example, Charger State `6`) with understandable named status indicators such as "Float Charging." Review other power-state codes too. Apple Home cannot display arbitrary status strings. HomeKit service changes and re-pairing are acceptable during development only. Client releases must preserve existing pairings and accessory identities without requiring re-pairing. Readable status text already exists in portal diagnostics.
 * Some RVs have AC units that can work as a heat pump; only the AC portion of these units is currently handled. (Ours only has a furnace so I don't currently have a way to implement this.)
+
+### Awning And Chassis Analysis
+* Eve reported read/write failure and reverted the awning switch to Off while diagnostics reported **Park brake unavailable**. The guard rejects released, unknown, reserved, or unreceived brake status; physical parking alone does not establish what the bridge received.
+* The temporary `AwningDiagnostics` bypass allowed extension, isolating the rejection to the park-brake guard. The bypass is now disabled on the live bridge: guarded `Release` was restored. Do not ship or retain the bypass as a client fix.
+* Passive instrumentation captured `CHASSIS_MOBILITY_STATUS` (`0x1FFF4`) from source address 148: `00 00 00 00 FD FF 7D 7D`. Byte 4 is `FD`, and bits 0-1 are `01` (park brake engaged). Fresh observations continued to report engaged. The earlier unavailable payload was not captured, so its cause remains unproven.
+* A separate host-reproduced HomeKit conflict was fixed: an Out/In callback no longer calls `setVal()` on an already-pending `TargetPosition` write. Standalone On still requests fully out; Off requests fully in. An explicit pending position takes precedence in a combined write. This defect is not proven to have caused the original live brake-status failure.
+* After guarded Release deployment, the owner verified front-awning extension through Eve and the **Retract Front Awning** scene. Both directions worked with the safety guard enabled; other awnings and longer-term stability still need verification.
+* On return, capture the missing failure evidence and add bounded transition history/rejection reasons if needed. Test engaged/released/unavailable/stale/startup status, conflicting sources, standalone switches, explicit positions, combined writes, and scenes. Never infer a safe park state solely from zero speed or unknown brake bits.
 
 ---
 ## <a name="hardware"></a>Hardware

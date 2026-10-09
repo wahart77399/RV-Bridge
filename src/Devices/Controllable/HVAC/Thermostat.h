@@ -106,11 +106,11 @@ class HVAC_Thermostat : public GenericDevice {
         }
         bool hasAirConditionerMode() const { return airConditionerMode_ <= 1; }
         uint8_t airConditionerMode() const { return airConditionerMode_; }
-        bool hasAirConditionerMaxFan() const { return airConditionerMaxFanRaw_ <= 200; }
+        bool hasAirConditionerMaxFan() const { return airConditionerMaxFanRaw_ <= MAX_RVC_PERCENT; }
         float airConditionerMaxFanPercent() const { return airConditionerMaxFanRaw_ * 0.5f; }
         bool hasHeatPumpMode() const { return heatPumpMode_ <= 1; }
         uint8_t heatPumpMode() const { return heatPumpMode_; }
-        bool hasHeatPumpMaxOutput() const { return heatPumpMaxOutputRaw_ <= 200; }
+        bool hasHeatPumpMaxOutput() const { return heatPumpMaxOutputRaw_ <= MAX_RVC_PERCENT; }
         float heatPumpMaxOutputPercent() const { return heatPumpMaxOutputRaw_ * 0.5f; }
         void setAmbientTemperature(const uint8_t* data) {
             if (data != nullptr) {

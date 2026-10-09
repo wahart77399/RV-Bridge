@@ -20,18 +20,18 @@ InverterView::InverterView(Inverter* model, const char* name, const uint8_t numL
 
     for (uint8_t sensorIndex = 0; sensorIndex < INVERTER_TEMPERATURE_COUNT; ++sensorIndex) {
         new Service::TemperatureSensor();
-        new Characteristic::Name(temperatureNames[sensorIndex]);
+        new Characteristic::ConfiguredName(temperatureNames[sensorIndex]);
         temperatureChar_[sensorIndex] = new Characteristic::CurrentTemperature(0);
         temperatureChar_[sensorIndex]->setRange(-40, 100, 0.1);
     }
 
     new Service::TemperatureSensor();
-    new Characteristic::Name("DC Voltage (V)");
+    new Characteristic::ConfiguredName("DC Voltage (V)");
     dcVoltageChar_ = new Characteristic::CurrentTemperature(tempCfromTempF(0.0f));
     dcVoltageChar_->setRange(tempCfromTempF(0.0f), tempCfromTempF(100.0f));
 
     new Service::TemperatureSensor();
-    new Characteristic::Name("DC Current (A)");
+    new Characteristic::ConfiguredName("DC Current (A)");
     dcCurrentChar_ = new Characteristic::CurrentTemperature(tempCfromTempF(0.0f));
     dcCurrentChar_->setRange(tempCfromTempF(-200.0f), tempCfromTempF(200.0f));
 }

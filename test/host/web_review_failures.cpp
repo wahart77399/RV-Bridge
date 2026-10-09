@@ -16,6 +16,7 @@ bool WifiCredentials::clear() { return true; }
 
 namespace {
     const std::string initial = R"([{"type":"Thermostat","rvcIndex":1,"sourceAddress":103,"name":"Existing","room":"Owner Room","enabled":true,"aid":43},{"type":"DC_Switch","rvcIndex":81,"sourceAddress":141,"name":"Pending Light","room":"","enabled":false,"aid":76},{"type":"DC_Switch","rvcIndex":83,"sourceAddress":141,"name":"Ignored Light","room":"","enabled":false,"ignored":true,"aid":77}])";
+    const std::string coachUpdate = R"({"year":2023,"make":"Test","model":"Updated Coach","floorplan":"1","coachId":"test","tanks":[{"instance":0,"capacityLiters":450,"name":"Fresh"}],"coverTimes":{},"batteries":[]})";
     void require(bool condition, const char* message) { if (!condition) throw std::runtime_error(message); }
     void fixture() {
         LittleFS = FakeFilesystem{};
@@ -47,6 +48,12 @@ namespace {
         request["ownerEmails"].to<JsonArray>().add(address);
         String body; serializeJson(request, body);
         WebServer::active->request("/email/settings", HTTP_POST, body);
+    }
+    void updateCoach(const std::string& body = coachUpdate) {
+        try {
+            WebServer::active->request("/coach/update", HTTP_POST, body.c_str());
+        } catch (const RestartRequested&) {
+        }
     }
 }
 
@@ -97,6 +104,17 @@ int main(int argc, char** argv) {
                 JsonDocument status; deserializeJson(status, WebServer::active->responseBody.c_str());
                 require(status["restart_required"] == true, "approval omitted restart state");
             }},
+            {"status route reports current learning state", [] {
+                fixture();
+                WebServer::active->request("/status", HTTP_GET);
+                JsonDocument idle; deserializeJson(idle, WebServer::active->responseBody.c_str());
+                require(idle["learning"] == false, "idle status should report learning=false");
+                LearnMode::handleCommand("start 1");
+                WebServer::active->request("/status", HTTP_GET);
+                JsonDocument learning; deserializeJson(learning, WebServer::active->responseBody.c_str());
+                require(learning["learning"] == true, "active status should report learning=true");
+                LearnMode::handleCommand("cancel");
+            }},
             {"ignore/reopen retains pending reservation", [] {
                 fixture(); review("ignore"); JsonDocument ignored = config();
                 require(WebServer::active->responseCode == 200 && ignored[1]["ignored"] == true && ignored[1]["aid"] == 76, "ignore lost reservation");
@@ -144,6 +162,33 @@ int main(int argc, char** argv) {
                 require(coach["shareWithSupport"] == false && coach["emailReports"] == true, "email consent preferences were not saved");
                 require(EmailReports::relayConfigured(), "saving owner address lost the relay token");
             }},
+            {"coach save persists settings and acknowledges before restarting", [] {
+                fixture(); updateCoach();
+                JsonDocument saved; deserializeJson(saved, LittleFS.content("/coach.json"));
+                JsonDocument response; deserializeJson(response, WebServer::active->responseBody.c_str());
+                require(WebServer::active->responseCode == 200 && response["saved"] == true && response["rebooting"] == true, "coach save omitted successful restart response");
+                require(saved["year"] == 2023 && saved["tanks"][0]["capacityLiters"] == 450, "coach settings were not persisted");
+                require(saved["chassisAid"] == 61 && saved["ownerEmails"][0] == "owner@example.com", "coach save lost pairing metadata or owner settings");
+                require(ESP.restarts == 1, "successful coach save did not restart exactly once");
+            }},
+            {"invalid coach save never restarts", [] {
+                fixture(); const std::string before = LittleFS.content("/coach.json");
+                updateCoach("{}");
+                require(WebServer::active->responseCode == 400 && ESP.restarts == 0, "invalid coach settings triggered a restart");
+                require(LittleFS.content("/coach.json") == before, "invalid coach save changed configuration");
+            }},
+            {"short coach write never restarts", [] {
+                fixture(); const std::string before = LittleFS.content("/coach.json");
+                LittleFS.writeLimits["/coach.json.web.tmp"] = 4; updateCoach();
+                require(WebServer::active->responseCode == 500 && ESP.restarts == 0, "short coach write triggered a restart");
+                require(LittleFS.content("/coach.json") == before, "short coach write changed configuration");
+            }},
+            {"failed coach rename never restarts", [] {
+                fixture(); const std::string before = LittleFS.content("/coach.json");
+                LittleFS.failRename.insert("/coach.json.web.tmp"); updateCoach();
+                require(WebServer::active->responseCode == 500 && ESP.restarts == 0, "failed coach rename triggered a restart");
+                require(LittleFS.content("/coach.json") == before, "failed coach rename changed configuration");
+            }},
             {"invalid owner address cannot be saved", [] {
                 fixture();
                 saveEmailSettings("not-an-email");
@@ -189,14 +234,18 @@ int main(int argc, char** argv) {
                 require(LittleFS.content("/SmartCoachDevicePortal/index.html") == original, "portal filesystem was modified");
                 require(Serial.log.find("root-page freeHeap=") != std::string::npos, "root-page heap baseline missing");
             }},
-            {"root streams original portal when heap reserve is low", [] {
+            {"root streams original portal with fallback links when heap reserve is low", [] {
                 fixture();
                 const std::string original = "<html><body><footer><span>SmartCoach</span></footer></body></html>";
                 LittleFS.put("/SmartCoachDevicePortal/index.html", original);
                 ESP.freeHeapBytes = 1000;
                 WebServer::active->request("/", HTTP_GET);
                 ESP.freeHeapBytes = 120000;
-                require(WebServer::active->responseCode == 200 && std::string(WebServer::active->responseBody.c_str()) == original, "low-heap root did not stream the original portal");
+                const std::string response = WebServer::active->responseBody.c_str();
+                require(WebServer::active->responseCode == 200 && response.find(original) != std::string::npos, "low-heap root did not stream the original portal");
+                require(response.find("href=\"/diagnostics-page\"") != std::string::npos, "low-heap diagnostics link missing");
+                require(response.find("href=\"/email\"") != std::string::npos, "low-heap email link missing");
+                require(WebServer::active->chunkedResponseEnded, "low-heap root stream was not terminated");
             }},
             {"root does not duplicate existing diagnostics link", [] {
                 fixture();

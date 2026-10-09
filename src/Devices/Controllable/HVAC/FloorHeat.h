@@ -78,15 +78,11 @@ class FloorHeat : public GenericDevice {
             if (data != nullptr) {
                 uint8_t msb = data[FLOOR_HEAT_STATUS_MEASURED_TEMPERATURE_MSB_INDEX];
                 uint8_t lsb = data[FLOOR_HEAT_STATUS_MEASURED_TEMPERATURE_LSB_INDEX];
-                // RV_PRINTF("FloorHeat::currentFloorHeatTemperature - raw msb: %02x, lsb: %02x\n", msb, lsb);
                 uint16_t tempValue = getLilEndian(msb, lsb);
-                // RV_PRINTF("FloorHeat::currentFloorHeatTemperature - combined raw value: %d\n", tempValue);
-                result = convToTempC(tempValue);
-                // RV_PRINTF("FloorHeat::currentFloorHeatTemperature - converted temperature: %f C\n", result);
-
-                // uint16_t tempValue = (static_cast<uint16_t>(data[FLOOR_HEAT_STATUS_MEASURED_TEMPERATURE_MSB_INDEX]) << 8) |
-                //                      static_cast<uint16_t>(data[FLOOR_HEAT_STATUS_MEASURED_TEMPERATURE_LSB_INDEX]);
-                // result = static_cast<float_t>(tempValue) / 100.0F; // assuming the value is in hundredths of a degree Celsius
+                if (tempValue != BAD_UINT16_DATA) {
+                    float_t temperatureC = convToTempC(tempValue);
+                    if (temperatureC >= -50.0F && temperatureC <= 100.0F) result = temperatureC;
+                }
             }
             return result;
         }
@@ -98,10 +94,10 @@ class FloorHeat : public GenericDevice {
                 uint8_t msb = data[FLOOR_HEAT_STATUS_SET_TEMPERATURE_MSB_INDEX];
                 uint8_t lsb = data[FLOOR_HEAT_STATUS_SET_TEMPERATURE_LSB_INDEX];
                 uint16_t tempValue = getLilEndian(msb, lsb);
-                result = convToTempC(tempValue);
-                // uint16_t tempValue = (static_cast<uint16_t>(data[FLOOR_HEAT_STATUS_SET_TEMPERATURE_MSB_INDEX]) << 8) |
-                //                     static_cast<uint16_t>(data[FLOOR_HEAT_STATUS_SET_TEMPERATURE_LSB_INDEX]);
-                // result = static_cast<float_t>(tempValue) / 100.0F; // assuming the value is in hundredths of a degree Celsius
+                if (tempValue != BAD_UINT16_DATA) {
+                    float_t temperatureC = convToTempC(tempValue);
+                    if (temperatureC >= -50.0F && temperatureC <= 100.0F) result = temperatureC;
+                }
             }
             return result;
         }

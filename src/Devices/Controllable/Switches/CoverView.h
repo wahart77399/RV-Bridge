@@ -264,6 +264,7 @@ private:
     static void createBridge();
 
     CoverKind kind() const;
+    bool canOperate() const;
 
     // Nested controller – all state private, mediated
     struct CoverController : public Service::WindowCovering {
@@ -290,7 +291,7 @@ private:
         float    currentPos_  = 0.0f;
         float    startPos_    = 0.0f;
         elapsedMillis startTime_{0};
-        uint16_t travelTime_  = 0;
+        uint32_t travelTime_  = 0;
         bool     moving_      = false;
 
         // Private mediation
@@ -301,6 +302,7 @@ private:
         bool retractCmd() const     { return retractCmd_; }
         bool stopCmd() const        { return stopCmd_; }
         void moveTo(float target);
+        void requestPosition(float target);
 
         void clearCommands() {
             setExtendCmd(false);
@@ -341,6 +343,7 @@ private:
         // Intent interface only (add these)
         void requestFullExtend();
         void requestFullRetract();
+        void publishAwningStatus(const uint8_t* data);
 
         // Rule of Five for nested class
         CoverController(const CoverController&) = delete;

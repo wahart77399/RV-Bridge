@@ -5,6 +5,7 @@
 #include "InverterView.h"
 #include "Packet.h"
 #include "DGN.h"
+#include "BridgeDiagnostics.h"
 
 Inverter::Inverter(uint8_t address, uint8_t instance)
     : PowerSensor(address, instance)
@@ -57,12 +58,54 @@ InverterStatus Inverter::status() const
     return result;
 }
 
+const char* Inverter::statusName(uint8_t state)
+{
+    const char* result = "Reserved";
+    switch (static_cast<InverterStatus>(state)) {
+        case InverterStatus::Disabled: result = "Disabled"; break;
+        case InverterStatus::Invert: result = "Inverting"; break;
+        case InverterStatus::PassThru: result = "AC Pass-through"; break;
+        case InverterStatus::ApsOnly: result = "Auxiliary Power Only"; break;
+        case InverterStatus::LoadSense: result = "Load Sense"; break;
+        case InverterStatus::WaitingInvert: result = "Waiting to Invert"; break;
+        case InverterStatus::GenSupport: result = "Generator Support"; break;
+        default:
+            if (state == 0xFF) {
+                result = "Unknown";
+            }
+            break;
+    }
+    return result;
+}
+
 // INVERTER_STATUS is not an AC point, so it must not land in a line's readings
 uint8_t Inverter::lineOf(RVC_DGN dgn, const uint8_t* raw) const
 {
     uint8_t result = NO_LINE;
     if ((dgn == INVERTER_AC_STATUS_1) && (raw != nullptr)) {
-        result = ((raw[INVERTER_LINE_INDEX] & INVERTER_LINE_MASK) == INVERTER_LINE_2_VALUE) ? 1 : 0;
+        const uint8_t line = raw[INVERTER_LINE_INDEX] & INVERTER_LINE_MASK;
+        if (line == INVERTER_LINE_1_VALUE) {
+            result = 0;
+        } else if (line == INVERTER_LINE_2_VALUE) {
+            result = 1;
+        }
+    }
+    return result;
+}
+
+uint8_t Inverter::ioOf(RVC_DGN dgn, const uint8_t* raw) const
+{
+    uint8_t result = INPUT_LINE;
+    if (dgn == INVERTER_AC_STATUS_1) {
+        result = NUMIO;
+        if (raw != nullptr) {
+            const uint8_t io = raw[INVERTER_IO_INDEX] & INVERTER_IO_MASK;
+            if (io == INVERTER_INPUT_VALUE) {
+                result = INPUT_LINE;
+            } else if (io == INVERTER_OUTPUT_VALUE) {
+                result = OUTPUT_LINE;
+            }
+        }
     }
     return result;
 }
@@ -76,7 +119,7 @@ boolean Inverter::executeCommand(RVC_DGN dgn, const uint8_t* buffer, uint8_t /*v
 {
      // RV_PRINTF("Inverter::executeCommand called with dgn=%#x\n", dgn);
     boolean cmdExecuted = GenericDevice::executeCommand(dgn, buffer);
-    if (!cmdExecuted) { // && (data != nullptr)) {
+    if (!cmdExecuted && buffer != nullptr) {
         // RV_PRINTF("Inverter::executeCommand: Command not executed, building command for dgn=%#x\n", dgn);
         CAN_frame_t* frame = nullptr;
         uint8_t* rawData = const_cast<uint8_t* >(buffer);
@@ -87,6 +130,9 @@ boolean Inverter::executeCommand(RVC_DGN dgn, const uint8_t* buffer, uint8_t /*v
                 // then we don't send a command on the CAN bus, we update our views (HOME SPAN)
                 // the -> the views will requst the data from the buffer
                 setData(dgn, rawData);
+                if (dgn == INVERTER_STATUS) {
+                    BridgeDiagnostics::observeDeviceDetail(this, statusName(buffer[INVERTER_STATUS_INDEX]));
+                }
                 updateViews();
                 cmdExecuted = true;
                 break;

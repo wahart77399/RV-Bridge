@@ -36,7 +36,8 @@
 
 #define SMART_COACH_ESP32S3
 constexpr uint8_t INVALID_SIZE = 255;
-constexpr uint16_t INVALID_TANK_SIZE = 0x01f4;
+constexpr uint16_t INVALID_TANK_SIZE = 0xffff;
+constexpr uint16_t MAX_RVC_TANK_VALUE = 65530;
 constexpr float_t INVALID_TEMPERATURE = -273.0F;
 constexpr uint8_t OUT_OF_RANGE_DATA = 255;
 constexpr uint16_t BAD_UINT16_DATA = 0xffff;

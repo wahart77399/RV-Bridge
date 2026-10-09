@@ -45,7 +45,7 @@ class BatteryView : SpanView {
 
             
             BatteryState(const char* batteryName) : Service::TemperatureSensor(),
-                                inst(), priority(),batteryLevel(tempCfromTempF(ONE_HUNDRED_PERCENT_DEGREE_F)), dcVoltage(12), dcCurrent(), temperature(72), 
+                                inst(), priority(),batteryLevel(tempCfromTempF(ONE_HUNDRED_PERCENT_DEGREE_F)), dcVoltage(12), dcCurrent(), temperature(0),
                                 /* capacityRemaining(), */ rmsRipple() {
                 inst.setString(batteryName);
                 inst.setDescription("Battery Instance");
@@ -73,14 +73,13 @@ class BatteryView : SpanView {
                     // printf("BatteryView::setBatteryLevel set to %f\n", adjVal); 
                 }
             }
-            void setDCVoltage(const uint8_t val)                               { dcVoltage.setVal(val); }
+            void setDCVoltage(const float_t val)                               { dcVoltage.setVal(val); }
             void setDCCurrent(const float_t val)                               { /* printf("BatteryView::setDCCurrent val=%f\n", val); */ dcCurrent.setVal(val); }
             // status 2
-            void setTemperature(const float_t val) { 
-                if ((val >= (tempCfromTempF(ZERO_AMP_DEGREE_F))) && (val <= tempCfromTempF(ONE_HUNDRED_PERCENT_DEGREE_F * 2.0))) {
-                    float adjVal = (val * 9.0/5.0) + 32.0; // celsius to fahrenheit
-                    if (adjVal > static_cast<float_t>(ONE_HUNDRED_PERCENT_DEGREE_F)) 
-                        adjVal = static_cast<float_t>(ONE_HUNDRED_PERCENT_DEGREE_F - 7.0); // limit to 93F for now - need to check with HomeKit spec 
+            void setTemperature(const float_t val) {
+                if ((val >= tempCfromTempF(ZERO_AMP_DEGREE_F)) &&
+                    (val <= tempCfromTempF(ONE_HUNDRED_PERCENT_DEGREE_F * 2.0))) {
+                    temperature.setVal(val);
                 }
             } 
             // void setCapacityRemaining(const uint16_t val)                      { /* printf("BatteryView::capacityRemaining %d\n", val); */ capacityRemaining.setVal(val); }

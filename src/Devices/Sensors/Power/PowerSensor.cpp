@@ -43,7 +43,7 @@ uint16_t PowerSensor::validateVolts(uint8_t line, uint8_t io, float volts)
 {
     uint16_t result = 0;
 
-    if (!(volts >= 0.0f && volts <= (VAC_MAX * VAC_PRECISION)) || volts == 0.0f) {
+    if (!(volts >= 0.0f && volts <= VAC_MAX)) {
         if (voltReadingElapsedTime_[line][io] < MAX_READING_INTERVAL_MS) {
             result = lastValidVolts(line, io);
         }
@@ -64,7 +64,7 @@ int16_t PowerSensor::validateAmps(uint8_t line, uint8_t io, float amps)
 {
     int16_t result = 0;
 
-    if (!(amps >= AAC_LOWER_LIMIT && amps <= AAC_UPPER_LIMIT) || amps == 0.0f) {
+    if (!(amps >= AAC_LOWER_LIMIT && amps <= AAC_UPPER_LIMIT)) {
         if (ampReadingElapsedTime_[line][io] < MAX_READING_INTERVAL_MS) {
             result = lastValidAmps(line, io);
         }
@@ -107,6 +107,19 @@ CAN_frame_t* PowerSensor::buildCommand(RVC_DGN /*dgn*/)
     return nullptr;   // listen-only for power sensors
 }
 
+void PowerSensor::clearReadings()
+{
+    memset(readings_, INVALID_DATA, sizeof(readings_));
+    for (uint8_t line = 0; line < MAX_LINES; ++line) {
+        for (uint8_t io = 0; io < NUMIO; ++io) {
+            lastValidVolts_[line][io] = 0;
+            lastValidAmps_[line][io] = 0;
+            voltReadingElapsedTime_[line][io] = 0;
+            ampReadingElapsedTime_[line][io] = 0;
+        }
+    }
+}
+
 uint16_t PowerSensor::rmsVoltage(uint8_t line, uint8_t io)
 {
     uint16_t result = 0;
@@ -114,7 +127,7 @@ uint16_t PowerSensor::rmsVoltage(uint8_t line, uint8_t io)
         uint16_t value = getACPointValue(readings_[line][io],
                                          AC_POINT_RMS_VOLTAGE_MSB_INDEX,
                                          AC_POINT_RMS_VOLTAGE_LSB_INDEX);
-        if (value <= VAC_MAX) {
+        if (value <= VAC_RAW_MAX) {
             result = validateVolts(line, io, (value - VAC_OFFSET) * VAC_PRECISION);
         }
     }
@@ -134,10 +147,10 @@ int16_t PowerSensor::rmsCurrent(uint8_t line, uint8_t io)
     return result;
 }
 
-boolean PowerSensor::isOpenGroundFault(uint8_t /*line*/) const
+boolean PowerSensor::isOpenGroundFault(uint8_t line) const
 {
     boolean result = false;
-    const uint8_t* raw = dataBuffer();
+    const uint8_t* raw = isValidSlot(line, INPUT_LINE) ? readings_[line][INPUT_LINE] : nullptr;
 
     if (raw != nullptr) {
         uint8_t fault = raw[AC_POINT_FAULTS_INDEX] & OPEN_GROUND_FAULT_MASK;
@@ -146,10 +159,10 @@ boolean PowerSensor::isOpenGroundFault(uint8_t /*line*/) const
     return result;
 }
 
-boolean PowerSensor::isOpenNeutralFault(uint8_t /*line*/) const
+boolean PowerSensor::isOpenNeutralFault(uint8_t line) const
 {
     boolean result = false;
-    const uint8_t* raw = dataBuffer();
+    const uint8_t* raw = isValidSlot(line, INPUT_LINE) ? readings_[line][INPUT_LINE] : nullptr;
 
     if (raw != nullptr) {
         uint8_t fault = raw[AC_POINT_FAULTS_INDEX] & OPEN_NEUTRAL_FAULT_MASK;
@@ -158,10 +171,10 @@ boolean PowerSensor::isOpenNeutralFault(uint8_t /*line*/) const
     return result;
 }
 
-boolean PowerSensor::isReversePolarityFault(uint8_t /*line*/) const
+boolean PowerSensor::isReversePolarityFault(uint8_t line) const
 {
     boolean result = false;
-    const uint8_t* raw = dataBuffer();
+    const uint8_t* raw = isValidSlot(line, INPUT_LINE) ? readings_[line][INPUT_LINE] : nullptr;
 
     if (raw != nullptr) {
         uint8_t fault = raw[AC_POINT_FAULTS_INDEX] & REVERSE_POLARITY_FAULT_MASK;
@@ -170,10 +183,10 @@ boolean PowerSensor::isReversePolarityFault(uint8_t /*line*/) const
     return result;
 }
 
-boolean PowerSensor::isGroundCurrentFault(uint8_t /*line*/) const
+boolean PowerSensor::isGroundCurrentFault(uint8_t line) const
 {
     boolean result = false;
-    const uint8_t* raw = dataBuffer();
+    const uint8_t* raw = isValidSlot(line, INPUT_LINE) ? readings_[line][INPUT_LINE] : nullptr;
 
     if (raw != nullptr) {
         uint8_t fault = raw[AC_POINT_FAULTS_INDEX] & GROUND_CURRENT_FAULT_MASK;

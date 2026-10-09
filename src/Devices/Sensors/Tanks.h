@@ -46,16 +46,16 @@ class Tanks : public GenericDevice {
         bool autoFillValveOpen() const;
         bool hasAutoFillResult() const;
         bool autoFillResultFailed() const;
+        uint8_t levelPercent() const;
 
         uint16_t size(void) const { 
-            uint16_t result = INVALID_SIZE;
+            uint16_t result = tankSize;
             uint8_t* rawData = getCurrentData();
             if (rawData != nullptr) {
-                uint16_t tankSize = getLilEndian(rawData[TANKS_SIZE_MSB], rawData[TANKS_SIZE_LSB]);
-                if (tankSize < INVALID_TANK_SIZE)
-                    result = tankSize;
-                else 
-                    result = tankSize; // return the tank size from the model if the data is invalid
+                uint16_t reportedSize = getLilEndian(rawData[TANKS_SIZE_MSB], rawData[TANKS_SIZE_LSB]);
+                if (reportedSize > 0 && reportedSize <= MAX_RVC_TANK_VALUE) {
+                    result = reportedSize;
+                }
             }
             return result;
         }
@@ -65,7 +65,7 @@ class Tanks : public GenericDevice {
             uint8_t* rawData = getCurrentData();
             if (rawData != nullptr) {
                 uint16_t tankLevel = getLilEndian(rawData[TANKS_ABSOLUTE_LEVEL_MSB], rawData[TANKS_ABSOLUTE_LEVEL_LSB]);
-                if (tankLevel < INVALID_TANK_SIZE)
+                if (tankLevel <= MAX_RVC_TANK_VALUE)
                     result = tankLevel;
                 }
             return result;

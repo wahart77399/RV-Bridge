@@ -6,9 +6,9 @@ GeneratorView::GeneratorView(Generator* model, const char* name)
     , generatorRunningChar_(nullptr)
     , externalActivityChar_(nullptr)
 {
-    new Service::TemperatureSensor();
-    new Characteristic::Name("Generator Engine Status");
-    engineFaultChar_ = new Characteristic::StatusFault(false);
+    new Service::ContactSensor();
+    new Characteristic::ConfiguredName("Generator Engine Status");
+    engineFaultChar_ = new Characteristic::ContactSensorState();
 
     new Service::ContactSensor();
     new Characteristic::ConfiguredName("Generator Engine Running");
@@ -23,7 +23,9 @@ bool GeneratorView::updateView()
 {
     bool updated = PowerSensorView::updateView();
     if (model_ != nullptr && (model_->hasStatus1() || model_->status2Received_) && engineFaultChar_ != nullptr) {
-        engineFaultChar_->setVal((model_->status1Fault() || model_->hasEngineFault()) ? 1 : 0);
+        engineFaultChar_->setVal((model_->status1Fault() || model_->hasEngineFault())
+            ? Characteristic::ContactSensorState::DETECTED
+            : Characteristic::ContactSensorState::NOT_DETECTED);
         updated = true;
     }
     if (model_ != nullptr && model_->hasStatus1() && generatorRunningChar_ != nullptr) {

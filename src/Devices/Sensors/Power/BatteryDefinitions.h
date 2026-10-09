@@ -77,7 +77,8 @@ typedef enum {
 
 const float_t VDC_PRECISION = 0.05;
 const float_t ADC_PRECISION = 0.001;
-const uint16_t VDC_MAX = 3213;
+const uint16_t VDC_RAW_MAX = 64250;
+const float_t VDC_MAX = 3212.5f;
 const uint32_t ADC_MAX = 2221082;
 const uint16_t VDC_OFFSET = 0;
 const float_t ADC_OFFSET = 2000000;

@@ -45,7 +45,10 @@
         </section>
         <div class="toolbar">
           <div class="toolbar-heading"><span class="section-kicker">Your coach</span><h2>Discovered devices <span id="visible-count">06</span></h2></div>
-          <label class="search-field"><span aria-hidden="true">⌕</span><input id="device-search" type="search" placeholder="Search devices" autocomplete="off" /></label>
+          <div class="toolbar-actions">
+            <label class="search-field"><span aria-hidden="true">⌕</span><input id="device-search" type="search" placeholder="Search devices" autocomplete="off" /></label>
+            <button class="apply-device-changes-button" id="apply-device-changes" type="button" title="Restart SmartCoach to apply saved device changes">Apply Device Changes</button>
+          </div>
         </div>
         <div class="device-scope" role="group" aria-label="Device visibility">
           <button type="button" data-scope="Enabled" aria-pressed="true">Enabled <span id="enabled-count">0</span></button>
@@ -219,6 +222,8 @@
       let devices = [...sampleDevices];
       let hasRuntimeDevices = false;
       let coachData = null;
+      let discoveryData = null;
+      let discoveryLoadAttempted = false;
       let isEditingCoach = false;
       let pendingRenameId = null;
       let pendingAction = "rename";
@@ -481,7 +486,8 @@
           isEditingCoach = false;
           updateCoachSummary(coachData);
           renderCoachDetails(coachData);
-          showToast("Coach details saved. Reboot SmartCoach to apply configuration changes.");
+          coachDialog.close();
+          showToast("Coach details saved. SmartCoach is restarting to apply changes.");
         } catch (saveError) {
           error.textContent = "Could not save coach details to the bridge.";
         } finally {
@@ -613,13 +619,19 @@
         if (showingDiagnostics) loadDiagnostics();
       }
 
-      async function loadRuntimeConfig() {
+      async function loadRuntimeConfig({ refreshDiscovery = false } = {}) {
+        const shouldLoadDiscovery = refreshDiscovery || !discoveryLoadAttempted;
+        if (shouldLoadDiscovery) discoveryLoadAttempted = true;
+        const discoveryRequest = shouldLoadDiscovery
+          ? fetchRuntimeJson(["/discovery"])
+          : Promise.resolve(discoveryData);
         const [config, coach, discovery, status] = await Promise.all([
           fetchRuntimeJson(["/devices.json", "../devices.json"]),
           fetchRuntimeJson(["/coach.json", "../coach.json"]),
-          fetchRuntimeJson(["/discovery"]),
+          discoveryRequest,
           fetchRuntimeJson(["/status"])
         ]);
+        if (discovery) discoveryData = discovery;
 
         if (coach && typeof coach === "object" && !Array.isArray(coach)) {
           coachData = coach;
@@ -630,7 +642,7 @@
         if (!Array.isArray(config)) {
           if (!hasRuntimeDevices) syncStatus.textContent = "Bridge data unavailable";
         } else {
-        const records = Array.isArray(discovery?.records) ? discovery.records : [];
+        const records = Array.isArray(discoveryData?.records) ? discoveryData.records : [];
         devices = config.map((item) => {
           const sample = sampleDevices.find((candidate) => candidate.type === item.type) || {};
           const category = item.type === "Thermostat" || item.type === "FloorHeat" ? "HVAC" : ["DC_DimmableSwitch", "DC_Switch", "WaterPump", "Shades", "DoorLock"].includes(item.type) ? "Switches" : "Monitoring";
@@ -666,7 +678,7 @@
         }
         renderUnhandled(records);
         renderDevices();
-        syncStatus.textContent = discovery?.learning ? "Learning in progress" : `Updated ${new Date().toLocaleTimeString()}`;
+        syncStatus.textContent = status?.learning ? "Learning in progress" : `Updated ${new Date().toLocaleTimeString()}`;
         }
       }
 
@@ -894,26 +906,37 @@
           showToast("Could not confirm reset. SmartCoach may be rebooting.");
         }
       });
-      document.querySelector("#device-reboot-button").addEventListener("click", async (event) => {
-        if (!window.confirm("Reboot SmartCoach? The bridge will be temporarily unavailable.")) return;
-        const button = event.currentTarget;
-        button.disabled = true;
-        button.textContent = "Rebooting...";
-        try {
-          const response = await fetch("/reboot", { method: "POST" });
-          if (!response.ok) throw new Error("Reboot failed");
-          showToast("SmartCoach is rebooting.");
-        } catch (error) {
-          showToast("Could not confirm reboot. SmartCoach may be restarting.");
+      async function restartSmartCoach(button, message) {
+        if (window.confirm(message)) {
+          const buttons = [document.querySelector("#device-reboot-button"), document.querySelector("#apply-device-changes")];
+          const originalLabel = button.textContent;
+          buttons.forEach(control => { control.disabled = true; });
+          button.textContent = "Restarting...";
+          try {
+            const response = await fetch("/reboot", { method: "POST" });
+            if (!response.ok) throw new Error("Reboot failed");
+            showToast("SmartCoach is restarting to apply saved changes.");
+          } catch (error) {
+            buttons.forEach(control => { control.disabled = false; });
+            button.textContent = originalLabel;
+            showToast("Could not confirm restart. SmartCoach may be restarting.");
+          }
         }
+      }
+      document.querySelector("#device-reboot-button").addEventListener("click", event => {
+        restartSmartCoach(event.currentTarget, "Reboot SmartCoach? The bridge will be temporarily unavailable.");
+      });
+      document.querySelector("#apply-device-changes").addEventListener("click", event => {
+        restartSmartCoach(event.currentTarget, "Apply saved device changes and restart SmartCoach? The bridge will be temporarily unavailable.");
       });
 
       search.addEventListener("input", renderDevices);
       document.querySelector("#scan-button").addEventListener("click", (event) => {
-        event.currentTarget.classList.add("spinning");
-        window.setTimeout(() => event.currentTarget.classList.remove("spinning"), 650);
+        const button = event.currentTarget;
+        button.classList.add("spinning");
+        window.setTimeout(() => button.classList.remove("spinning"), 650);
         showToast("Scanning the coach network…");
-        loadRuntimeConfig();
+        loadRuntimeConfig({ refreshDiscovery: true });
       });
       document.querySelector("#coach-details-button").addEventListener("click", () => coachDialog.showModal());
       coachEditButton.addEventListener("click", () => {

@@ -14,8 +14,8 @@ constexpr uint8_t FLOOR_HEAT_STATUS_SET_TEMPERATURE_LSB_INDEX       = 5;
 constexpr uint8_t FLOOR_HEAT_COMMAND_SET_TEMPERATURE_MSB_INDEX      = 2;
 constexpr uint8_t FLOOR_HEAT_COMMAND_SET_TEMPERATURE_LSB_INDEX      = 3;
 constexpr uint8_t FLOOR_HEAT_INVALID_BYTE                           = 0xff;
-constexpr uint8_t FLOOR_HEAT_COMMAND_OFF                            = 0xf3;  // 1111 0011
-constexpr uint8_t FLOOR_HEAT_COMMAND_ON                             = 0xf7;  // 1111 0111
+constexpr uint8_t FLOOR_HEAT_COMMAND_OFF                            = 0x01;  // manual, off, element off, schedule disabled
+constexpr uint8_t FLOOR_HEAT_COMMAND_ON                             = 0x15;  // manual, on, element on, schedule disabled
 constexpr uint8_t FLOOR_HEAT_STATUS_OFF                             = 0x00;
 constexpr uint8_t FLOOR_HEAT_STATUS_ON                              = 0x04;  // xxxx 01xx
 

@@ -108,6 +108,9 @@ bool DeviceFactory::instanceFromData(RVC_DGN dgn, uint8_t* data, uint8_t& index)
         if ((dgn == WATER_PUMP_COMMAND) || (dgn == WATER_PUMP_STATUS)) {
             index = WATER_PUMP_INDEX;
             found = true;
+        } else if ((dgn == CHASSIS_MOBILITY_STATUS) || (dgn == CHASSIS_MOBILITY_STATUS_2)) {
+            index = DEFAULT_CHASSIS_INDEX;
+            found = true;
         } else if (dgn == AUTOFILL_STATUS) {
             index = Tanks::FRESH_WATER_INSTANCE;
             found = true;
@@ -119,15 +122,11 @@ bool DeviceFactory::instanceFromData(RVC_DGN dgn, uint8_t* data, uint8_t& index)
                 found = true;
             }
         } else if ((dgn == CHARGER_AC_STATUS_1) || (dgn == CHARGER_AC_STATUS_2) ||
-                   (dgn == CHARGER_AC_STATUS_3) || (dgn == CHARGER_AC_STATUS_4)) {
-            index = data[0] & 0x0F;
-            found = true;
-        } else if ((dgn == INVERTER_AC_STATUS_1) || (dgn == INVERTER_STATUS)) {
-            uint8_t tmp = data[INVERTER_LINE_INDEX];
-            if (dgn == INVERTER_AC_STATUS_1) {
-                tmp = tmp & INVERTER_INSTANCE_MASK;
-            }
-            if (tmp != INVERTER_INVALID) {
+                   (dgn == CHARGER_AC_STATUS_3) || (dgn == CHARGER_AC_STATUS_4) ||
+                   (dgn == INVERTER_AC_STATUS_1) || (dgn == INVERTER_AC_STATUS_2) ||
+                   (dgn == INVERTER_AC_STATUS_3) || (dgn == INVERTER_AC_STATUS_4)) {
+            uint8_t tmp = data[0] & INVERTER_INSTANCE_MASK;
+            if (tmp >= 1 && tmp <= 13) {
                 index = tmp;
                 found = true;
             }
@@ -254,7 +253,7 @@ void DeviceFactory::registerCreators() {
             DGN2DeviceMap[AWNING_COMMAND][c.rvcIndex] = d;
             DGN2DeviceMap[AWNING_STATUS][c.rvcIndex]  = d;
 
-            CoverView::createCoverView(d, c.name.c_str());
+            CoverView::createCoverView(d, c.name.c_str(), ext * 1000.0f, ret * 1000.0f);
             result = d;
         }
         return result;
@@ -279,7 +278,7 @@ void DeviceFactory::registerCreators() {
             DGN2DeviceMap[WINDOW_SHADE_CONTROL_COMMAND][c.rvcIndex] = d;
             DGN2DeviceMap[WINDOW_SHADE_CONTROL_STATUS][c.rvcIndex]  = d;
 
-            CoverView::createCoverView(d, c.name.c_str());
+            CoverView::createCoverView(d, c.name.c_str(), ext * 1000.0f, ret * 1000.0f);
             result = d;
         }
         return result;
@@ -316,7 +315,10 @@ void DeviceFactory::registerCreators() {
 
     creators["Inverter"] = [](const DeviceConfig& c, const CoachSpec&) -> GenericDevice* {
         auto* d = new Inverter(c.sourceAddress, c.rvcIndex);
-        DGN2DeviceMap[INVERTER_AC_STATUS_1][c.rvcIndex] = d;
+        const uint32_t acPointInstance = c.extraUInt("acPointInstance", c.rvcIndex);
+        if (acPointInstance >= 1 && acPointInstance <= 13) {
+            DGN2DeviceMap[INVERTER_AC_STATUS_1][static_cast<uint8_t>(acPointInstance)] = d;
+        }
         DGN2DeviceMap[INVERTER_STATUS][c.rvcIndex]      = d;
         DGN2DeviceMap[INVERTER_TEMPERATURE_STATUS][c.rvcIndex] = d;
         DGN2DeviceMap[INVERTER_TEMPERATURE_STATUS_2][c.rvcIndex] = d;
@@ -355,11 +357,13 @@ void DeviceFactory::registerCreators() {
     };
     creators["Charger"] = [](const DeviceConfig& c, const CoachSpec&) -> GenericDevice* {
         auto* d = new Charger(c.sourceAddress, c.rvcIndex);
-        DGN2DeviceMap[CHARGER_AC_STATUS_1][c.rvcIndex] = d;
-        DGN2DeviceMap[CHARGER_AC_STATUS_2][c.rvcIndex] = d;
-        DGN2DeviceMap[CHARGER_AC_STATUS_3][c.rvcIndex] = d;
-        DGN2DeviceMap[CHARGER_AC_STATUS_4][c.rvcIndex] = d;
-        DGN2DeviceMap[CHARGER_DC_STATUS][c.rvcIndex] = d;
+        const uint32_t acPointInstance = c.extraUInt("acPointInstance", c.rvcIndex);
+        if (acPointInstance >= 1 && acPointInstance <= 13) {
+            DGN2DeviceMap[CHARGER_AC_STATUS_1][static_cast<uint8_t>(acPointInstance)] = d;
+            DGN2DeviceMap[CHARGER_AC_STATUS_2][static_cast<uint8_t>(acPointInstance)] = d;
+            DGN2DeviceMap[CHARGER_AC_STATUS_3][static_cast<uint8_t>(acPointInstance)] = d;
+            DGN2DeviceMap[CHARGER_AC_STATUS_4][static_cast<uint8_t>(acPointInstance)] = d;
+        }
         DGN2DeviceMap[CHARGER_STATUS][c.rvcIndex] = d;
         DGN2DeviceMap[CHARGER_STATUS_2][c.rvcIndex] = d;
         DGN2DeviceMap[CHARGER_STATUS_3][c.rvcIndex] = d;

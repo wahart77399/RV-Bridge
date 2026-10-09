@@ -12,6 +12,16 @@ CoverKind CoverView::kind() const {
     return mdl ? mdl->kind() : CoverKind::Awning;
 }
 
+bool CoverView::canOperate() const {
+    bool allowed = ChassisMobility::isParked();
+#if defined(SMARTCOACH_AWNING_PARK_BYPASS) && SMARTCOACH_AWNING_PARK_BYPASS
+    if (kind() == CoverKind::Awning) {
+        allowed = true;
+    }
+#endif
+    return allowed;
+}
+
 void CoverView::createBridge() {
     if (!bridgeCreated_) {
         bridgeCreated_ = true;
@@ -77,17 +87,15 @@ bool CoverView::CoverController::isReadyToStop() {
     const bool travelDone = isMoving() && (startTime_ >= travelTime_);
     if (travelDone || stopCmd_) {
         if (travelDone) {
-            // shades have no position command, so a partial move must be stopped explicitly
-            if (model_ && view_ && (view_->kind() == CoverKind::Shade) &&
-                (targetPos_ > SHADES_FULLY_OPEN_PCT) && (targetPos_ < SHADES_FULLY_CLOSED_PCT)) {
+            if (model_ && view_ && (view_->kind() == CoverKind::Shade)) {
                 model_->stop();
             }
             currentPos_ = targetPos_;
             currentState_->setVal(static_cast<uint8_t>(targetPos_ + 0.5f));
         }
         clearCommands();
-        setStopCmd(true);
         stopMoving();
+        setStopCmd(true);
     }
     return stopCmd_;
 }
@@ -223,10 +231,10 @@ void CoverView::CoverController::moveTo(float target) {
         travelTime_ = 0;
     } else if (towardOut) {
         readyToExtend();
-        travelTime_ = static_cast<uint16_t>(round(fabsf(target - currentPos_) * timeExtend_ / COVER_MAX_PERCENT));
+        travelTime_ = static_cast<uint32_t>(round(fabsf(target - currentPos_) * timeExtend_ / COVER_MAX_PERCENT));
     } else {
         readyToRetract();
-        travelTime_ = static_cast<uint16_t>(round(fabsf(target - currentPos_) * timeRetract_ / COVER_MAX_PERCENT));
+        travelTime_ = static_cast<uint32_t>(round(fabsf(target - currentPos_) * timeRetract_ / COVER_MAX_PERCENT));
     }
 
     if (wasMoving) {
@@ -298,7 +306,7 @@ boolean CoverView::CoverController::update() {
     view_->dontUpdateTheView();
     currentPos_ = currentState_->getVal<float>();
 
-    if (targetState_->updated() && model_ && ChassisMobility::isParked()) {
+    if (targetState_->updated() && model_ && view_->canOperate()) {
         moveTo(targetState_->getNewVal<float>());
         updated = true;
     }
@@ -306,7 +314,7 @@ boolean CoverView::CoverController::update() {
     return updated;
 }
 void CoverView::CoverController::loop() {
-    if (isReadyToStop() || !view_ || !ChassisMobility::isParked()) return;
+    if (isReadyToStop() || !view_ || !view_->canOperate()) return;
 
     view_->dontUpdateTheView();
 
@@ -438,7 +446,7 @@ boolean CoverView::CoverExtendRetractController::update() {
 
     view_->dontUpdateTheView();
 
-    if (out_->updated() && coverCtrl_ && ChassisMobility::isParked()) {
+    if (out_->updated() && coverCtrl_ && view_->canOperate()) {
         bool outVal = out_->getNewVal<bool>();
         if (outVal) {
             coverCtrl_->requestFullExtend();
@@ -470,14 +478,33 @@ CoverView::~CoverView() {
 
 bool CoverView::updateView() {
     bool updated = false;
-    if (isNeedToUpdateView() && ChassisMobility::isParked()) {
+    if (isNeedToUpdateView()) {
         CoverDevice* mdl = static_cast<CoverDevice*>(getModel());
         if (mdl && extendRetractCtrl_ && controller_) {
+            if (mdl->kind() == CoverKind::Awning && mdl->awningStatusPending_) {
+                controller_->publishAwningStatus(mdl->getCurrentData());
+                mdl->awningStatusPending_ = false;
+            }
             extendRetractCtrl_->setOut(controller_->isCoverExtended());
             updated = true;
         }
     }
     return updated;
+}
+
+void CoverView::CoverController::publishAwningStatus(const uint8_t* data) {
+    if (data != nullptr) {
+        const uint8_t position = data[AWNING_STATUS_POSITION_INDEX];
+        if (position <= 200) {
+            currentPos_ = position * COVER_PERCENT_PRECISION;
+            currentState_->setVal(static_cast<uint8_t>(currentPos_ + 0.5f));
+        }
+        const uint8_t motion = data[1];
+        if (motion <= 2) {
+            positionState_->setVal(motion == 0 ? POSITION_STOPPED :
+                                   motion == 1 ? POSITION_INCREASING : POSITION_DECREASING);
+        }
+    }
 }
 
 void CoverView::createCoverView(GenericDevice* model, const char* spanDevName,
@@ -499,6 +526,18 @@ void CoverView::createCoverView(GenericDevice* model, const char* spanDevName,
     vw->setExtendRetractController(extCtrl);
 }
 
+void CoverView::CoverController::requestPosition(float target) {
+    if (targetState_ != nullptr) {
+        float requestedTarget = target;
+        if (targetState_->updated()) {
+            requestedTarget = targetState_->getNewVal<float>();
+        } else {
+            targetState_->setVal(static_cast<uint8_t>(target));
+        }
+        moveTo(requestedTarget);
+    }
+}
+
 void CoverView::CoverController::requestFullExtend() {
     /**
     clearCommands();
@@ -511,8 +550,7 @@ void CoverView::CoverController::requestFullExtend() {
     const float target = (view_->kind() == CoverKind::Awning)
                              ? static_cast<float>(AWNING_FULLY_EXTENDED_PCT)
                              : static_cast<float>(SHADES_FULLY_CLOSED_PCT);
-    targetState_->setVal(static_cast<uint8_t>(target));
-    moveTo(target);
+    requestPosition(target);
 }
 
 void CoverView::CoverController::requestFullRetract() {
@@ -527,6 +565,5 @@ void CoverView::CoverController::requestFullRetract() {
     const float target = (view_->kind() == CoverKind::Awning)
                              ? static_cast<float>(AWNING_FULLY_RETRACTED_PCT)
                              : static_cast<float>(SHADES_FULLY_OPEN_PCT);
-    targetState_->setVal(static_cast<uint8_t>(target));
-    moveTo(target);
+    requestPosition(target);
 }

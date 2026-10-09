@@ -62,6 +62,56 @@ namespace {
         WebServer& server_;
         bool started_ = false;
     };
+
+    bool fileContains(File& file, const char* text)
+    {
+        size_t textLength = std::strlen(text);
+        if (textLength == 0 || textLength > 64) return false;
+
+        char window[64];
+        size_t windowLength = 0;
+        bool found = false;
+        file.seek(0);
+        while (!found && file.available()) {
+            int value = file.read();
+            if (value < 0) break;
+            if (windowLength < textLength) {
+                window[windowLength++] = static_cast<char>(value);
+            } else {
+                std::memmove(window, window + 1, textLength - 1);
+                window[textLength - 1] = static_cast<char>(value);
+            }
+            found = windowLength == textLength &&
+                    std::memcmp(window, text, textLength) == 0;
+        }
+        file.seek(0);
+        return found;
+    }
+
+    void streamRootFallback(WebServer& server, File& file, bool addDiagnostics, bool addEmail)
+    {
+        server.chunkResponseBegin("text/html");
+        char buffer[512];
+        while (file.available()) {
+            size_t count = file.readBytes(buffer, sizeof(buffer));
+            if (count == 0) break;
+            server.chunkWrite(buffer, count);
+        }
+        if (addDiagnostics || addEmail) {
+            server.chunkWrite("<nav class=\"footer-actions\" aria-label=\"Portal links\">",
+                              sizeof("<nav class=\"footer-actions\" aria-label=\"Portal links\">") - 1);
+            if (addDiagnostics) {
+                constexpr const char* link = "<a class=\"footer-legal-link\" href=\"/diagnostics-page\">Diagnostics</a>";
+                server.chunkWrite(link, std::strlen(link));
+            }
+            if (addEmail) {
+                constexpr const char* link = "<a class=\"footer-legal-link\" href=\"/email\">Email reports</a>";
+                server.chunkWrite(link, std::strlen(link));
+            }
+            server.chunkWrite("</nav>", sizeof("</nav>") - 1);
+        }
+        server.chunkResponseEnd();
+    }
 }
 
 namespace {
@@ -467,10 +517,17 @@ void SmartCoachWebServer::handleCoachUpdate()
     } while (false);
     JsonDocument response;
     if (error != nullptr) response["error"] = error;
-    else response["saved"] = true;
+    else {
+        response["saved"] = true;
+        response["rebooting"] = true;
+    }
     String body;
     serializeJson(response, body);
     m_server.send(code, "application/json", body);
+    if (error == nullptr) {
+        delay(500);
+        ESP.restart();
+    }
 }
 
 void SmartCoachWebServer::handleEmailSettings()
@@ -683,8 +740,11 @@ void SmartCoachWebServer::handleRoot()
             }
         }
         if (!served) {
-            f.seek(0);
-            m_server.streamFile(f, "text/html");
+            bool hasDiagnosticsLink = fileContains(f, "id=\"diagnostics-open\"") ||
+                                      fileContains(f, "href=\"/diagnostics-page\"");
+            bool hasEmailLink = fileContains(f, "id=\"email-open\"") ||
+                                fileContains(f, "href=\"/email\"");
+            streamRootFallback(m_server, f, !hasDiagnosticsLink, !hasEmailLink);
         }
         f.close();
     } else {
@@ -707,12 +767,13 @@ void SmartCoachWebServer::handleStatus()
     bool emailRelayConfigured = EmailReports::relayConfigured();
     int length = snprintf(json, sizeof(json),
         "{\"ip\":\"%s\",\"rssi\":%d,\"free_heap\":%lu,\"uptime_ms\":%lu,"
-        "\"restart_required\":%s,\"diagnostics_available\":true,"
+        "\"restart_required\":%s,\"learning\":%s,\"diagnostics_available\":true,"
         "\"email_reports_available\":true,\"email_relay_configured\":%s,"
         "\"email_report_pending\":%s,\"email_report_available\":%s,"
         "\"email_learning_report_available\":%s}",
         ip.c_str(), WiFi.RSSI(), static_cast<unsigned long>(ESP.getFreeHeap()),
         static_cast<unsigned long>(millis()), m_restartRequired ? "true" : "false",
+        LearnMode::isLearning() ? "true" : "false",
         emailRelayConfigured ? "true" : "false", emailReportPending ? "true" : "false",
         reportAvailable ? "true" : "false",
         (!LearnMode::isLearning() && learningReportAvailable) ? "true" : "false");

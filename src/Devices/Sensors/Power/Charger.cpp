@@ -4,13 +4,14 @@
 // #ifdef CHARGER_H
 #include "Packet.h"
 #include "DGN.h"
+#include "BridgeDiagnostics.h"
 
 Charger::Charger(uint8_t address, uint8_t instance)
     : PowerSensor(address, instance)
 {
     for (uint8_t i = 0; i < DATA_SIZE; ++i) {
-        statusData_[i]  = 0;
-        status2Data_[i] = 0;
+        statusData_[i]  = 0xFF;
+        status2Data_[i] = 0xFF;
         configurationData_[i] = 0xFF;
         configuration2Data_[i] = 0xFF;
         configuration3Data_[i] = 0xFF;
@@ -28,12 +29,57 @@ void Charger::copyBuffer(const uint8_t* src, uint8_t* dst) {
     }
 }
 
+const char* Charger::operatingStateName(uint8_t state) {
+    const char* result = "Reserved";
+    switch (static_cast<ChargerOperatingState>(state)) {
+        case ChargerOperatingState::Disabled: result = "Disabled"; break;
+        case ChargerOperatingState::NotCharging: result = "Not Charging"; break;
+        case ChargerOperatingState::Bulk: result = "Bulk"; break;
+        case ChargerOperatingState::Absorption: result = "Absorption"; break;
+        case ChargerOperatingState::Overcharge: result = "Overcharge"; break;
+        case ChargerOperatingState::Equalize: result = "Equalize"; break;
+        case ChargerOperatingState::Float: result = "Float"; break;
+        case ChargerOperatingState::ConstantVoltageCurrent: result = "Constant Voltage/Current"; break;
+        default:
+            if (state == 0xFF) {
+                result = "Unknown";
+            }
+            break;
+    }
+    return result;
+}
+
+uint8_t Charger::lineOf(RVC_DGN dgn, const uint8_t* raw) const {
+    uint8_t result = NO_LINE;
+    if (dgn == CHARGER_AC_STATUS_1 && raw != nullptr) {
+        uint8_t line = (raw[0] >> 4) & 0x03;
+        if (line <= 1) {
+            result = line;
+        }
+    }
+    return result;
+}
+
+uint8_t Charger::ioOf(RVC_DGN dgn, const uint8_t* raw) const {
+    uint8_t result = NUMIO;
+    if (dgn == CHARGER_AC_STATUS_1 && raw != nullptr) {
+        uint8_t io = (raw[0] >> 6) & 0x03;
+        if (io == 0) {
+            result = INPUT_LINE;
+        } else if (io == 1) {
+            result = OUTPUT_LINE;
+        }
+    }
+    return result;
+}
+
 void Charger::setData(RVC_DGN dgn, uint8_t* data) {
 if (data != nullptr) {
         if (dgn == CHARGER_AC_STATUS_1) {
             PowerSensor::setData(dgn, data);
         } else if (dgn == CHARGER_STATUS) {
             copyBuffer(data, statusData());
+            BridgeDiagnostics::observeDeviceDetail(this, operatingStateName(rawOperatingStateByte()));
         } else if (dgn == CHARGER_STATUS_2) {
             copyBuffer(data, status2Data());
         } else if (dgn == CHARGER_CONFIGURATION_STATUS) {

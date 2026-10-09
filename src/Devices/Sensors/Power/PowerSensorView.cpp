@@ -9,6 +9,7 @@ namespace {
         new Characteristic::Identify();
         new Characteristic::Name(label.c_str());
         new Service::TemperatureSensor();
+        new Characteristic::ConfiguredName(label.c_str());
         SpanCharacteristic* reading = new Characteristic::CurrentTemperature(tempCfromTempF(lowerF));
         reading->setRange(tempCfromTempF(lowerF), tempCfromTempF(upperF));
         return reading;
@@ -28,23 +29,23 @@ PowerSensorView::PowerSensorView(PowerSensor* model, const char* name, const uin
 
     for (uint8_t i = 0; i < legs; i++) {
         const String base   = String(name);
-        const String leg    = String(i);
+        const String leg    = String(i + 1);
         const String input  = needIO() ? " Input" : "";
         const String output = needIO() ? " Output" : "";
 
-        voltageChar(addReadingAccessory(base + " Voltage " + leg + input, VAC_LOWER_LIMIT, VAC_UPPER_LIMIT), i, INPUT_LINE);
+        voltageChar(addReadingAccessory(base + " AC Voltage L" + leg + input, VAC_LOWER_LIMIT, VAC_UPPER_LIMIT), i, INPUT_LINE);
         if (showFault) {
             // StatusFault must live in a service; it is optional on TemperatureSensor
             faultChar(new Characteristic::StatusFault(false), i);
         }
         if (needIO()) {
-            voltageChar(addReadingAccessory(base + " Voltage " + leg + output, VAC_LOWER_LIMIT, VAC_UPPER_LIMIT), i, OUTPUT_LINE);
+            voltageChar(addReadingAccessory(base + " AC Voltage L" + leg + output, VAC_LOWER_LIMIT, VAC_UPPER_LIMIT), i, OUTPUT_LINE);
         }
 
         if (showCurrent) {
-            currentChar(addReadingAccessory(base + " Current " + leg, AAC_LOWER_LIMIT, AAC_UPPER_LIMIT), i, INPUT_LINE);
+            currentChar(addReadingAccessory(base + " AC Current L" + leg + input, AAC_LOWER_LIMIT, AAC_UPPER_LIMIT), i, INPUT_LINE);
             if (needIO()) {
-                currentChar(addReadingAccessory(base + " Current " + leg + output, AAC_LOWER_LIMIT, AAC_UPPER_LIMIT), i, OUTPUT_LINE);
+                currentChar(addReadingAccessory(base + " AC Current L" + leg + output, AAC_LOWER_LIMIT, AAC_UPPER_LIMIT), i, OUTPUT_LINE);
             }
         }
     }
@@ -73,10 +74,10 @@ bool PowerSensorView::updateView()
                 }
             }
             if (faultChar(i) != nullptr) {
-                bool faulted = model_->isOpenGroundFault() ||
-                           model_->isOpenNeutralFault() ||
-                           model_->isReversePolarityFault() ||
-                           model_->isGroundCurrentFault();
+                bool faulted = model_->isOpenGroundFault(i) ||
+                           model_->isOpenNeutralFault(i) ||
+                           model_->isReversePolarityFault(i) ||
+                           model_->isGroundCurrentFault(i);
                 faultChar(i)->setVal(faulted ? 1 : 0);
             }
         }

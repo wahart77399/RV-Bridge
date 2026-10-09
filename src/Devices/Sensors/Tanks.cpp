@@ -25,6 +25,32 @@ const uint8_t Tanks::GRAY_WATER_SECOND_INSTANCE   = 18;
 const uint8_t Tanks::LPG_SECOND_INSTANCE          = 19;
 const std::map<uint8_t, std::string> Tanks::tankNames = { {FRESH_WATER_INSTANCE, "Fresh Tank"}, {BLACK_WATER_INSTANCE, "Black Tank"}, {GRAY_WATER_INSTANCE, "Gray Tank"}, {LPG_INSTANCE, "LPG Tank"} };    ;
 
+uint8_t Tanks::levelPercent() const {
+    uint8_t result = OUT_OF_RANGE_DATA;
+    const uint8_t* data = getCurrentData();
+    if (data != nullptr) {
+        const uint8_t relativeLevel = data[TANKS_RELATIVE_LEVEL];
+        const uint8_t resolution = data[TANKS_RESOLUTION];
+        uint32_t percent = 0;
+        bool available = false;
+        if (relativeLevel <= 250 && resolution > 0 && resolution <= 250) {
+            percent = 100UL * relativeLevel / resolution;
+            available = true;
+        } else {
+            const uint16_t capacity = size();
+            const uint16_t absoluteLevel = level();
+            if (capacity > 0 && capacity <= MAX_RVC_TANK_VALUE && absoluteLevel != INVALID_TANK_SIZE) {
+                percent = 100UL * absoluteLevel / capacity;
+                available = true;
+            }
+        }
+        if (available) {
+            result = static_cast<uint8_t>(percent > MAX_PERCENT ? MAX_PERCENT : percent);
+        }
+    }
+    return result;
+}
+
 void Tanks::setAutoFillStatus(const uint8_t* data)
 {
     if (data != nullptr) {

@@ -15,12 +15,13 @@ bool TanksView::updateView(void) {
     if ((mdl != nullptr) && (tank != nullptr)) {
         uint8_t* rawData = mdl->getCurrentData();
         uint16_t tankSize = mdl->size();
-        uint16_t absoluteLevel = mdl->level();
-        bool hasTankLevel = tankSize > 0 && absoluteLevel != INVALID_TANK_SIZE;
-        uint16_t levelPercent = hasTankLevel ? (100 * absoluteLevel) / tankSize : 0;
+        uint8_t levelPercent = mdl->levelPercent();
+        bool hasTankLevel = levelPercent != OUT_OF_RANGE_DATA;
         // RV_PRINTF("TankView::updateView: index = %d, levelPercent=%d, absolute level=%d, size=%d \n", mdl->index(), levelPercent, absoluteLevel, tankSize );
          // convert to Celsius if needed
-        tank->setTankSize(tankSize);
+        if (tankSize > 0 && tankSize <= MAX_RVC_TANK_VALUE) {
+            tank->setTankSize(tankSize);
+        }
         if (hasTankLevel && levelPercent < 100) {
             tank->setTankLevel(levelPercent);
             // tank->setTankFullState(FILLING_TANK); // set the tank full state to filling
@@ -39,7 +40,9 @@ bool TanksView::updateView(void) {
                 : Characteristic::ContactSensorState::NOT_DETECTED);
         }
         if (mdl->hasAutoFillResult() && autoFillResultFaultChar_ != nullptr) {
-            autoFillResultFaultChar_->setVal(mdl->autoFillResultFailed() ? 1 : 0);
+            autoFillResultFaultChar_->setVal(mdl->autoFillResultFailed()
+                ? Characteristic::ContactSensorState::DETECTED
+                : Characteristic::ContactSensorState::NOT_DETECTED);
         }
         PacketQueue::clearLastPacketReceiveTime();
         updated = true; 
@@ -79,9 +82,9 @@ void TanksView::createTanksView(GenericDevice* model, const char* spanDevName) {
         new Characteristic::ConfiguredName("AutoFill Diverter Valve");
         vw->autoFillValveChar_ = new Characteristic::ContactSensorState();
 
-        new Service::TemperatureSensor();
+        new Service::ContactSensor();
         new Characteristic::ConfiguredName("AutoFill Last Operation");
-        vw->autoFillResultFaultChar_ = new Characteristic::StatusFault(false);
+        vw->autoFillResultFaultChar_ = new Characteristic::ContactSensorState();
     }
     // vw->updateView();
 

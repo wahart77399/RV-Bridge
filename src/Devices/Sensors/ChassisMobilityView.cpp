@@ -1,54 +1,57 @@
 #include "ChassisMobility.h"
 #include "ChassisMobilityView.h"
-#include "PacketQueue.h"
 #include "debug.h"
 
+ChassisMobilityView::ChassisMobilityView(GenericDevice* model, const char* spanDevName)
+    : SpanView(model)
+    , chassisMobilitySensor_(nullptr) {
+    (void)spanDevName;
+}
 
-bool ChassisMobilityView::updateView(void) {
-        // 
-    // RV_PRINTF("ChassisMobilityView::updateView called\n");
+ChassisMobilityView::~ChassisMobilityView() {
+    chassisMobilitySensor_ = nullptr;
+}
+
+void ChassisMobilityView::sensor(ChassisMobilityMotion* value) {
+    chassisMobilitySensor_ = value;
+}
+
+ChassisMobilityView::ChassisMobilityMotion* ChassisMobilityView::sensor() const {
+    return chassisMobilitySensor_;
+}
+
+bool ChassisMobilityView::updateView() {
     bool updated = false;
-    // uint8_t instance = indexOfModel();   
-    // uint8_t index = -1;
-    ChassisMobility* mdl = (ChassisMobility* )getModel();
-    if ((mdl != nullptr) && (chassisMobilitySensor != nullptr))  {
-        // uint8_t* rawData = mdl->getCurrentData();
-        MOTION_STATE motion = (mdl->isParked()) ? NOT_IN_MOTION : IN_MOTION;
-        // RV_PRINTF("ChassisMobility::updateView Motion State = %d\n", motion);
-        chassisMobilitySensor->detected(motion);
-        updated = true; 
-    }
-    // RV_PRINTF("ChassisMobilityView::updateView completed \n"); 
+    do {
+        ChassisMobility* model = static_cast<ChassisMobility*>(getModel());
+        ChassisMobilityMotion* motionService = sensor();
+        if (model == nullptr || motionService == nullptr) {
+            break;
+        }
+        if (!model->hasValidStatus()) {
+            break;
+        }
+        MOTION_STATE motion = model->isMoving() ? IN_MOTION : NOT_IN_MOTION;
+        motionService->publish(motion);
+        updated = true;
+    } while (false);
     return updated;
- }
-
- ChassisMobilityView::ChassisMobilityView(GenericDevice* model, const char* spanDevName) 
-        : SpanView(model), chassisMobilitySensor(nullptr) {
 }
 
 void ChassisMobilityView::createChassisMobilityView(GenericDevice* model, const char* spanDevName) {
-    RV_PRINTF("ChassisMobilityView::createChassisMobilityView called\n");
-    SpanView::prepHomeSpan();
-    // ChassisMobilityView::createBridge();
-    SpanView::createAccessory();
-    new Service::AccessoryInformation(); 
-    new Characteristic::Identify();
-    new Characteristic::Name(spanDevName);
-    ChassisMobilityView* tmp = new ChassisMobilityView(model, spanDevName);
+    do {
+        if (model == nullptr || spanDevName == nullptr) {
+            break;
+        }
+        SpanView::prepHomeSpan();
+        SpanView::createAccessory();
+        new Service::AccessoryInformation();
+        new Characteristic::Identify();
+        new Characteristic::Name(spanDevName);
 
-
-    SpanView::createAccessory();
-    new Service::AccessoryInformation(); 
-    new Characteristic::Identify();
-    new Characteristic::Name(spanDevName);
-    ChassisMobilityView::ChassisMobilityMotion* mvw = new ChassisMobilityView::ChassisMobilityMotion(tmp, (ChassisMobility* )model, spanDevName);
-    tmp->setSensorView(mvw);
-
-
-
-    if (tmp != nullptr)
-        RV_PRINTF("ChassisMobilityView::createChassisMobilityView: tmp created successfully\n");
-    else
-        RV_PRINTF("ChassisMobilityView::createChassisMobilityView: tmp creation failed\n");   
-    RV_PRINTF("ChassisMobilityView::createChassisMobilityView completed\n");
+        ChassisMobilityView* view = new ChassisMobilityView(model, spanDevName);
+        ChassisMobilityMotion* motionService =
+            new ChassisMobilityMotion(view, static_cast<ChassisMobility*>(model), spanDevName);
+        view->sensor(motionService);
+    } while (false);
 }

@@ -47,6 +47,7 @@ public:
     bool operator==(const char* value) const { return value_ == value; }
     bool operator!=(const char* value) const { return value_ != value; }
     bool operator==(const String& value) const { return value_ == value.value_; }
+    bool operator!=(const String& value) const { return value_ != value.value_; }
     bool operator<(const String& value) const { return value_ < value.value_; }
     bool startsWith(const char* prefix) const { return value_.rfind(prefix, 0) == 0; }
     bool endsWith(const char* suffix) const {
@@ -65,6 +66,11 @@ public:
     void replace(const char* search, const String& replacement) { replace(search, replacement.c_str()); }
     void remove(size_t index) { value_.erase(index); }
     String substring(size_t index) const { return String(value_.substr(std::min(index, value_.size()))); }
+    String substring(size_t begin, size_t end) const {
+        begin = std::min(begin, value_.size());
+        end = std::min(std::max(end, begin), value_.size());
+        return String(value_.substr(begin, end - begin));
+    }
     long toInt() const { return std::strtol(value_.c_str(), nullptr, 10); }
     void toLowerCase() {
         for (char& value : value_) value = static_cast<char>(std::tolower(static_cast<unsigned char>(value)));

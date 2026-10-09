@@ -135,8 +135,8 @@ bool BatteryView::updateView(void) {
         if (mdl->relativeCapacity() != OUT_OF_RANGE_DATA)
             batteryMeter->setRelativeCapacity(mdl->relativeCapacity());
         */
-        int16_t ripple = mdl->rmsRipple();
-        if (ripple != OUT_OF_RANGE_DATA) {
+        uint16_t ripple = mdl->rmsRipple();
+        if (ripple != INVALID_RMS_RIPPLE) {
             // printf("BatteryView::updateView ripple = %d\n", ripple);
             batteryMeter->setRMSRipple(static_cast<float_t>(ripple));
         }

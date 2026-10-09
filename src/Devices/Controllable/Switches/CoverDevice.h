@@ -280,6 +280,7 @@ private:
     bool         extended_;          // true = physically out / closed (shade)
     float        extendSec_;
     float        retractSec_;
+    bool         awningStatusPending_ = false;
 
     // Private mediation
     CoverKind    kind() const               { return kind_; }
@@ -289,8 +290,8 @@ private:
     void         extendSec(float v)         { extendSec_ = v; }
     float        retractSec() const         { return retractSec_; }
     void         retractSec(float v)        { retractSec_ = v; }
-    bool         isClosed() const           { return !extended_; }
-    void         closed(bool c)             { extended_ = !c; }
+    bool         isClosed() const           { return kind_ == CoverKind::Shade ? extended_ : !extended_; }
+    void         closed(bool c)             { extended_ = c; }
     void         extended(bool e)           { extended_ = e; }
     uint8_t*     getCommandData() const     { return commandData_; }
 

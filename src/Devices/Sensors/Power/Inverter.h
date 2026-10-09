@@ -42,11 +42,13 @@ private:
     bool dcCurrentAvailable_;
 
     InverterStatus status() const;
+    static const char* statusName(uint8_t state);
     void setTemperatureStatus(const uint8_t* data, uint8_t sensorOffset);
     void setDcStatus(const uint8_t* data);
 
 protected:
     uint8_t lineOf(RVC_DGN dgn, const uint8_t* raw) const override;
+    uint8_t ioOf(RVC_DGN dgn, const uint8_t* raw) const override;
 
 public:
     Inverter() = delete;

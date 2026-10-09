@@ -124,28 +124,8 @@ void CoverDevice::stop() {
         motion(CoverMotion::Stopped);
         executeCommand(AWNING_COMMAND, cmd);
     } else {
-	/*
-	SHADES_COMMANDS c = SHADE_COMMAND_TOGGLE_REVERSE;
-        if (!isClosed() || motion() == CoverMotion::Opening)
-            c = SHADE_COMMAND_TOGGLE_FORWARD;
-
-        cmd[SHADE_INSTANCE_INDEX]   = index();
-        cmd[SHADE_GROUP_INDEX]      = SHADE_GROUP_NONE;
-        cmd[SHADE_MOTOR_DUTY_INDEX] = 0x00;          // stop usually uses 0 duty
-        cmd[SHADE_COMMAND_INDEX]    = c;
-        cmd[SHADE_DURATION_INDEX]   = 0x00;
-        cmd[SHADE_INTERLOCK_INDEX]  = 0x00;
-
-        motion(CoverMotion::Stopped);
-	*/
         printf("CoverDevice::stop() - Shade stop command\n");
-	    SHADES_COMMANDS c = SHADE_COMMAND_TOGGLE_REVERSE;
-        if (!isClosed() || motion() == CoverMotion::Opening) {
-            c = SHADE_COMMAND_TOGGLE_FORWARD;
-        }
-
-        // Only the command byte is written
-        cmd[SHADE_COMMAND_INDEX] = c;
+        cmd[SHADE_COMMAND_INDEX] = SHADE_COMMAND_STOP;
         motion(CoverMotion::Stopped);
         executeCommand(WINDOW_SHADE_CONTROL_COMMAND, cmd);
     }
@@ -201,6 +181,10 @@ void CoverDevice::setData(RVC_DGN dgn, uint8_t* data) {
                 break;
             case AWNING_STATUS:
                 for (uint8_t i = 1; i < 8; ++i) raw[i] = data[i];
+                awningStatusPending_ = true;
+                if (data[AWNING_STATUS_POSITION_INDEX] <= 200) {
+                    extended(data[AWNING_STATUS_POSITION_INDEX] > 0);
+                }
                 break;
             default:
                 break;
