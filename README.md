@@ -102,6 +102,7 @@ Archive has all of the original code from Randy Ubillos. I created this so that 
 ---
 ## Main
 The main.cpp is located directly under the src directory tree. It manages the initialization and start of the code.
+<img width="850" alt="main associations" src="images/main .png" />
 
 ---
 ## Base
