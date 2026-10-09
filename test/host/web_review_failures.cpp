@@ -211,12 +211,20 @@ int main(int argc, char** argv) {
                 WebServer::active->request("/diagnostics", HTTP_GET);
                 JsonDocument report; deserializeJson(report, WebServer::active->responseBody.c_str());
                 require(WebServer::active->responseCode == 200, "diagnostics route failed");
-                require(WebServer::active->chunkedResponseEnded, "diagnostics stream was not terminated");
+                require(WebServer::active->contentLength == WebServer::active->responseBody.length(), "diagnostics Content-Length does not match its body");
                 require(WebServer::active->responseHeaders["Cache-Control"] == "no-store", "diagnostics response can be cached");
                 require(WebServer::active->responseHeaders["Content-Disposition"].find("attachment") != std::string::npos, "diagnostics response is not a download");
                 require(report["bus"]["receivedFrames"] == 0 && report["configuredDevices"].size() == 0, "unexpected diagnostics data");
                 require(fakeTwaiStatusReads == 1, "diagnostics request made an unexpected number of driver reads");
                 require(Serial.log.find("diagnostics-report freeHeap=") != std::string::npos, "diagnostics heap baseline missing");
+            }},
+            {"diagnostics route detects a short client write", [] {
+                fixture();
+                WebServer::active->clientWriteLimit = 8;
+                WebServer::active->request("/diagnostics", HTTP_GET);
+                require(WebServer::active->responseCode == 200, "diagnostics response did not start");
+                require(WebServer::active->responseBody.length() < WebServer::active->contentLength,
+                        "short client write was incorrectly reported as a complete response");
             }},
             {"root injects diagnostics link without changing filesystem", [] {
                 fixture();

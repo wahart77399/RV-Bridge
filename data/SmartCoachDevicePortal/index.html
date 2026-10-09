@@ -14,7 +14,25 @@
           <img class="brand-image" src="smartcoach-mark.svg" alt="" width="36" height="36" />
           <span><strong>SmartCoach</strong><small>device portal</small></span>
         </a>
-        <div class="topbar-status"><span class="status-dot"></span> Coach bridge online</div>
+        <div class="topbar-tools">
+          <div class="topbar-status"><span class="status-dot"></span><span id="bridge-status">Coach bridge online</span></div>
+          <details class="utility-menu" id="utility-menu">
+            <summary class="utility-menu-toggle" aria-label="Open portal menu" title="Portal menu">
+              <span class="hamburger-icon" aria-hidden="true"><span></span><span></span><span></span></span>
+            </summary>
+            <nav class="utility-menu-panel" aria-label="Portal menu">
+              <button class="utility-menu-item" id="status-open" type="button">Status</button>
+              <button class="utility-menu-item" id="diagnostics-open" type="button" hidden>Diagnostics</button>
+              <button class="utility-menu-item" id="email-open" type="button" hidden>Email reports</button>
+              <a class="utility-menu-item" id="email-page-link" href="/email" hidden>Email setup</a>
+              <button class="utility-menu-item" id="privacy-open" type="button">Privacy notice <span>(draft)</span></button>
+              <div class="utility-menu-divider" role="separator"></div>
+              <span class="utility-menu-label">System actions</span>
+              <button class="utility-menu-item utility-menu-danger" id="wifi-reset-button" type="button">Reset Wi-Fi</button>
+              <button class="utility-menu-item utility-menu-danger" id="device-reboot-button" type="button">Reboot SmartCoach</button>
+            </nav>
+          </details>
+        </div>
       </header>
 
       <section class="intro" id="portal-intro">
@@ -61,6 +79,23 @@
         <details class="unhandled-traffic"><summary>Unhandled RV-C traffic <span id="unhandled-count">0</span></summary><div id="unhandled-list"></div></details>
       </section>
 
+      <section class="status-view" id="status-view" hidden aria-labelledby="status-title">
+        <header class="status-header">
+          <div><span class="section-kicker">Live bridge state</span><h2 id="status-title">Status</h2></div>
+          <div class="status-actions"><button id="status-back" type="button">Back to devices</button><button id="status-refresh" type="button">Refresh status</button></div>
+        </header>
+        <p class="status-updated" id="status-updated" role="status" aria-live="polite">Waiting for bridge status</p>
+        <dl class="status-metrics">
+          <div><dt>Connection</dt><dd id="status-connection">Unavailable</dd></div>
+          <div><dt>IP address</dt><dd id="status-ip">Unavailable</dd></div>
+          <div><dt>Wi-Fi signal</dt><dd id="status-rssi">Unavailable</dd></div>
+          <div><dt>Free heap</dt><dd id="status-heap">Unavailable</dd></div>
+          <div><dt>Uptime</dt><dd id="status-uptime">Unavailable</dd></div>
+          <div><dt>Learning</dt><dd id="status-learning">Unavailable</dd></div>
+          <div><dt>Restart</dt><dd id="status-restart">Unavailable</dd></div>
+        </dl>
+      </section>
+
       <section class="diagnostics-view" id="diagnostics-view" hidden aria-labelledby="diagnostics-title">
         <header class="diagnostics-header">
           <div><span class="section-kicker">Passive bridge status</span><h2 id="diagnostics-title">Diagnostics</h2></div>
@@ -81,15 +116,7 @@
 
       <footer class="footer">
         <span>SmartCoachDevicePortal V0.1.1</span>
-        <div class="footer-actions">
-          <span class="footer-sync"><span class="footer-dot"></span> Synced with coach bridge</span>
-          <button class="footer-legal-link" id="diagnostics-open" type="button" hidden>Diagnostics</button>
-          <button class="footer-legal-link" id="email-open" type="button" hidden>Email reports</button>
-           <a class="footer-legal-link" id="email-page-link" href="/email" hidden>Email setup page</a>
-          <button class="footer-legal-link" id="privacy-open" type="button">Privacy notice <span>(draft)</span></button>
-          <button class="wifi-reset-button" id="wifi-reset-button" type="button">Reset Wi-Fi</button>
-          <button class="device-reboot-button" id="device-reboot-button" type="button">Reboot SmartCoach</button>
-        </div>
+        <span class="footer-sync"><span class="footer-dot"></span> Synced with coach bridge</span>
       </footer>
     </main>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
@@ -192,6 +219,8 @@
       const syncStatus = document.querySelector("#sync-status");
       const portalIntro = document.querySelector("#portal-intro");
       const deviceWorkspace = document.querySelector("#device-workspace");
+      const statusView = document.querySelector("#status-view");
+      const utilityMenu = document.querySelector("#utility-menu");
       const diagnosticsView = document.querySelector("#diagnostics-view");
       const diagnosticsStatus = document.querySelector("#diagnostics-status");
       const diagnosticsMetrics = document.querySelector("#diagnostics-metrics");
@@ -612,11 +641,36 @@
 
       function showPortalView(view) {
         const showingDiagnostics = view === "diagnostics";
-        currentView = showingDiagnostics ? "diagnostics" : "devices";
-        portalIntro.hidden = showingDiagnostics;
-        deviceWorkspace.hidden = showingDiagnostics;
+        const showingStatus = view === "status";
+        currentView = showingDiagnostics ? "diagnostics" : showingStatus ? "status" : "devices";
+        portalIntro.hidden = showingDiagnostics || showingStatus;
+        deviceWorkspace.hidden = showingDiagnostics || showingStatus;
+        statusView.hidden = !showingStatus;
         diagnosticsView.hidden = !showingDiagnostics;
         if (showingDiagnostics) loadDiagnostics();
+        if (showingStatus) loadRuntimeConfig();
+      }
+
+      function formatUptime(value) {
+        const totalSeconds = Math.floor(Number(value) / 1000);
+        if (!Number.isFinite(totalSeconds) || totalSeconds < 0) return "Unavailable";
+        const days = Math.floor(totalSeconds / 86400);
+        const hours = Math.floor((totalSeconds % 86400) / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        return days ? `${days}d ${hours}h` : hours ? `${hours}h ${minutes}m` : `${minutes}m`;
+      }
+
+      function renderStatus(status) {
+        const connected = status && typeof status === "object";
+        document.querySelector("#status-connection").textContent = connected ? "Online" : "Unavailable";
+        document.querySelector("#status-ip").textContent = status?.ip || "Unavailable";
+        document.querySelector("#status-rssi").textContent = status?.rssi != null && Number.isFinite(Number(status.rssi)) ? `${status.rssi} dBm` : "Unavailable";
+        document.querySelector("#status-heap").textContent = status?.free_heap != null && Number.isFinite(Number(status.free_heap)) ? `${Number(status.free_heap).toLocaleString()} bytes` : "Unavailable";
+        document.querySelector("#status-uptime").textContent = formatUptime(status?.uptime_ms);
+        document.querySelector("#status-learning").textContent = connected ? (status.learning ? "In progress" : "Idle") : "Unavailable";
+        document.querySelector("#status-restart").textContent = connected ? (status.restart_required ? "Pending" : "Not pending") : "Unavailable";
+        document.querySelector("#status-updated").textContent = connected ? `Updated ${new Date().toLocaleTimeString()}` : "Bridge status unavailable";
+        document.querySelector("#bridge-status").textContent = connected ? (status.learning ? "Learning in progress" : "Coach bridge online") : "Bridge status unavailable";
       }
 
       async function loadRuntimeConfig({ refreshDiscovery = false } = {}) {
@@ -632,6 +686,7 @@
           fetchRuntimeJson(["/status"])
         ]);
         if (discovery) discoveryData = discovery;
+        renderStatus(status);
 
         if (coach && typeof coach === "object" && !Array.isArray(coach)) {
           coachData = coach;
@@ -675,6 +730,8 @@
           emailStageButton.hidden = !(status.email_report_available && coachData?.emailReports && !status.email_report_pending);
           emailStageButton.textContent = status.email_learning_report_available ? "Stage completed learning report" : "Stage current inventory report";
           document.querySelector("#email-relay-state").textContent = status.email_relay_configured ? "Relay configured" : "Relay not configured";
+        } else {
+          renderStatus(null);
         }
         renderUnhandled(records);
         renderDevices();
@@ -798,6 +855,21 @@
         if (event.target === renameDialog) renameDialog.close();
       });
       document.querySelector("#privacy-open").addEventListener("click", () => privacyDialog.showModal());
+      document.querySelector("#status-open").addEventListener("click", () => showPortalView("status"));
+      document.querySelector("#status-back").addEventListener("click", () => showPortalView("devices"));
+      document.querySelector("#status-refresh").addEventListener("click", () => loadRuntimeConfig());
+      utilityMenu.addEventListener("click", (event) => {
+        if (event.target.closest("button, a")) utilityMenu.open = false;
+      });
+      document.addEventListener("click", (event) => {
+        if (!utilityMenu.contains(event.target)) utilityMenu.open = false;
+      });
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape" && utilityMenu.open) {
+          utilityMenu.open = false;
+          utilityMenu.querySelector("summary").focus();
+        }
+      });
       document.querySelector("#privacy-close").addEventListener("click", () => privacyDialog.close());
       document.querySelector("#email-open").addEventListener("click", () => {
         document.querySelector("#email-owner-consent").checked = Boolean(coachData?.emailReports);

@@ -40,20 +40,22 @@ namespace {
 
         size_t extraHeapRequired(size_t) const override { return 0; }
 
-        bool begin(size_t) override {
+        bool begin(size_t jsonLength) override {
+            expected_ = jsonLength;
+            server_.setContentLength(jsonLength);
+            server_.send(200, "application/json", "");
             started_ = true;
-            server_.chunkResponseBegin("application/json");
             return true;
         }
 
         size_t write(const uint8_t* data, size_t length) override {
-            server_.chunkWrite(reinterpret_cast<const char*>(data), length);
-            return length;
+            size_t written = server_.client().write(data, length);
+            written_ += written;
+            return written;
         }
 
         bool finish() override {
-            server_.chunkResponseEnd();
-            return true;
+            return written_ == expected_;
         }
 
         bool started() const { return started_; }
@@ -61,6 +63,8 @@ namespace {
     private:
         WebServer& server_;
         bool started_ = false;
+        size_t expected_ = 0;
+        size_t written_ = 0;
     };
 
     bool fileContains(File& file, const char* text)
