@@ -49,6 +49,7 @@ These screenshots show RV devices in the EVE Home app, including awning, motion,
 
 ## Web Portal
 The first screen shows the coach profile and discovered devices.
+The upper-right menu provides live Status, Diagnostics, Email Reports, Email setup, and the Privacy Notice. System actions are separated in the menu; Wi-Fi reset and reboot require confirmation. Status refreshes from the bridge's routine status poll without running a discovery scan.
 
 <img width="200" alt="Web Portal Top of Page" src="images/IMG_6503.PNG"/>
 
@@ -63,7 +64,7 @@ This Water Pump has been discovered but is still unassigned. Its card shows the 
 <img width="200" alt="Unassigned Water Pump card showing its RV-C messages" src="images/IMG_6505.PNG"/>
 
 ---
-This shows the reboot and reset buttons along with links to the Diagnostic Page and Email Reports.
+This screenshot shows an earlier footer layout. The current portal places these tools and system actions in the upper-right menu.
 
 <img width="200" alt="Diagnostic Page Bottom" src="images/IMG_6520.PNG"/>
 
