@@ -5,14 +5,111 @@
 #include <driver/twai.h>
 #include <esp_system.h>
 #include <esp_timer.h>
+#include <cstddef>
+#include <cstdlib>
 #include <cstring>
 
 #include "LearnRecord.h"
 
 namespace {
-    constexpr size_t MAX_DIAGNOSTICS_JSON_BYTES = 32768;
+    // The full diagnostics payload can exceed a 32 KiB document once all configured
+    // devices and unmapped traffic are included. Keep the ceiling bounded but large
+    // enough to avoid rejecting valid reports while still failing closed under low heap.
+    constexpr size_t MAX_DIAGNOSTICS_JSON_BYTES = 65536;
+    constexpr size_t DIAGNOSTICS_DOCUMENT_CAPACITY = 65536;
     constexpr uint32_t MIN_FREE_HEAP_FOR_JSON = 24576;
     constexpr size_t JSON_STREAM_BUFFER_BYTES = 512;
+
+    class DiagnosticsDocumentAllocator : public Allocator {
+    public:
+        explicit DiagnosticsDocumentAllocator(size_t capacity)
+            : capacity_(capacity), buffer_(static_cast<uint8_t*>(std::malloc(capacity))) {}
+
+        DiagnosticsDocumentAllocator(const DiagnosticsDocumentAllocator&) = delete;
+        DiagnosticsDocumentAllocator& operator=(const DiagnosticsDocumentAllocator&) = delete;
+        DiagnosticsDocumentAllocator(DiagnosticsDocumentAllocator&&) = delete;
+        DiagnosticsDocumentAllocator& operator=(DiagnosticsDocumentAllocator&&) = delete;
+
+        ~DiagnosticsDocumentAllocator() { std::free(buffer_); }
+
+        bool available() const { return buffer_ != nullptr; }
+
+        void* allocate(size_t size) override {
+            size_t alignedSize = 0;
+            bool valid = buffer_ != nullptr && alignSize(size, alignedSize);
+            if (valid) valid = used_ <= capacity_ && HEADER_SIZE <= capacity_ - used_;
+            size_t start = valid ? alignOffset(used_) : 0;
+            if (valid) valid = start >= used_ && start <= capacity_ && HEADER_SIZE <= capacity_ - start;
+            size_t dataOffset = valid ? start + HEADER_SIZE : 0;
+            if (valid) valid = alignedSize <= capacity_ - dataOffset;
+            void* result = nullptr;
+            if (valid) {
+                auto* header = reinterpret_cast<AllocationHeader*>(buffer_ + start);
+                header->requestedSize = size;
+                header->endOffset = dataOffset + alignedSize;
+                used_ = header->endOffset;
+                result = buffer_ + dataOffset;
+            }
+            return result;
+        }
+
+        void deallocate(void*) override {}
+
+        void* reallocate(void* pointer, size_t newSize) override {
+            void* result = nullptr;
+            if (pointer == nullptr) {
+                result = allocate(newSize);
+            } else if (newSize == 0) {
+                deallocate(pointer);
+            } else {
+                auto* data = static_cast<uint8_t*>(pointer);
+                size_t dataOffset = static_cast<size_t>(data - buffer_);
+                bool valid = dataOffset >= HEADER_SIZE && dataOffset <= capacity_;
+                auto* header = valid ? reinterpret_cast<AllocationHeader*>(data - HEADER_SIZE) : nullptr;
+                size_t alignedSize = 0;
+                if (valid) valid = alignSize(newSize, alignedSize);
+                if (valid && header->endOffset == used_) {
+                    valid = alignedSize <= capacity_ - dataOffset;
+                    if (valid) {
+                        header->requestedSize = newSize;
+                        header->endOffset = dataOffset + alignedSize;
+                        used_ = header->endOffset;
+                        result = pointer;
+                    }
+                } else if (valid) {
+                    result = allocate(newSize);
+                    if (result != nullptr) {
+                        size_t copied = header->requestedSize < newSize ? header->requestedSize : newSize;
+                        std::memcpy(result, pointer, copied);
+                    }
+                }
+            }
+            return result;
+        }
+
+    private:
+        struct AllocationHeader {
+            size_t requestedSize;
+            size_t endOffset;
+        };
+
+        static constexpr size_t ALIGNMENT = alignof(std::max_align_t);
+        static constexpr size_t HEADER_SIZE = (sizeof(AllocationHeader) + ALIGNMENT - 1) & ~(ALIGNMENT - 1);
+
+        static bool alignSize(size_t size, size_t& alignedSize) {
+            bool valid = size <= static_cast<size_t>(-1) - (ALIGNMENT - 1);
+            if (valid) alignedSize = (size + ALIGNMENT - 1) & ~(ALIGNMENT - 1);
+            return valid;
+        }
+
+        static size_t alignOffset(size_t offset) {
+            return (offset + ALIGNMENT - 1) & ~(ALIGNMENT - 1);
+        }
+
+        size_t capacity_;
+        uint8_t* buffer_ = nullptr;
+        size_t used_ = 0;
+    };
 
     class BufferedJsonSinkWriter {
     public:
@@ -411,7 +508,12 @@ void BridgeDiagnostics::populateReport(JsonDocument& document) {
 }
 
 bool BridgeDiagnostics::writeReport(DiagnosticsJsonSink& sink) {
-    JsonDocument document;
+    bool enoughHeap = ESP.getFreeHeap() >= DIAGNOSTICS_DOCUMENT_CAPACITY + MIN_FREE_HEAP_FOR_JSON;
+    if (!enoughHeap) return false;
+
+    DiagnosticsDocumentAllocator allocator(DIAGNOSTICS_DOCUMENT_CAPACITY);
+    if (!allocator.available()) return false;
+    JsonDocument document(&allocator);
     populateReport(document);
     if (document.overflowed()) return false;
 
@@ -425,7 +527,8 @@ bool BridgeDiagnostics::writeReport(DiagnosticsJsonSink& sink) {
     BufferedJsonSinkWriter writer(sink);
     size_t written = serializeJson(document, writer);
     bool complete = writer.flush() && written == expected;
-    return sink.finish() && complete;
+    bool finished = sink.finish();
+    return finished && complete;
 }
 
 String BridgeDiagnostics::reportJson() {
