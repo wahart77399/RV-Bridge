@@ -85,6 +85,10 @@ namespace {
         ESP.freeHeapBytes = 1000;
         require(BridgeDiagnostics::reportJson().isEmpty(), "diagnostics serialized without the reserved heap margin");
         ESP.freeHeapBytes = 120000;
+        String reused = BridgeDiagnostics::reportJson();
+        JsonDocument reusedReport;
+        require(!reused.isEmpty() && !deserializeJson(reusedReport, reused.c_str()),
+            "diagnostics document was not reusable after low-heap refusal");
     }
 
         void resetHostFakes() {
