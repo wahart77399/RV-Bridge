@@ -3,8 +3,7 @@ This is a forked version of Randy Ubillos's RV-Bridge
 
 ## Overview
 ### Credit and Origin
-The RV-Bridge was originally developed by Randy Ubillos, you may find the original documentation from him, here at https://github.com/rubillos/RV-Bridge. After reviewing his code, I felt it needed significant work to make it more modular and Object Oriented and less monolithic. I forked from his GitHub and re-architected the design. My GitHub link is:
-https://github.com/wahart77399/RV-Bridge
+The RV-Bridge was originally developed by Randy Ubillos, you may find the original documentation from him, here at https://github.com/rubillos/RV-Bridge. After reviewing his code, I felt it needed significant work to make it more modular and Object Oriented and less monolithic. I forked from his GitHub and re-architected the design.
 
 ## Development and Hardware
 Originally, I used Randy’s original hardware and 3D casing. Unfortunately, the ESP32 board he used did not allow me to build all the devices I wanted. So, I researched and found a different board, the ESP32-S3 with CAN and LIN bus connections from SKPang. You can find the board [here](https://copperhilltech.com/esp32s3-can-lin-bus-board/). Once I made that decision, I decided to add more capability, including:
